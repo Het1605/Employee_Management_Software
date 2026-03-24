@@ -13,17 +13,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/change-password")
 def change_password(data: ChangePasswordRequest, db: Session = Depends(get_db)):
-    # In a real app, user_id would come from JWT/Token
-    # For now, we simulate this or pass it as needed.
-    # The requirement says "Authenticated", but JWT/Auth is not implemented yet.
-    # We will assume a user_id for now or skip until JWT is added.
-    # To satisfy the request "logic only", I'll use a placeholder or 
-    # require user_id in the request if necessary, but the schema didn't have it.
-    # I'll return a message that this requires authentication.
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required (JWT not implemented yet)"
-    )
+    return AuthService.change_password(db, data.email, data.old_password, data.new_password)
 
 @router.post("/reset-password")
 def reset_password_request(data: ResetPasswordRequest, db: Session = Depends(get_db)):

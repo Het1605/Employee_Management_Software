@@ -43,6 +43,7 @@ class LoginRequest(BaseModel):
     password: str
 
 class ChangePasswordRequest(BaseModel):
+    email: EmailStr
     old_password: str
     new_password: str = Field(..., min_length=8)
 

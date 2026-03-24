@@ -4,14 +4,18 @@ import Login from '../pages/Login';
 import AdminDashboard from '../pages/AdminDashboard';
 import EmployeeDashboard from '../pages/EmployeeDashboard';
 import UserManagement from '../pages/UserManagement';
+import ForgotPassword from '../pages/ForgotPassword';
+import ResetPassword from '../pages/ResetPassword';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const AppRouter = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Route */}
+        {/* Public Routes */}
         <Route path="/" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Protected Admin Routes */}
         <Route
