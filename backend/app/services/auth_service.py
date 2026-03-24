@@ -49,7 +49,6 @@ class AuthService:
         success_msg = {"message": "If this email exists in our system, a reset link has been sent."}
         
         if not user:
-            # Still return success to prevent user enumeration
             return success_msg
         
         # Generate JWT Token (15 min expiry)
@@ -60,16 +59,19 @@ class AuthService:
         }
         token = jwt.encode(token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         
-        # Send email (mock)
-        reset_link = f"http://localhost:3000/reset-password?token={token}"
+        # Send email
+        reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
         AuthService._send_reset_email(user.email, reset_link)
         
         return success_msg
 
     @staticmethod
     def reset_password_confirm(db: Session, confirm_data: ResetPasswordConfirm):
+        # Clean token (safeguard against hidden characters)
+        token = confirm_data.token.replace("\\r", "").replace("\\n", "").replace("\r", "").replace("\n", "").strip()
+        
         try:
-            payload = jwt.decode(confirm_data.token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             email = payload.get("sub")
             if not email or payload.get("type") != "reset_password":
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
@@ -91,10 +93,8 @@ class AuthService:
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
 
-        print(f"DEBUG: Internal call to _send_reset_email for {email}")
-
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-            print("EMAIL ERROR: SMTP credentials not configured in .env")
+            print("EMAIL ERROR: SMTP credentials not configured")
             return
 
         # Create message

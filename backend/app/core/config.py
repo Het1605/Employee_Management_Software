@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Links
+    FRONTEND_URL: str = "http://localhost:3000"
+    
     # SMTP Settings
     SMTP_SERVER: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

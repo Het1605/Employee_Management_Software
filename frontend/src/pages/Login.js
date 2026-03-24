@@ -36,11 +36,13 @@ function Login() {
       // Correct extraction: role is at top level, username is in user object
       let role = res.data.role;
       const userName = res.data.user.name;
+      const userEmail = res.data.user.email;
       
       role = role ? role.toUpperCase() : "";
       console.log("ROLE:", role);
 
       localStorage.setItem("username", userName);
+      localStorage.setItem("userEmail", userEmail);
       localStorage.setItem("userRole", role);
 
       if (role === "ADMIN") {
@@ -92,7 +94,8 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+              <a href="/change-password" style={{ fontSize: '0.875rem', color: '#6b7280', textDecoration: 'none' }}>Change Password</a>
               <a href="/forgot-password" style={{ fontSize: '0.875rem', color: '#3b82f6', textDecoration: 'none' }}>Forgot Password?</a>
             </div>
           </div>

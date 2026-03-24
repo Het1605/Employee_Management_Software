@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services.auth_service import AuthService
@@ -12,8 +12,13 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     return AuthService.authenticate_user(db, data)
 
 @router.post("/change-password")
-def change_password(data: ChangePasswordRequest, db: Session = Depends(get_db)):
-    return AuthService.change_password(db, data.email, data.old_password, data.new_password)
+def change_password(data: ChangePasswordRequest, x_user_email: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not identified. Please log in."
+        )
+    return AuthService.change_password(db, x_user_email, data.old_password, data.new_password)
 
 @router.post("/reset-password")
 def reset_password_request(data: ResetPasswordRequest, db: Session = Depends(get_db)):
