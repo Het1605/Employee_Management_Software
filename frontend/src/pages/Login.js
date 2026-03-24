@@ -33,16 +33,26 @@ function Login() {
         password,
       });
 
-      // Extract details from ResponseSchema -> data
-      const { role, username } = res.data.data;
+      // Correct extraction: role is at top level, username is in user object
+      let role = res.data.role;
+      const userName = res.data.user.name;
       
-      localStorage.setItem("username", username);
+      role = role ? role.toUpperCase() : "";
+      console.log("ROLE:", role);
+
+      localStorage.setItem("username", userName);
       localStorage.setItem("userRole", role);
 
-      if (role === "admin") {
+      if (role === "ADMIN") {
         navigate("/admin");
-      } else {
+      } else if (role === "EMPLOYEE") {
         navigate("/employee");
+      } else if (role === "HR") {
+        navigate("/hr");
+      } else if (role === "MANAGER") {
+        navigate("/manager");
+      } else {
+        navigate("/");
       }
 
     } catch (err) {

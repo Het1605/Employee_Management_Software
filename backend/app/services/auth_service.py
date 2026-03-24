@@ -22,7 +22,7 @@ class AuthService:
 
         return {
             "message": "Login successful",
-            "role": user.role,
+            "role": user.role.upper(),
             "user": {
                 "id": user.id,
                 "name": user.name,

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from '../pages/Login';
 import AdminDashboard from '../pages/AdminDashboard';
 import EmployeeDashboard from '../pages/EmployeeDashboard';
+import UserManagement from '../pages/UserManagement';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const AppRouter = () => {
@@ -12,12 +13,20 @@ const AppRouter = () => {
         {/* Public Route */}
         <Route path="/" element={<Login />} />
 
-        {/* Protected Admin Route */}
+        {/* Protected Admin Routes */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['ADMIN']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <UserManagement />
             </ProtectedRoute>
           }
         />
@@ -26,7 +35,7 @@ const AppRouter = () => {
         <Route
           path="/employee"
           element={
-            <ProtectedRoute allowedRoles={['employee']}>
+            <ProtectedRoute allowedRoles={['EMPLOYEE']}>
               <EmployeeDashboard />
             </ProtectedRoute>
           }
