@@ -2,9 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
 from app.db import models
-from app.api.routes import auth
+from app.api.routes import auth, users
 from app.core.config import settings
-
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -20,7 +19,8 @@ app.add_middleware(
 # 🔥 This line creates tables in DB
 Base.metadata.create_all(bind=engine)
 
-app.include_router(auth.router, prefix="/auth")
+app.include_router(auth.router)
+app.include_router(users.router)
 
 @app.get("/")
 def home():
