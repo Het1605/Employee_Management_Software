@@ -18,7 +18,18 @@ class AuthService:
                 detail="Invalid email or password"
             )
 
+        # Generate Access Token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token_data = {
+            "sub": user.email,
+            "role": user.role.upper(),
+            "exp": datetime.utcnow() + access_token_expires
+        }
+        access_token = jwt.encode(access_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
         return {
+            "access_token": access_token,
+            "token_type": "bearer",
             "message": "Login successful",
             "role": user.role.upper(),
             "user": {
