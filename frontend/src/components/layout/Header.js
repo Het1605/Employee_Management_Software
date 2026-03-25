@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../../styles/Header.module.css';
 
-const Header = () => {
+const Header = ({ title, onToggleSidebar }) => {
   const navigate = useNavigate();
   const username = localStorage.getItem('username');
   const role = localStorage.getItem('role');
@@ -14,14 +14,24 @@ const Header = () => {
 
   return (
     <header className={styles.header}>
-      <div className={styles.logo}>HR Portal</div>
-      <div className={styles.userInfo}>
-        <span className={styles.userText}>
-          {username} ({role})
-        </span>
-        <button onClick={handleLogout} className={styles.logoutBtn}>
-          Logout
+      <div className={styles.leftSection}>
+        <button className={styles.menuBtn} onClick={onToggleSidebar}>
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
+        <div className={styles.headerTitle}>{title || "HR Portal"}</div>
+      </div>
+
+      <div className={styles.rightSection}>
+        <div className={styles.userInfo}>
+          <span className={styles.userText}>
+            {username} ({role})
+          </span>
+          <button onClick={handleLogout} className={styles.logoutBtn}>
+            Logout
+          </button>
+        </div>
       </div>
     </header>
   );

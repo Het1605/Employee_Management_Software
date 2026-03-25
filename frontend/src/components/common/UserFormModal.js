@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import styles from '../../styles/UserManagement.module.css';
 
 const UserFormModal = ({ user, onClose, onSubmit }) => {
+  const currentRole = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
+  const isAdmin = currentRole === 'ADMIN';
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -20,7 +23,14 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
     e.preventDefault();
     setError('');
 
-    if (!user) {
+    // Common validations for New User OR Admin Editing (since it's now compulsory)
+    const isPasswordRequired = !user || (user && isAdmin);
+
+    if (isPasswordRequired) {
+      if (!formData.password) {
+        setError('Password is required');
+        return;
+      }
       if (formData.password !== formData.confirm_password) {
         setError('Passwords do not match');
         return;
@@ -30,8 +40,20 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
         return;
       }
     }
+
+    // Prepare payload
+    const payload = { ...formData };
     
-    onSubmit(formData);
+    // Cleanup for submission
+    if (user) {
+      if (!isAdmin) {
+        // If non-admin is editing, they shouldn't be sending password fields at all
+        delete payload.password;
+      }
+      delete payload.confirm_password;
+    }
+    
+    onSubmit(payload);
   };
 
   return (
@@ -76,7 +98,11 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
             />
           </div>
           
-          {!user && (
+          {/* Show password fields:
+              1. Always for New User
+              2. For Edit Mode ONLY if current user is ADMIN (now compulsory)
+          */}
+          {(!user || (user && isAdmin)) && (
             <>
               <div className={styles.inputGroup}>
                 <label>Password</label>
@@ -103,7 +129,7 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
             </>
           )}
 
-          <div className={user ? styles.fullWidth : styles.fullWidth}>
+          <div className={styles.fullWidth}>
             <div className={styles.inputGroup}>
               <label>System Role</label>
               <select name="role" value={formData.role} onChange={handleChange}>

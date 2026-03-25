@@ -30,6 +30,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
+    password: Optional[str] = Field(None, min_length=8)
 
 class UserResponse(UserBase):
     id: int

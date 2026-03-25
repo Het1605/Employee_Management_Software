@@ -53,6 +53,9 @@ class UserService:
                     detail="Email already registered"
                 )
         
+        if "password" in update_data:
+            db_user.password = hash_password(update_data.pop("password"))
+        
         for key, value in update_data.items():
             setattr(db_user, key, value)
         

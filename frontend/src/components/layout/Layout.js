@@ -1,35 +1,38 @@
-import React from 'react';
-import Sidebar from './Sidebar';
+import React, { useState } from 'react';
 import Header from './Header';
+import Sidebar from './Sidebar';
 import styles from '../../styles/Layout.module.css';
 
-const Layout = ({ children, title, onActionClick, actionLabel }) => {
+const Layout = ({ children, title, actionLabel, onActionClick }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
     <div className={styles.layout}>
-      <Sidebar />
+      {/* Sidebar with state and close handler */}
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+      
+      {/* Overlay for mobile when sidebar is open */}
+      {isSidebarOpen && <div className={styles.overlay} onClick={closeSidebar}></div>}
+
       <div className={styles.contentArea}>
-        <header className={styles.contentHeader}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', background: '#fff', borderBottom: '1px solid #eee' }}>
-            <h1 style={{ fontSize: '1.5rem', margin: 0 }}>{title}</h1>
+        {/* Header with toggle solely */}
+        <Header 
+          title={title} 
+          onToggleSidebar={toggleSidebar}
+        />
+        
+        <main className={styles.mainContent}>
+          <div className={styles.pageHeader}>
+            {title && <h1 className={styles.pageTitle}>{title}</h1>}
             {actionLabel && (
-              <button 
-                onClick={onActionClick}
-                style={{ 
-                  backgroundColor: '#3b82f6', 
-                  color: '#fff', 
-                  padding: '0.6rem 1.2rem', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  fontWeight: '600'
-                }}
-              >
+              <button className={styles.actionBtn} onClick={onActionClick}>
                 {actionLabel}
               </button>
             )}
           </div>
-        </header>
-        <main className={styles.mainContent}>
           {children}
         </main>
       </div>
