@@ -15,8 +15,8 @@ class CompanyCreate(CompanyBase):
 class CompanyUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     address: Optional[str] = Field(None, min_length=5)
-    gst_number: Optional[str] = None
-    pan_number: Optional[str] = None
+    gst_number: Optional[str] = Field(None, min_length=15, max_length=15)
+    pan_number: Optional[str] = Field(None, min_length=10, max_length=10)
     logo_url: Optional[str] = None
 
 class CompanyResponse(CompanyBase):
