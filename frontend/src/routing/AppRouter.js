@@ -1,13 +1,19 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from '../pages/Login';
-import AdminDashboard from '../pages/AdminDashboard';
-import EmployeeDashboard from '../pages/EmployeeDashboard';
-import UserManagement from '../pages/UserManagement';
-import ForgotPassword from '../pages/ForgotPassword';
-import ResetPassword from '../pages/ResetPassword';
-import ChangePassword from '../pages/ChangePassword';
-import ProtectedRoute from '../components/ProtectedRoute';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from '../components/common/ProtectedRoute';
+
+// Auth Pages
+import Login from '../pages/auth/Login';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
+import ChangePassword from '../pages/auth/ChangePassword';
+
+// Dashboards
+import AdminDashboard from '../pages/dashboard/admin/AdminDashboard';
+import UserManagement from '../pages/dashboard/admin/UserManagement';
+import HRDashboard from '../pages/dashboard/hr/HRDashboard';
+import ManagerDashboard from '../pages/dashboard/manager/ManagerDashboard';
+import EmployeeDashboard from '../pages/dashboard/employee/EmployeeDashboard';
 
 const AppRouter = () => {
   return (
@@ -19,36 +25,72 @@ const AppRouter = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/change-password" element={<ChangePassword />} />
 
-        {/* Protected Admin Routes */}
-        <Route
-          path="/admin"
+        {/* Admin Routes */}
+        <Route 
+          path="/admin" 
           element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
               <AdminDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
-        <Route
-          path="/admin/users"
+        <Route 
+          path="/admin/users" 
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
               <UserManagement />
             </ProtectedRoute>
-          }
+          } 
         />
 
-        {/* Protected Employee Route */}
-        <Route
-          path="/employee"
+        {/* HR Routes */}
+        <Route 
+          path="/hr" 
           element={
-            <ProtectedRoute allowedRoles={['EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <HRDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/users" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <UserManagement />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Manager Routes */}
+        <Route 
+          path="/manager" 
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/manager/users" 
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <UserManagement />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Employee Routes */}
+        <Route 
+          path="/employee" 
+          element={
+            <ProtectedRoute allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}>
               <EmployeeDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Login />} />
       </Routes>
     </Router>
   );

@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import API from '../services/api';
-import styles from '../styles/Login.module.css';
+import API from '../../services/api';
+import styles from '../../styles/Login.module.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return;
-    
     setLoading(true);
+    setError('');
+    setMessage('');
+    
     try {
       await API.post('/auth/reset-password', { email });
-      setMessage('If email exists, reset link sent');
+      setMessage('If an account exists with this email, you will receive a reset link shortly.');
     } catch (err) {
-      setMessage('If email exists, reset link sent'); // Generic message even on error for security
+      setError(err.response?.data?.detail || 'Failed to send reset link');
     } finally {
       setLoading(false);
     }
@@ -33,19 +35,21 @@ const ForgotPassword = () => {
             <input 
               type="email" 
               className={styles.input} 
+              placeholder="name@example.com"
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
             />
           </div>
+          {error && <p className={styles.error}>{error}</p>}
           {message && <p style={{ color: '#059669', fontSize: '0.875rem', marginBottom: '1rem' }}>{message}</p>}
           <button type="submit" className={styles.button} disabled={loading}>
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
+          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+            <a href="/" style={{ fontSize: '0.875rem', color: '#3b82f6', textDecoration: 'none' }}>Back to Login</a>
+          </div>
         </form>
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <a href="/" style={{ color: '#3b82f6', textDecoration: 'none' }}>Back to Login</a>
-        </div>
       </div>
     </div>
   );

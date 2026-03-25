@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
-import styles from "../styles/Login.module.css";
+import API from "../../services/api";
+import styles from "../../styles/Login.module.css";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +17,6 @@ function Login() {
       return;
     }
 
-    // Basic email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Please enter a valid email address");
@@ -33,17 +32,16 @@ function Login() {
         password,
       });
 
-      // Correct extraction: role is at top level, username is in user object
       let role = res.data.role;
       const userName = res.data.user.name;
       const userEmail = res.data.user.email;
       
       role = role ? role.toUpperCase() : "";
-      console.log("ROLE:", role);
-
+      
+      // Store in localStorage for routing and identification
       localStorage.setItem("username", userName);
       localStorage.setItem("userEmail", userEmail);
-      localStorage.setItem("userRole", role);
+      localStorage.setItem("role", role); // Standardized key
 
       if (role === "ADMIN") {
         navigate("/admin");
@@ -58,9 +56,7 @@ function Login() {
       }
 
     } catch (err) {
-      // Handle standardized error response
       const errorMsg = err.response?.data?.detail || "Login Failed: Invalid credentials";
-      console.log("Error:", err);
       setError(errorMsg);
     } finally {
       setLoading(false);

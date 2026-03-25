@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../styles/UserManagement.module.css';
+import styles from '../../styles/UserManagement.module.css';
 
 const UserCard = ({ user, onEdit, onDelete }) => {
   return (

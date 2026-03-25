@@ -1,8 +1,8 @@
 .userGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
-  padding-top: 1rem;
+  padding: 1rem;
 }
 
 .userCard {
@@ -89,90 +89,129 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(4px);
 }
 
 .modalContent {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 500px;
+  max-width: 550px;
   padding: 2rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
 }
 
 .modalHeader {
-  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 1rem;
 }
 
-.modalTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
   color: #111827;
 }
 
-.formGroup {
-  margin-bottom: 1rem;
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.15s;
 }
 
-.label {
-  display: block;
+.closeBtn:hover {
+  color: #111827;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fullWidth {
+  grid-column: span 2;
+}
+
+.inputGroup label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 0.25rem;
 }
 
-.input, .select {
-  width: 100%;
-  padding: 0.625rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
+.inputGroup input, .inputGroup select {
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #f9fafb;
 }
 
-.input:focus, .select:focus {
+.inputGroup input:focus, .inputGroup select:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-.modalFooter {
+.formActions {
+  grid-column: span 2;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 1.5rem;
 }
 
-.confirmBtn, .cancelBtn {
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
+.submitBtn {
+  padding: 0.75rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.confirmBtn {
-  background-color: #3b82f6;
-  color: #fff;
-  border: none;
-}
-
-.confirmBtn:hover {
+.submitBtn:hover {
   background-color: #2563eb;
 }
 
 .cancelBtn {
+  padding: 0.75rem 1.5rem;
   background-color: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: #4b5563;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .cancelBtn:hover {
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
 }

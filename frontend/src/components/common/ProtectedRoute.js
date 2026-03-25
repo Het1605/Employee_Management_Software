@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const userRole = localStorage.getItem('userRole');
+  const userRole = localStorage.getItem('role'); // Standardized key
   const isAuthenticated = !!localStorage.getItem('username');
 
   if (!isAuthenticated) {
@@ -11,7 +11,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     // Redirect to their respective dashboard if they try to access a forbidden route
-    return <Navigate to={userRole === 'admin' ? '/admin' : '/employee'} replace />;
+    const redirectPath = userRole ? `/${userRole.toLowerCase()}` : '/';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

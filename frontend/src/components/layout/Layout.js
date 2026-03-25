@@ -1,7 +1,7 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import styles from '../styles/Layout.module.css';
+import styles from '../../styles/Layout.module.css';
 
 const Layout = ({ children, title, onActionClick, actionLabel }) => {
   return (

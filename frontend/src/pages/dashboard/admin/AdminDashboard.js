@@ -1,6 +1,6 @@
 import React from 'react';
-import Layout from '../components/Layout';
-import styles from '../styles/Dashboard.module.css';
+import Layout from '../../../components/layout/Layout';
+import styles from '../../../styles/Dashboard.module.css';
 
 const AdminDashboard = () => {
   const sections = [
@@ -9,6 +9,7 @@ const AdminDashboard = () => {
     { title: 'Salary', desc: 'Manage payroll and salary structures.', path: '#' },
     { title: 'Leave Requests', desc: 'Review and approve leave applications.', path: '#' },
   ];
+
   return (
     <Layout title="Admin Dashboard">
       <h1 className={styles.welcome}>Welcome, Admin</h1>
