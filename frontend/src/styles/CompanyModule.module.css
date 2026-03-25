@@ -212,8 +212,10 @@
         align-items: center;
         gap: 0.8rem;
         width: 100%;
-        overflow-x: auto;
-        scrollbar-width: none;
+    }
+
+    .userAvatar {
+        flex-shrink: 0;
     }
 
     .mobileRow {
@@ -224,7 +226,8 @@
     }
 
     .mobileRowAvatar::-webkit-scrollbar,
-    .mobileRow::-webkit-scrollbar {
+    .mobileRow::-webkit-scrollbar,
+    .userNameMobile::-webkit-scrollbar {
         display: none;
     }
 
@@ -233,6 +236,10 @@
         font-size: 1rem;
         color: #1e293b;
         white-space: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        flex: 1;
+        min-width: 0;
     }
 
     .userEmailMobile {

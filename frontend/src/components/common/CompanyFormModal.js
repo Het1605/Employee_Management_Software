@@ -32,10 +32,31 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        if (name === 'gst_number') {
+            const upperVal = value.toUpperCase();
+            
+            // Automatically extract PAN if string has reached indices 3-12
+            let extractedPan = formData.pan_number;
+            if (upperVal.length >= 12) {
+                extractedPan = upperVal.substring(2, 12);
+            } else if (upperVal.length > 2) {
+                extractedPan = upperVal.substring(2);
+            } else {
+                extractedPan = '';
+            }
+            
+            setFormData(prev => ({
+                ...prev,
+                gst_number: upperVal,
+                pan_number: extractedPan
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handleFileChange = (e) => {
@@ -106,19 +127,26 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                                         name="gst_number"
                                         value={formData.gst_number}
                                         onChange={handleChange}
-                                        placeholder="15-digit GSTIN"
+                                        placeholder="15-digit GSTIN (e.g. 27ABCDE1234F1Z5)"
+                                        pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}[0-9A-Z]{1}$"
+                                        title="Format: 2 digits, 5 letters, 4 digits, 1 letter, followed by 3 alphanumeric characters"
+                                        maxLength={15}
                                         required
                                     />
                                 </div>
 
                                 <div className={styles.inputGroup}>
-                                    <label>PAN Number *</label>
+                                    <label>PAN Number (Auto-extracted) *</label>
                                     <input
                                         type="text"
                                         name="pan_number"
                                         value={formData.pan_number}
                                         onChange={handleChange}
                                         placeholder="10-digit PAN"
+                                        pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+                                        title="PAN is automatically extracted from the GST Number."
+                                        readOnly
+                                        style={{ backgroundColor: '#f8fafc', cursor: 'not-allowed', color: '#64748b' }}
                                         required
                                     />
                                 </div>

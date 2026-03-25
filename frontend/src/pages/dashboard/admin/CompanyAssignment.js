@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styles from '../../../styles/CompanyModule.module.css';
 import Layout from '../../../components/layout/Layout';
 import API from '../../../services/api';
+import { useToast } from '../../../contexts/ToastContext';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const CompanyAssignment = () => {
     const [companies, setCompanies] = useState([]);
@@ -12,6 +14,7 @@ const CompanyAssignment = () => {
     const [selectedAvailable, setSelectedAvailable] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const { showToast } = useToast();
     
     // Responsive states
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -34,9 +37,9 @@ const CompanyAssignment = () => {
                 setSelectedCompanyId(response.data[0].id);
             }
         } catch (err) {
-            console.error("Failed to fetch companies");
+            showToast("Failed to load companies. " + handleApiError(err), 'error');
         }
-    }, [selectedCompanyId]);
+    }, [selectedCompanyId, showToast]);
 
     const fetchUserLists = useCallback(async (id) => {
         setLoading(true);
@@ -50,11 +53,11 @@ const CompanyAssignment = () => {
             setSelectedAssigned([]);
             setSelectedAvailable([]);
         } catch (err) {
-            console.error("Failed to fetch user lists");
+            showToast("Failed to load users. " + handleApiError(err), 'error');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         fetchCompanies();
@@ -83,9 +86,10 @@ const CompanyAssignment = () => {
             await API.post(`/companies/${selectedCompanyId}/assign`, {
                 user_ids: selectedAvailable
             });
+            showToast("Users assigned successfully", 'success');
             fetchUserLists(selectedCompanyId);
         } catch (err) {
-            alert("Assignment failed");
+            showToast("User assignment failed. " + handleApiError(err), 'error');
         }
     };
 
@@ -95,24 +99,31 @@ const CompanyAssignment = () => {
             await API.post(`/companies/${selectedCompanyId}/unassign`, {
                 user_ids: selectedAssigned
             });
+            showToast("Users removed successfully", 'success');
             fetchUserLists(selectedCompanyId);
         } catch (err) {
-            alert("Unassignment failed");
+            showToast("User removal failed. " + handleApiError(err), 'error');
         }
     };
 
     const handleSingleAssign = async (userId) => {
         try {
             await API.post(`/companies/${selectedCompanyId}/assign`, { user_ids: [userId] });
+            showToast("User assigned successfully", 'success');
             fetchUserLists(selectedCompanyId);
-        } catch (err) { alert("Assignment failed"); }
+        } catch (err) { 
+            showToast("Assignment failed. " + handleApiError(err), 'error');
+        }
     };
 
     const handleSingleUnassign = async (userId) => {
         try {
             await API.post(`/companies/${selectedCompanyId}/unassign`, { user_ids: [userId] });
+            showToast("User removed successfully", 'success');
             fetchUserLists(selectedCompanyId);
-        } catch (err) { alert("Unassignment failed"); }
+        } catch (err) { 
+            showToast("Removal failed. " + handleApiError(err), 'error'); 
+        }
     };
 
     const getInitials = (name) => {

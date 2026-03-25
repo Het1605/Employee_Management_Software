@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from app.db.models import User
 from app.schemas.user import UserCreate, UserUpdate, ChangePasswordRequest
 from app.core.security import hash_password, verify_password
@@ -36,9 +37,22 @@ class UserService:
             role=user_data.role.value
         )
         db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is already registered"
+            )
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error. Please try again later."
+            )
 
     @staticmethod
     def update_user(db: Session, user_id: int, user_data: UserUpdate):
@@ -59,16 +73,42 @@ class UserService:
         for key, value in update_data.items():
             setattr(db_user, key, value)
         
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is already registered"
+            )
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error. Please try again later."
+            )
 
     @staticmethod
     def delete_user(db: Session, user_id: int):
         db_user = UserService.get_user_by_id(db, user_id)
         db.delete(db_user)
-        db.commit()
-        return {"message": "User deleted successfully"}
+        try:
+            db.commit()
+            return {"message": "User deleted successfully"}
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete user because they have active company associations"
+            )
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error. Please try again later."
+            )
 
     @staticmethod
     def get_all_users(db: Session):
@@ -85,5 +125,12 @@ class UserService:
             )
         
         db_user.password = hash_password(password_data.new_password)
-        db.commit()
-        return {"message": "Password updated successfully"}
+        try:
+            db.commit()
+            return {"message": "Password updated successfully"}
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error. Please try again later."
+            )

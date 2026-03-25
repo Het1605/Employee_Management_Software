@@ -3,13 +3,15 @@ import CompanyFormModal from '../../../components/common/CompanyFormModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import Layout from '../../../components/layout/Layout';
 import API from '../../../services/api';
+import { useToast } from '../../../contexts/ToastContext';
+import { handleApiError } from '../../../utils/errorHandler';
 import styles from '../../../styles/CompanyModule.module.css';
 import commonStyles from '../../../styles/UserManagement.module.css';
 
 const CompanyManagement = () => {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { showToast } = useToast();
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,10 +28,8 @@ const CompanyManagement = () => {
             setLoading(true);
             const response = await API.get('/companies/');
             setCompanies(response.data);
-            setError(null);
         } catch (err) {
-            setError("Failed to fetch companies. Please try again.");
-            console.error(err);
+            showToast("Failed to load companies. " + handleApiError(err), 'error');
         } finally {
             setLoading(false);
         }
@@ -54,23 +54,27 @@ const CompanyManagement = () => {
         try {
             if (editingCompany) {
                 await API.put(`/companies/${editingCompany.id}`, formData);
+                showToast("Company updated successfully", 'success');
             } else {
                 await API.post('/companies/', formData);
+                showToast("Company created successfully", 'success');
             }
             setIsModalOpen(false);
             fetchCompanies();
         } catch (err) {
-            alert(err.response?.data?.detail || "Action failed");
+            showToast(handleApiError(err), 'error');
         }
     };
 
     const handleConfirmDelete = async () => {
         try {
             await API.delete(`/companies/${deletingId}`);
+            showToast("Company deleted successfully", 'success');
             setIsConfirmOpen(false);
             fetchCompanies();
         } catch (err) {
-            alert("Delete failed");
+            showToast("Unable to delete company. " + handleApiError(err), 'error');
+            setIsConfirmOpen(false);
         }
     };
 
@@ -87,8 +91,6 @@ const CompanyManagement = () => {
             onActionClick={handleAdd}
         >
             <div className={styles.container}>
-                {error && <div className={commonStyles.errorMsg}>{error}</div>}
-
                 <div className={styles.companyGrid}>
                     {companies.map(company => (
                         <div key={company.id} className={styles.companyCard}>

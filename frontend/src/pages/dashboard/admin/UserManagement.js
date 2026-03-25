@@ -3,6 +3,8 @@ import Layout from '../../../components/layout/Layout';
 import UserCard from '../../../components/common/UserCard';
 import UserFormModal from '../../../components/common/UserFormModal';
 import API from '../../../services/api';
+import { useToast } from '../../../contexts/ToastContext';
+import { handleApiError } from '../../../utils/errorHandler';
 
 import styles from '../../../styles/UserManagement.module.css';
 
@@ -10,13 +12,14 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const { showToast } = useToast();
 
   const fetchUsers = async () => {
     try {
       const res = await API.get('/users/');
       setUsers(res.data);
     } catch (err) {
-      console.error(err);
+      showToast("Failed to load users. " + handleApiError(err), 'error');
     }
   };
 
@@ -27,24 +30,22 @@ const UserManagement = () => {
   const handleCreate = async (data) => {
     try {
       await API.post('/users/', data);
+      showToast("User created successfully", 'success');
       fetchUsers();
       setIsModalOpen(false);
     } catch (err) {
-      const msg = err.response?.data?.detail || "Creation failed";
-      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
-      console.error(err);
+      showToast(handleApiError(err), 'error');
     }
   };
 
   const handleUpdate = async (data) => {
     try {
       await API.put(`/users/${selectedUser.id}`, data);
+      showToast("User updated successfully", 'success');
       fetchUsers();
       setIsModalOpen(false);
     } catch (err) {
-      const msg = err.response?.data?.detail || "Update failed";
-      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
-      console.error(err);
+      showToast(handleApiError(err), 'error');
     }
   };
 
@@ -61,9 +62,14 @@ const UserManagement = () => {
             user={user} 
             onEdit={() => { setSelectedUser(user); setIsModalOpen(true); }} 
             onDelete={async () => {
-              if (window.confirm('Delete this user?')) {
-                await API.delete(`/users/${user.id}`);
-                fetchUsers();
+              if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                try {
+                  await API.delete(`/users/${user.id}`);
+                  showToast("User deleted successfully", 'success');
+                  fetchUsers();
+                } catch (err) {
+                  showToast("Unable to delete user. " + handleApiError(err), 'error');
+                }
               }
             }}
           />
