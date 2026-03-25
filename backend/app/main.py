@@ -19,9 +19,9 @@ app.add_middleware(
 # 🔥 This line creates tables in DB
 Base.metadata.create_all(bind=engine)
 
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(company.router)
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+app.include_router(company.router, prefix="/api")
 
 @app.get("/")
 def home():

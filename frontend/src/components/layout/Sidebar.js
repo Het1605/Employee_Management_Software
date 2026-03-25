@@ -44,10 +44,25 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* Other menu items... */}
-        {(role === 'HR' || role === 'MANAGER' || role === 'ADMIN') && (
+        {(role === 'HR' || role === 'ADMIN') && (
           <div className={styles.navGroup}>
             <div className={styles.groupTitle}>Organization</div>
-            <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Employees List</div>
+            <div className={styles.subMenu}>
+              <NavLink 
+                to="/admin/companies" 
+                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
+                Manage Companies
+              </NavLink>
+              <NavLink 
+                to="/admin/companies/assign" 
+                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
+                Company Assignment
+              </NavLink>
+            </div>
             <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>
           </div>
         )}

@@ -14,6 +14,8 @@ import UserManagement from '../pages/dashboard/admin/UserManagement';
 import HRDashboard from '../pages/dashboard/hr/HRDashboard';
 import ManagerDashboard from '../pages/dashboard/manager/ManagerDashboard';
 import EmployeeDashboard from '../pages/dashboard/employee/EmployeeDashboard';
+import CompanyManagement from '../pages/dashboard/admin/CompanyManagement';
+import CompanyAssignment from '../pages/dashboard/admin/CompanyAssignment';
 
 const AppRouter = () => {
   return (
@@ -39,6 +41,22 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
               <UserManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/companies" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <CompanyManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/companies/assign" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <CompanyAssignment />
             </ProtectedRoute>
           } 
         />
