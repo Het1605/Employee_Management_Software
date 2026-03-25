@@ -52,6 +52,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 to="/admin/companies" 
                 className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 onClick={handleLinkClick}
+                end
               >
                 Manage Companies
               </NavLink>
