@@ -19,6 +19,18 @@ const EditIcon = () => (
    </svg>
 );
 
+const formatHolidaySource = (source) => {
+    if (source === 'imported') return 'API';
+    if (source === 'manual') return 'Manual';
+    return source;
+};
+
+const formatLabel = (value) =>
+    value
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
 const HolidayManagement = () => {
     const { holidays, loading, refreshData } = useCalendarData();
     const { deleteHoliday } = useCalendarMutations(refreshData);
@@ -56,53 +68,39 @@ const HolidayManagement = () => {
                     </div>
                 </div>
 
-                <div className="table-responsive">
-                    <table className="modern-data-table">
-                        <thead>
-                            <tr>
-                                <th className="th-date">Date</th>
-                                <th className="th-name">Holiday Name</th>
-                                <th className="th-badge">Type</th>
-                                <th className="th-badge">Source</th>
-                                <th className="th-actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeHolidays.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5">
-                                        <div className="empty-table-state">
-                                            <span className="huge-icon">🌴</span>
-                                            <p>No holidays logged yet.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                activeHolidays.map((h) => (
-                                    <tr key={h.id}>
-                                        <td className="td-date font-medium">{new Date(h.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric'})}</td>
-                                        <td className="td-name">{h.name}</td>
-                                        <td className="td-badge">
-                                            <span className={`pill-badge type-${h.type}`}>{h.type}</span>
-                                        </td>
-                                        <td className="td-badge">
-                                            <span className={`pill-badge source-${h.source}`}>{h.source}</span>
-                                        </td>
-                                        <td className="td-actions">
-                                            <div className="actions">
-                                                <button className="btn-icon-primary" onClick={() => setEditingHoliday(h)} title="Edit Holiday">
-                                                    <EditIcon />
-                                                </button>
-                                                <button className="btn-icon-danger" onClick={() => handleDelete(h.id)} title="Delete Holiday">
-                                                    <TrashIcon />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                <div className="card-list-grid">
+                    {activeHolidays.length === 0 ? (
+                        <div className="empty-card-state">
+                            <p>No holidays available</p>
+                        </div>
+                    ) : (
+                        activeHolidays.map((h) => (
+                            <article key={h.id} className="data-card">
+                                <div className="data-card-header">
+                                    <div className="data-card-content">
+                                        <p className="data-card-date">
+                                            {new Date(h.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </p>
+                                        <h4 className="data-card-title">{h.name}</h4>
+                                    </div>
+
+                                    <div className="actions">
+                                        <button className="btn-icon-primary" onClick={() => setEditingHoliday(h)} title="Edit Holiday" aria-label={`Edit ${h.name}`}>
+                                            <EditIcon />
+                                        </button>
+                                        <button className="btn-icon-danger" onClick={() => handleDelete(h.id)} title="Delete Holiday" aria-label={`Delete ${h.name}`}>
+                                            <TrashIcon />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="card-badge-row">
+                                    <span className={`pill-badge type-${h.type}`}>{formatLabel(h.type)}</span>
+                                    <span className={`pill-badge source-badge source-${h.source}`}>{formatHolidaySource(h.source)}</span>
+                                </div>
+                            </article>
+                        ))
+                    )}
                 </div>
             </div>
 

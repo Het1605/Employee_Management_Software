@@ -18,6 +18,12 @@ const EditIcon = () => (
    </svg>
 );
 
+const formatLabel = (value) =>
+    value
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
 const OverrideManagement = () => {
     const { overrides, loading, refreshData } = useCalendarData();
     const { deleteOverride } = useCalendarMutations(refreshData);
@@ -51,49 +57,45 @@ const OverrideManagement = () => {
                     </div>
                 </div>
 
-                <div className="table-responsive">
-                    <table className="modern-data-table">
-                        <thead>
-                            <tr>
-                                <th className="th-date">Target Date</th>
-                                <th className="th-badge">Forced Type</th>
-                                <th className="th-name">Reason</th>
-                                <th className="th-actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {overrides.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4">
-                                        <div className="empty-table-state">
-                                            <span className="huge-icon">📅</span>
-                                            <p>No overrides defined.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                overrides.map((o) => (
-                                    <tr key={o.id}>
-                                        <td className="td-date font-medium">{new Date(o.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric'})}</td>
-                                        <td className="td-badge">
-                                            <span className={`pill-badge override-${o.override_type}`}>{o.override_type.replace('_', ' ')}</span>
-                                        </td>
-                                        <td className="td-name text-muted">{o.reason || '-'}</td>
-                                        <td className="td-actions">
-                                            <div className="actions">
-                                                <button className="btn-icon-primary" onClick={() => setEditingOverride(o)} title="Edit Override">
-                                                    <EditIcon />
-                                                </button>
-                                                <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Override">
-                                                    <TrashIcon />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                <div className="card-list-grid">
+                    {overrides.length === 0 ? (
+                        <div className="empty-card-state">
+                            <p>No overrides available</p>
+                        </div>
+                    ) : (
+                        overrides.map((o) => (
+                            <article key={o.id} className="data-card">
+                                <div className="data-card-header">
+                                    <div className="data-card-content">
+                                        <p className="data-card-date">
+                                            {new Date(o.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric'})}
+                                        </p>
+                                    </div>
+
+                                    <div className="actions">
+                                        <button className="btn-icon-primary" onClick={() => setEditingOverride(o)} title="Edit Override" aria-label={`Edit override for ${o.date}`}>
+                                            <EditIcon />
+                                        </button>
+                                        <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Override" aria-label={`Delete override for ${o.date}`}>
+                                            <TrashIcon />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="data-card-body">
+                                    <div className="data-card-row">
+                                        <span className="data-card-label">Type:</span>
+                                        <span className={`pill-badge override-${o.override_type}`}>{formatLabel(o.override_type)}</span>
+                                    </div>
+
+                                    <div className="data-card-row data-card-row-wrap">
+                                        <span className="data-card-label">Reason:</span>
+                                        <p className="data-card-text">{o.reason || '-'}</p>
+                                    </div>
+                                </div>
+                            </article>
+                        ))
+                    )}
                 </div>
             </div>
 

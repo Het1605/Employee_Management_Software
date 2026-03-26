@@ -58,13 +58,14 @@ const WorkingDaysConfig = () => {
                         const dayConfig = localDays[index];
                         return (
                             <div key={index} className="day-list-item">
-                                <div className="day-info">
-                                    <span className="day-name">{dayName}</span>
-                                    <span className={`status-text ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
-                                        {dayConfig.is_working ? 'Working' : 'Off / Rest'}
-                                    </span>
-                                </div>
-                                <div className="day-controls">
+                                <div className="day-main-row">
+                                    <div className="day-info">
+                                        <span className="day-name">{dayName}</span>
+                                        <span className={`status-text day-status-desktop ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
+                                            {dayConfig.is_working ? 'Working' : 'Off / Rest'}
+                                        </span>
+                                    </div>
+
                                     <label className="switch-wrapper">
                                         <input 
                                             type="checkbox" 
@@ -74,16 +75,34 @@ const WorkingDaysConfig = () => {
                                         />
                                         <span className="slider round"></span>
                                     </label>
+                                </div>
+
+                                <div className="day-controls">
+                                    <span className={`status-text day-status-mobile ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
+                                        {dayConfig.is_working ? 'Working' : 'Off / Rest'}
+                                    </span>
                                     
-                                    <div className={`half-day-toggle ${dayConfig.is_working ? 'visible' : 'hidden'}`}>
-                                        <label className="checkbox-standard">
+                                    <div className="day-actions">
+                                        <label className="switch-wrapper day-toggle-mobile">
                                             <input 
                                                 type="checkbox" 
-                                                checked={dayConfig.is_half_day} 
-                                                onChange={() => handleToggleHalfDay(index)} 
+                                                checked={dayConfig.is_working} 
+                                                onChange={() => handleToggleWorking(index)} 
+                                                className="ios-switch"
                                             />
-                                            Half Day
+                                            <span className="slider round"></span>
                                         </label>
+
+                                        <div className={`half-day-toggle ${dayConfig.is_working ? 'visible' : 'hidden'}`}>
+                                            <label className="checkbox-standard">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={dayConfig.is_half_day} 
+                                                    onChange={() => handleToggleHalfDay(index)} 
+                                                />
+                                                Half Day
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -303,15 +303,56 @@
    .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 2rem; }
    
    .days-list { display: flex; flex-direction: column; gap: 1px; background: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
-   .day-list-item { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 1.25rem 1.5rem; }
+   .day-list-item {
+       display: flex;
+       flex-direction: column;
+       gap: 0.9rem;
+       background: #ffffff;
+       padding: 1.25rem 1.5rem;
+   }
+
+   .day-main-row {
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       gap: 1rem;
+   }
    
-   .day-info { display: flex; flex-direction: column; }
-   .day-name { font-weight: 600; font-size: 1.1rem; color: #1e293b; }
-   .status-text { font-size: 0.8rem; font-weight: 500; }
+   .day-info {
+       display: flex;
+       flex-direction: column;
+       min-width: 0;
+       flex: 1;
+   }
+   .day-name {
+       font-weight: 600;
+       font-size: 1.1rem;
+       color: #1e293b;
+       white-space: nowrap;
+   }
+   .status-text {
+       font-size: 0.8rem;
+       font-weight: 500;
+       line-height: 1.4;
+   }
    .text-working { color: #10b981; }
    .text-off { color: #94a3b8; }
    
-   .day-controls { display: flex; align-items: center; gap: 2rem; }
+   .day-controls {
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       gap: 1.25rem;
+       min-width: 0;
+   }
+
+   .day-actions {
+       display: flex;
+       align-items: center;
+       justify-content: flex-end;
+       gap: 1.25rem;
+       flex-shrink: 0;
+   }
    
    /* iOS Switch */
    .switch-wrapper { position: relative; display: inline-block; width: 50px; height: 26px; }
@@ -323,9 +364,24 @@
    
    .half-day-toggle.hidden { opacity: 0; pointer-events: none; }
    .half-day-toggle.visible { opacity: 1; transition: opacity 0.3s; }
-   .checkbox-standard { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #475569; }
+   .checkbox-standard {
+       display: flex;
+       align-items: center;
+       gap: 0.5rem;
+       font-size: 0.9rem;
+       color: #475569;
+       white-space: nowrap;
+   }
+   .checkbox-standard input {
+       flex-shrink: 0;
+   }
+
+   .day-status-mobile,
+   .day-toggle-mobile {
+       display: none;
+   }
    
-   /* ---------------------- DATA TABLES (Holidays/Overrides) ---------------------- */
+   /* ---------------------- HOLIDAY / OVERRIDE CARDS ---------------------- */
    .management-card {
        background: #ffffff;
        border-radius: 12px;
@@ -335,9 +391,96 @@
    
    .management-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
    .titles h3 { color: #0f172a; margin-bottom: 0.25rem; }
-   
-   .modern-data-table { width: 100%; border-collapse: collapse; }
-   .modern-data-table   .td-actions { text-align: right; }
+
+   .card-list-grid {
+       display: grid;
+       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+       gap: 16px;
+   }
+
+   .data-card {
+       background: #ffffff;
+       border: 1px solid #e2e8f0;
+       border-radius: 12px;
+       padding: 16px;
+       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+       display: flex;
+       flex-direction: column;
+       gap: 14px;
+       min-height: 100%;
+   }
+
+   .data-card-header {
+       display: flex;
+       align-items: flex-start;
+       justify-content: space-between;
+       gap: 12px;
+   }
+
+   .data-card-content {
+       min-width: 0;
+       flex: 1;
+   }
+
+   .data-card-date {
+       margin: 0 0 0.45rem;
+       font-size: 0.9rem;
+       color: #64748b;
+   }
+
+   .data-card-title {
+       margin: 0;
+       font-size: 1.05rem;
+       font-weight: 700;
+       color: #0f172a;
+       line-height: 1.4;
+       word-break: break-word;
+   }
+
+   .card-badge-row {
+       display: flex;
+       flex-wrap: wrap;
+       gap: 0.6rem;
+   }
+
+   .data-card-body {
+       display: flex;
+       flex-direction: column;
+       gap: 12px;
+   }
+
+   .data-card-row {
+       display: flex;
+       align-items: center;
+       gap: 0.6rem;
+       flex-wrap: wrap;
+   }
+
+   .data-card-row-wrap {
+       align-items: flex-start;
+   }
+
+   .data-card-text-block {
+       display: flex;
+       flex-direction: column;
+       gap: 0.35rem;
+   }
+
+   .data-card-label {
+       font-size: 0.9rem;
+       font-weight: 600;
+       color: #475569;
+   }
+
+   .data-card-text {
+       margin: 0;
+       color: #334155;
+       line-height: 1.5;
+       white-space: normal;
+       word-break: break-word;
+       flex: 1;
+       min-width: 0;
+   }
 
    /* Standardized Table Action Alignment */
    .actions {
@@ -353,15 +496,20 @@
    .actions button {
        background: transparent;
        border: none;
-       padding: 4px;
+       padding: 0.6rem;
+       border-radius: 10px;
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
    }
    .actions .btn-icon-primary { color: #3b82f6; }
+   .actions .btn-icon-primary:hover { background: #dbeafe; color: #1d4ed8; }
    .actions .btn-icon-primary:hover svg { transform: scale(1.1); color: #1d4ed8; }
    
    .actions .btn-icon-danger { color: #ef4444; }
+   .actions .btn-icon-danger:hover { background: #fee2e2; color: #b91c1c; }
    .actions .btn-icon-danger:hover svg { transform: scale(1.1); color: #b91c1c; }
-   .modern-data-table th { text-align: left; padding: 1rem 1.5rem; color: #64748b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
-   .modern-data-table td { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
    
    .font-medium { font-weight: 500; color: #0f172a; }
    .text-muted { color: #64748b; }
@@ -372,8 +520,9 @@
    .type-company { background: #f3e8ff; color: #6b21a8; }
    .type-optional { background: #ffedd5; color: #9a3412; }
    
+   .source-badge { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
    .source-manual { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-   .source-imported { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+   .source-imported { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
    
    .override-working { background: #dcfce7; color: #166534; }
    .override-holiday { background: #fee2e2; color: #991b1b; }
@@ -384,6 +533,20 @@
    .icon-trash { width: 20px; height: 20px; }
    .btn-icon-danger:hover { background: #fee2e2; color: #ef4444; }
    
+   .empty-card-state {
+       grid-column: 1 / -1;
+       min-height: 180px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       text-align: center;
+       color: #64748b;
+       border: 1px dashed #cbd5e1;
+       border-radius: 12px;
+       background: #f8fafc;
+       padding: 2rem;
+       font-weight: 500;
+   }
    .empty-table-state { padding: 3rem 0; text-align: center; color: #64748b; }
    .huge-icon { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.8; }
 
@@ -472,41 +635,88 @@
     .status-pill { font-size: 0.6rem; padding: 0.15rem; }
     
     /* Working Days Section */
-    .working-day-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-    
-    /* Tables to Cards */
-    .modern-data-table, 
-    .modern-data-table tbody, 
-    .modern-data-table tr, 
-    .modern-data-table td {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
+    .working-days-card {
+        padding: 1.5rem;
     }
-    .modern-data-table thead { display: none; }
-    
-    .modern-data-table tr {
-        margin-bottom: 1rem;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 12px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+    .day-list-item {
+        padding: 1rem 1.25rem;
+        gap: 0.75rem;
     }
-    
-    .modern-data-table td {
-        border-bottom: none;
-        padding: 4px 0;
-        text-align: left !important;
+
+    .day-controls {
+        gap: 1rem;
     }
-    .td-actions { margin-top: 8px; padding-top: 8px !important; border-top: 1px solid #f1f5f9 !important; }
-    
-    /* Align actions in card */
-    .td-actions .actions { justify-content: flex-start !important; }
+
+    .day-actions {
+        gap: 1rem;
+    }
+
+    .management-card {
+        padding: 1.25rem;
+    }
+
+    .management-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .card-list-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .data-card-header {
+        gap: 0.75rem;
+    }
     
     /* Full width buttons */
     .btn-primary-action, .btn-secondary, .btn-primary {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@media (max-width: 560px) {
+    .day-info {
+        gap: 0.2rem;
+    }
+
+    .day-main-row {
+        align-items: flex-start;
+    }
+
+    .day-status-desktop,
+    .day-main-row .switch-wrapper {
+        display: none;
+    }
+
+    .day-status-mobile,
+    .day-toggle-mobile {
+        display: inline-flex;
+    }
+
+    .day-controls {
+        width: 100%;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        row-gap: 0.6rem;
+    }
+
+    .day-actions {
+        width: 100%;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        row-gap: 0.6rem;
+    }
+
+    .status-text {
+        white-space: normal;
+    }
+
+    .checkbox-standard {
+        white-space: normal;
     }
 }
