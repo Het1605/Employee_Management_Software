@@ -25,7 +25,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           end
           onClick={handleLinkClick}
         >
-          Dashboard
+          <span className={styles.icon}>📊</span>
+          <span className={styles.linkText}>Dashboard</span>
         </NavLink>
         
         {['ADMIN', 'HR', 'MANAGER'].includes(role) && (
@@ -37,7 +38,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 onClick={handleLinkClick}
               >
-                Manage Users
+                <span className={styles.icon}>👥</span>
+                <span className={styles.linkText}>Manage Users</span>
               </NavLink>
             </div>
           </div>
@@ -54,21 +56,24 @@ const Sidebar = ({ isOpen, onClose }) => {
                 onClick={handleLinkClick}
                 end
               >
-                Manage Companies
+                <span className={styles.icon}>🏢</span>
+                <span className={styles.linkText}>Manage Companies</span>
               </NavLink>
               <NavLink 
                 to="/admin/companies/assign" 
                 className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 onClick={handleLinkClick}
               >
-                Company Assignment
+                <span className={styles.icon}>🔗</span>
+                <span className={styles.linkText}>Company Assignment</span>
               </NavLink>
               <NavLink 
                 to={`/${role.toLowerCase()}/calendar`} 
                 className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 onClick={handleLinkClick}
               >
-                Calendar
+                <span className={styles.icon}>📅</span>
+                <span className={styles.linkText}>Calendar</span>
               </NavLink>
             </div>
             <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>

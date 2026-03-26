@@ -69,69 +69,70 @@ const CalendarView = () => {
 
     return (
         <div className="calendar-view-card">
-            <div className="calendar-month-nav" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <button onClick={handlePrevMonth} className="nav-btn">‹</button>
-                
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="calendar-month-nav-container">
+                <div className="calendar-month-nav-row1">
+                    <button onClick={handlePrevMonth} className="nav-btn flex-shrink-0">‹</button>
+                    
                     <select 
-                        className="company-select-modern" 
+                        className="company-select-modern text-center month-select" 
                         value={month} 
                         onChange={(e) => setCurrentDate(new Date(year, parseInt(e.target.value), 1))}
-                        style={{ minWidth: '140px' }}
                     >
                         {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
                     </select>
                     
                     <select 
-                        className="company-select-modern" 
+                        className="company-select-modern text-center year-select" 
                         value={year} 
                         onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}
                     >
                         {Array.from({length: 10}, (_, i) => year - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                </div>
 
-                <button onClick={handleNextMonth} className="nav-btn">›</button>
-                <button onClick={jumpToToday} className="btn-secondary" style={{ marginLeft: '1rem' }}>Today</button>
+                    <button onClick={handleNextMonth} className="nav-btn flex-shrink-0">›</button>
+                </div>
+                <button onClick={jumpToToday} className="btn-secondary today-btn truncate">Today</button>
             </div>
 
             {loading ? <div className="loading-state">Loading calendar data...</div> : (
-                <div className="calendar-high-fidelity">
-                    {/* Header Row */}
-                    {WEEKDAYS.map(day => (
-                        <div key={day} className="calendar-week-header">{day}</div>
-                    ))}
+                <div className="calendar-scroll-area">
+                    <div className="calendar-high-fidelity">
+                        {/* Header Row */}
+                        {WEEKDAYS.map(day => (
+                            <div key={day} className="calendar-week-header">{day}</div>
+                        ))}
 
-                    {/* Grid Cells */}
-                    {dates.map((date, index) => {
-                        if (!date) return <div key={`empty-${index}`} className="calendar-cell-empty"></div>;
+                        {/* Grid Cells */}
+                        {dates.map((date, index) => {
+                            if (!date) return <div key={`empty-${index}`} className="calendar-cell-empty"></div>;
 
-                        const statusObj = getStatusForDate(date);
-                        let colorClass = 'loading'; // default
-                        
-                        // Map backend enum states to our CSS
-                        if (statusObj.status.includes('working')) colorClass = 'working';
-                        if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
-                        if (statusObj.status.includes('half_day')) colorClass = 'half-day';
+                            const statusObj = getStatusForDate(date);
+                            let colorClass = 'loading'; // default
+                            
+                            // Map backend enum states to our CSS
+                            if (statusObj.status.includes('working')) colorClass = 'working';
+                            if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
+                            if (statusObj.status.includes('half_day')) colorClass = 'half-day';
 
-                        const todayClass = isToday(date) ? 'today-cell' : '';
+                            const todayClass = isToday(date) ? 'today-cell' : '';
 
-                        return (
-                            <div 
-                                key={date.toISOString()} 
-                                className={`calendar-cell ${colorClass} ${todayClass}`}
-                                onClick={() => setSelectedDateInfo({ date, statusObj, colorClass })}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <div className="cell-date">{date.getDate()}</div>
-                                <div className="status-badge-container">
-                                    <span className={`status-pill ${colorClass}`} title={statusObj.name}>
-                                        {statusObj.name.length > 15 ? statusObj.name.substring(0, 15) + '...' : statusObj.name}
-                                    </span>
+                            return (
+                                <div 
+                                    key={date.toISOString()} 
+                                    className={`calendar-cell ${colorClass} ${todayClass}`}
+                                    onClick={() => setSelectedDateInfo({ date, statusObj, colorClass })}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="cell-date">{date.getDate()}</div>
+                                    <div className="status-badge-container">
+                                        <span className={`status-pill ${colorClass}`} title={statusObj.name}>
+                                            {statusObj.name.length > 15 ? statusObj.name.substring(0, 15) + '...' : statusObj.name}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
