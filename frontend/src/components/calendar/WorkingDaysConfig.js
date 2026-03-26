@@ -3,7 +3,7 @@ import { useCalendarData } from '../../hooks/useCalendarData';
 import { useCalendarMutations } from '../../hooks/useCalendarMutations';
 import { useToast } from '../../contexts/ToastContext';
 
-const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const WorkingDaysConfig = () => {
     const { workingDays, loading, refreshData } = useCalendarData();

@@ -15,14 +15,6 @@ const CalendarDashboard = ({ companies = [] }) => {
         setSelectedCompanyId(e.target.value);
     };
 
-    const getPrimaryAction = () => {
-        if (!selectedCompanyId) return null;
-        if (activeTab === 'holidays') return <button className="btn-primary-action">+ Add Holiday</button>;
-        if (activeTab === 'overrides') return <button className="btn-primary-action">+ Add Override</button>;
-        // calendar/working_days might not have a generic global add button
-        return null;
-    };
-
     return (
         <div className="calendar-dashboard-wrapper">
             {/* Unified Action Bar Header */}
@@ -39,10 +31,6 @@ const CalendarDashboard = ({ companies = [] }) => {
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
-                </div>
-                
-                <div className="header-right">
-                    {getPrimaryAction()}
                 </div>
             </div>
 

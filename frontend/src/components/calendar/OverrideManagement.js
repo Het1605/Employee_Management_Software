@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useCalendarMutations } from '../../hooks/useCalendarMutations';
 import { useToast } from '../../contexts/ToastContext';
+import AddOverrideModal from './modals/AddOverrideModal';
 
 // Trash Icon SVG
 const TrashIcon = () => (
@@ -14,6 +15,7 @@ const OverrideManagement = () => {
     const { overrides, loading, refreshData } = useCalendarData();
     const { deleteOverride } = useCalendarMutations(refreshData);
     const { showToast } = useToast();
+    const [showAddModal, setShowAddModal] = useState(false);
 
     const handleDelete = async (id) => {
         if (window.confirm("Delete this override?")) {
@@ -37,7 +39,7 @@ const OverrideManagement = () => {
                         <p className="subtitle">Manage forced working days or impromptu holidays.</p>
                     </div>
                     <div className="action-buttons">
-                        <button className="btn-primary-action">+ Add Override</button>
+                        <button className="btn-primary-action" onClick={() => setShowAddModal(true)}>+ Add Override</button>
                     </div>
                 </div>
 
@@ -81,6 +83,15 @@ const OverrideManagement = () => {
                     </table>
                 </div>
             </div>
+
+            {showAddModal && (
+                <AddOverrideModal 
+                    onClose={(didAdd) => {
+                        setShowAddModal(false);
+                        if (didAdd) refreshData();
+                    }}
+                />
+            )}
         </div>
     );
 };

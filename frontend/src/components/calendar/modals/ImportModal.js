@@ -1,93 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { useCalendarMutations } from '../../../hooks/useCalendarMutations';
-import { useToast } from '../../../contexts/ToastContext';
+import React, { useState } from 'react';
 
 const ImportModal = ({ onClose }) => {
-    const { fetchImportOptions, importHolidays, saving } = useCalendarMutations();
-    const { showToast } = useToast();
-    
     const [year, setYear] = useState(new Date().getFullYear());
     const [country, setCountry] = useState('IN');
-    const [templates, setTemplates] = useState([]);
-    const [selectedIndexes, setSelectedIndexes] = useState(new Set());
     const [fetching, setFetching] = useState(false);
+    const [templates, setTemplates] = useState([]);
 
-    const handleFetch = async () => {
+    const handleFetchMock = () => {
         setFetching(true);
-        try {
-            const data = await fetchImportOptions(year, country);
-            setTemplates(data || []);
-            setSelectedIndexes(new Set()); // reset selections
-        } catch (err) {
-            showToast("Failed to fetch templates or backend route inactive", "error");
-            // MOCK data fallback since backend lacks this complete API:
-            setTemplates([
-                { date: `${year}-01-26`, name: "Republic Day", type: "public", source: "imported" },
-                { date: `${year}-08-15`, name: "Independence Day", type: "public", source: "imported" },
-                { date: `${year}-10-02`, name: "Gandhi Jayanti", type: "public", source: "imported" }
-            ]);
-        } finally {
+        // Simulate fetch delay without API integration
+        setTimeout(() => {
+            setTemplates([]); // Kept empty as per instructed temporary behavior
             setFetching(false);
-        }
-    };
-
-    const toggleSelection = (index) => {
-        const newSet = new Set(selectedIndexes);
-        if (newSet.has(index)) {
-            newSet.delete(index);
-        } else {
-            newSet.add(index);
-        }
-        setSelectedIndexes(newSet);
-    };
-
-    const handleImport = async () => {
-        const toImport = templates.filter((_, i) => selectedIndexes.has(i));
-        if (toImport.length === 0) {
-            showToast("Please select at least one holiday to import.", "error");
-            return;
-        }
-
-        try {
-            await importHolidays(toImport);
-            showToast("Holidays successfully imported!", "success");
-            onClose();
-        } catch (err) {
-            showToast("Failed to import holidays", "error");
-        }
+        }, 800);
     };
 
     return (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000}}>
-            <div className="modal-content card" style={{ background: '#fff', width: '500px', maxWidth: '90%', padding: '20px' }}>
-                <h3>Import Holidays</h3>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                    <input type="number" value={year} onChange={e => setYear(e.target.value)} placeholder="Year" className="form-input" />
-                    <input type="text" value={country} onChange={e => setCountry(e.target.value)} placeholder="Country Code" className="form-input" />
-                    <button className="btn btn-outline" onClick={handleFetch} disabled={fetching}>
-                        {fetching ? 'Fetching...' : 'Fetch'}
-                    </button>
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div className="modal-content card" style={{ background: '#ffffff', padding: '2rem', borderRadius: '12px', width: '500px', maxWidth: '90%', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>Import Holidays</h3>
+                
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#64748b', marginBottom: '0.25rem' }}>Year</label>
+                        <select 
+                            value={year} 
+                            onChange={e => setYear(e.target.value)} 
+                            className="company-select-modern" 
+                            style={{ width: '100%', padding: '0.5rem' }}
+                        >
+                            {[year-1, year, year+1].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#64748b', marginBottom: '0.25rem' }}>Country</label>
+                        <select 
+                            value={country} 
+                            onChange={e => setCountry(e.target.value)} 
+                            className="company-select-modern" 
+                            style={{ width: '100%', padding: '0.5rem' }}
+                        >
+                            <option value="IN">India (IN)</option>
+                            <option value="US">United States (US)</option>
+                            <option value="UK">United Kingdom (UK)</option>
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100%' }}>
+                        <button 
+                            className="btn-secondary" 
+                            onClick={handleFetchMock} 
+                            disabled={fetching}
+                            style={{ height: '42px', marginTop: '20px' }}
+                        >
+                            {fetching ? 'Fetching...' : 'Fetch'}
+                        </button>
+                    </div>
                 </div>
 
-                <div className="import-list" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '20px', border: '1px solid #eee', padding: '10px' }}>
-                    {templates.length === 0 ? <p>No holidays fetched yet.</p> : (
-                        templates.map((tpl, idx) => (
-                            <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={selectedIndexes.has(idx)} 
-                                    onChange={() => toggleSelection(idx)}
-                                />
-                                <span>{tpl.date} - {tpl.name}</span>
-                            </div>
-                        ))
+                <div className="import-list" style={{ minHeight: '150px', maxHeight: '300px', overflowY: 'auto', marginBottom: '1.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    {templates.length === 0 ? (
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>No holidays fetched yet.</p>
+                    ) : (
+                        <div>{/* Future list structure goes here */}</div>
                     )}
                 </div>
 
-                <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary" onClick={handleImport} disabled={saving || selectedIndexes.size === 0}>
-                        {saving ? 'Importing...' : `Import (${selectedIndexes.size})`}
+                <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                    <button className="btn-secondary" onClick={onClose}>Cancel</button>
+                    <button className="btn-primary-action" disabled={true} style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+                        Import Selected
                     </button>
                 </div>
             </div>
