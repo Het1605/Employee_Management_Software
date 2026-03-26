@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, conint, field_validator
 from datetime import date, datetime
+import datetime as dt
 from typing import Optional, List
 from app.models.calendar import HolidayType, HolidaySource, OverrideType
 
@@ -51,6 +52,7 @@ class HolidayCreate(HolidayBase):
     pass
 
 class HolidayUpdate(BaseModel):
+    date: Optional[dt.date] = None
     name: Optional[str] = None
     type: Optional[HolidayType] = None
     description: Optional[str] = None
@@ -77,6 +79,7 @@ class OverrideCreate(OverrideBase):
     pass
 
 class OverrideUpdate(BaseModel):
+    date: Optional[dt.date] = None
     override_type: Optional[OverrideType] = None
     reason: Optional[str] = None
 

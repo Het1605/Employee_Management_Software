@@ -12,12 +12,20 @@ const TrashIcon = () => (
    </svg>
 );
 
+// Edit Icon SVG
+const EditIcon = () => (
+   <svg xmlns="http://www.w3.org/2000/svg" className="icon-edit" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+   </svg>
+);
+
 const HolidayManagement = () => {
     const { holidays, loading, refreshData } = useCalendarData();
     const { deleteHoliday } = useCalendarMutations(refreshData);
     const { showToast } = useToast();
     const [showImportModal, setShowImportModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingHoliday, setEditingHoliday] = useState(null);
 
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this holiday?")) {
@@ -81,9 +89,14 @@ const HolidayManagement = () => {
                                             <span className={`pill-badge source-${h.source}`}>{h.source}</span>
                                         </td>
                                         <td className="td-actions">
-                                            <button className="btn-icon-danger" onClick={() => handleDelete(h.id)} title="Delete Holiday">
-                                                <TrashIcon />
-                                            </button>
+                                            <div className="actions">
+                                                <button className="btn-icon-primary" onClick={() => setEditingHoliday(h)} title="Edit Holiday">
+                                                    <EditIcon />
+                                                </button>
+                                                <button className="btn-icon-danger" onClick={() => handleDelete(h.id)} title="Delete Holiday">
+                                                    <TrashIcon />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -94,10 +107,12 @@ const HolidayManagement = () => {
             </div>
 
             {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
-            {showAddModal && (
+            {(showAddModal || editingHoliday) && (
                 <AddHolidayModal 
+                    editData={editingHoliday}
                     onClose={(didAdd) => { 
                         setShowAddModal(false); 
+                        setEditingHoliday(null);
                         if (didAdd) refreshData(); 
                     }} 
                 />

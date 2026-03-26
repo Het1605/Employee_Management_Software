@@ -3,15 +3,15 @@ import { useCalendarMutations } from '../../../hooks/useCalendarMutations';
 import { useToast } from '../../../contexts/ToastContext';
 import { useCalendarContext } from '../../../utils/calendarContext';
 
-const AddOverrideModal = ({ onClose }) => {
-    const { createOverride, saving } = useCalendarMutations();
+const AddOverrideModal = ({ onClose, editData = null }) => {
+    const { createOverride, updateOverride, saving } = useCalendarMutations();
     const { showToast } = useToast();
     const { selectedCompanyId } = useCalendarContext();
 
     const [formData, setFormData] = useState({
-        date: '',
-        override_type: 'working', // 'working', 'holiday', or 'half_day'
-        reason: ''
+        date: editData ? editData.date : '',
+        override_type: editData ? editData.override_type : 'working',
+        reason: editData ? (editData.reason || '') : ''
     });
 
     const handleChange = (e) => {
@@ -26,16 +26,33 @@ const AddOverrideModal = ({ onClose }) => {
         }
 
         try {
-            await createOverride({
-                company_id: selectedCompanyId,
-                date: formData.date,
-                override_type: formData.override_type,
-                reason: formData.reason || null
-            });
-            showToast("Override added successfully", "success");
+            if (editData) {
+                await updateOverride(editData.id, {
+                    date: formData.date,
+                    override_type: formData.override_type,
+                    reason: formData.reason || null
+                });
+                showToast("Override updated successfully", "success");
+            } else {
+                await createOverride({
+                    company_id: selectedCompanyId,
+                    date: formData.date,
+                    override_type: formData.override_type,
+                    reason: formData.reason || null
+                });
+                showToast("Override added successfully", "success");
+            }
             onClose(true); // tells parent to refresh Data
         } catch (err) {
-            const errorMsg = err.response?.data?.detail || "Failed to add override. It might already exist for this date.";
+            let errorMsg = `Failed to ${editData ? 'update' : 'add'} override.`;
+            if (err.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                if (typeof detail === 'string') {
+                    errorMsg = detail;
+                } else if (Array.isArray(detail)) {
+                    errorMsg = detail.map(d => `${d.loc ? d.loc.join('.') + ': ' : ''}${d.msg}`).join(', ');
+                }
+            }
             showToast(errorMsg, "error");
         }
     };
@@ -43,7 +60,7 @@ const AddOverrideModal = ({ onClose }) => {
     return (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className="modal-content card" style={{ background: '#ffffff', padding: '2rem', borderRadius: '12px', width: '450px', maxWidth: '90%', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>Add New Override</h3>
+                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Override' : 'Add New Override'}</h3>
                 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
@@ -90,7 +107,7 @@ const AddOverrideModal = ({ onClose }) => {
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                         <button type="button" className="btn-secondary" onClick={() => onClose(false)} disabled={saving}>Cancel</button>
                         <button type="submit" className="btn-primary-action" disabled={saving}>
-                            {saving ? 'Saving...' : 'Save Override'}
+                            {saving ? 'Saving...' : (editData ? 'Update Override' : 'Save Override')}
                         </button>
                     </div>
                 </form>

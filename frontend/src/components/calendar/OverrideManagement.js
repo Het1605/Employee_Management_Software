@@ -11,11 +11,19 @@ const TrashIcon = () => (
    </svg>
 );
 
+// Edit Icon SVG
+const EditIcon = () => (
+   <svg xmlns="http://www.w3.org/2000/svg" className="icon-edit" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+   </svg>
+);
+
 const OverrideManagement = () => {
     const { overrides, loading, refreshData } = useCalendarData();
     const { deleteOverride } = useCalendarMutations(refreshData);
     const { showToast } = useToast();
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingOverride, setEditingOverride] = useState(null);
 
     const handleDelete = async (id) => {
         if (window.confirm("Delete this override?")) {
@@ -72,9 +80,14 @@ const OverrideManagement = () => {
                                         </td>
                                         <td className="td-name text-muted">{o.reason || '-'}</td>
                                         <td className="td-actions">
-                                            <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Override">
-                                                <TrashIcon />
-                                            </button>
+                                            <div className="actions">
+                                                <button className="btn-icon-primary" onClick={() => setEditingOverride(o)} title="Edit Override">
+                                                    <EditIcon />
+                                                </button>
+                                                <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Override">
+                                                    <TrashIcon />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -84,10 +97,12 @@ const OverrideManagement = () => {
                 </div>
             </div>
 
-            {showAddModal && (
+            {(showAddModal || editingOverride) && (
                 <AddOverrideModal 
+                    editData={editingOverride}
                     onClose={(didAdd) => {
                         setShowAddModal(false);
+                        setEditingOverride(null);
                         if (didAdd) refreshData();
                     }}
                 />
