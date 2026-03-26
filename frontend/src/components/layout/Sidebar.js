@@ -63,6 +63,13 @@ const Sidebar = ({ isOpen, onClose }) => {
               >
                 Company Assignment
               </NavLink>
+              <NavLink 
+                to={`/${role.toLowerCase()}/calendar`} 
+                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
+                Calendar
+              </NavLink>
             </div>
             <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>
           </div>

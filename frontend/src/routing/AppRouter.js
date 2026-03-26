@@ -16,6 +16,8 @@ import ManagerDashboard from '../pages/dashboard/manager/ManagerDashboard';
 import EmployeeDashboard from '../pages/dashboard/employee/EmployeeDashboard';
 import CompanyManagement from '../pages/dashboard/admin/CompanyManagement';
 import CompanyAssignment from '../pages/dashboard/admin/CompanyAssignment';
+import AdminCalendarManagement from '../pages/dashboard/admin/CalendarManagement';
+import HRCalendarManagement from '../pages/dashboard/hr/CalendarManagement';
 
 const AppRouter = () => {
   return (
@@ -60,6 +62,14 @@ const AppRouter = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/admin/calendar" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <AdminCalendarManagement />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* HR Routes */}
         <Route 
@@ -75,6 +85,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
               <UserManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/calendar" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <HRCalendarManagement />
             </ProtectedRoute>
           } 
         />
