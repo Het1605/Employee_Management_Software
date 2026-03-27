@@ -16,11 +16,8 @@ const HRCalendarManagement = () => {
     }, []);
 
     return (
-        <Layout>
+        <Layout title="Calendar Management (HR)">
             <CalendarProvider>
-                <div className="page-header">
-                    <h1>Calendar Management (HR)</h1>
-                </div>
                 <CalendarDashboard companies={companies} />
             </CalendarProvider>
         </Layout>

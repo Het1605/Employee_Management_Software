@@ -34,6 +34,12 @@ const WorkingDaysConfig = () => {
         setLocalDays(newDays);
     };
 
+    const hasChanges = React.useMemo(() => {
+        if (!workingDays || workingDays.length !== 7 || localDays.length !== 7) return false;
+        const initialSorted = [...workingDays].sort((a,b) => a.day_of_week - b.day_of_week);
+        return JSON.stringify(localDays) !== JSON.stringify(initialSorted);
+    }, [localDays, workingDays]);
+
     const handleSave = async () => {
         try {
             await updateWorkingDays(localDays);
@@ -49,7 +55,16 @@ const WorkingDaysConfig = () => {
         <div className="working-days-container">
             <div className="working-days-card">
                 <div className="card-header">
-                    <h3>Weekly Configuration</h3>
+                    <div className="card-header-top">
+                        <h3>Weekly Configuration</h3>
+                        <button 
+                            className="btn-primary-action" 
+                            onClick={handleSave} 
+                            disabled={saving || !hasChanges}
+                        >
+                            {saving ? 'Saving...' : 'Save Configuration'}
+                        </button>
+                    </div>
                     <p className="subtitle">Define the standard operating days for this company.</p>
                 </div>
                 
@@ -58,14 +73,24 @@ const WorkingDaysConfig = () => {
                         const dayConfig = localDays[index];
                         return (
                             <div key={index} className="day-list-item">
-                                <div className="day-main-row">
-                                    <div className="day-info">
-                                        <span className="day-name">{dayName}</span>
-                                        <span className={`status-text day-status-desktop ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
-                                            {dayConfig.is_working ? 'Working' : 'Off / Rest'}
-                                        </span>
-                                    </div>
+                                <div className="day-name">{dayName}</div>
+                                
+                                <div className={`day-status ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
+                                    {dayConfig.is_working ? 'Working' : 'Off / Rest'}
+                                </div>
 
+                                <div className={`half-day-section ${dayConfig.is_working ? 'visible' : 'hidden'}`}>
+                                    <label className="checkbox-standard">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={dayConfig.is_half_day} 
+                                            onChange={() => handleToggleHalfDay(index)} 
+                                        />
+                                        <span>Half Day</span>
+                                    </label>
+                                </div>
+
+                                <div className="day-toggle-action">
                                     <label className="switch-wrapper">
                                         <input 
                                             type="checkbox" 
@@ -76,48 +101,9 @@ const WorkingDaysConfig = () => {
                                         <span className="slider round"></span>
                                     </label>
                                 </div>
-
-                                <div className="day-controls">
-                                    <span className={`status-text day-status-mobile ${dayConfig.is_working ? 'text-working' : 'text-off'}`}>
-                                        {dayConfig.is_working ? 'Working' : 'Off / Rest'}
-                                    </span>
-                                    
-                                    <div className="day-actions">
-                                        <label className="switch-wrapper day-toggle-mobile">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={dayConfig.is_working} 
-                                                onChange={() => handleToggleWorking(index)} 
-                                                className="ios-switch"
-                                            />
-                                            <span className="slider round"></span>
-                                        </label>
-
-                                        <div className={`half-day-toggle ${dayConfig.is_working ? 'visible' : 'hidden'}`}>
-                                            <label className="checkbox-standard">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={dayConfig.is_half_day} 
-                                                    onChange={() => handleToggleHalfDay(index)} 
-                                                />
-                                                Half Day
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         );
                     })}
-                </div>
-                
-                <div className="card-footer actions-right">
-                    <button 
-                        className="btn-primary-action" 
-                        onClick={handleSave} 
-                        disabled={saving || localDays.length === 0}
-                    >
-                        {saving ? 'Saving...' : 'Save Configuration'}
-                    </button>
                 </div>
             </div>
         </div>

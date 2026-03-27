@@ -15,11 +15,8 @@ const AdminCalendarManagement = () => {
     }, []);
 
     return (
-        <Layout>
+        <Layout title="Calendar Management (Admin)">
             <CalendarProvider>
-                <div className="page-header">
-                    <h1>Calendar Management (Admin)</h1>
-                </div>
                 <CalendarDashboard companies={companies} />
             </CalendarProvider>
         </Layout>
