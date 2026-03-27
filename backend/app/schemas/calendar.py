@@ -46,7 +46,7 @@ class HolidayBase(BaseModel):
     type: HolidayType
     description: Optional[str] = None
     source: HolidaySource = HolidaySource.MANUAL
-    is_active: bool = True
+
 
 class HolidayCreate(HolidayBase):
     pass
@@ -57,14 +57,13 @@ class HolidayUpdate(BaseModel):
     type: Optional[HolidayType] = None
     description: Optional[str] = None
     source: Optional[HolidaySource] = None
-    is_active: Optional[bool] = None
+
 
 class HolidayResponse(HolidayBase):
     id: int
     company_id: int
     created_at: datetime
     updated_at: Optional[datetime]
-
     class Config:
         from_attributes = True
 

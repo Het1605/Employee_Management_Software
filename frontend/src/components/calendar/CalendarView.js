@@ -39,7 +39,7 @@ const CalendarView = () => {
         if (override) return { status: override.override_type, name: override.reason || 'Override', source: 'Manual Override' };
         
         // 2. Holidays
-        const holiday = holidays.find(h => h.is_active && h.date === dtStr);
+        const holiday = holidays.find(h => h.date === dtStr);
         if (holiday) return { status: 'holiday', name: holiday.name, source: `Holiday (${holiday.type})` };
 
         // 3. Working Days

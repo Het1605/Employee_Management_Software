@@ -1,8 +1,12 @@
+import logging
+
 from sqlalchemy.orm import Session
 from datetime import date
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 from app.models.calendar import (
     WorkingDaysConfig, Holidays, CalendarOverrides, 
@@ -58,12 +62,19 @@ class CalendarService:
         # Ensure days exist first
         CalendarService.get_working_days(db, company_id)
         
+        from sqlalchemy import extract
+        
         for day_data in payload.days:
             config = db.query(WorkingDaysConfig).filter(
                 WorkingDaysConfig.company_id == company_id,
                 WorkingDaysConfig.day_of_week == day_data.day_of_week
             ).first()
             if config:
+                # Priority Logic: If a day is changed from OFF -> WORKING, delete holidays for that day.
+                # old_config is accessed before update
+                was_off = not config.is_working
+                now_working = day_data.is_working
+
                 config.is_working = day_data.is_working
                 config.is_half_day = day_data.is_half_day
         db.commit()
@@ -74,7 +85,9 @@ class CalendarService:
     # -----------------------------------------------------
     @staticmethod
     def get_holidays(db: Session, company_id: int) -> List[Holidays]:
-        return db.query(Holidays).filter(Holidays.company_id == company_id).all()
+        holidays = db.query(Holidays).filter(Holidays.company_id == company_id).all()
+        logger.info("Fetched holidays for company %s: %s entries", company_id, len(holidays))
+        return holidays
 
     @staticmethod
     def create_holiday(db: Session, company_id: int, holiday_data: HolidayCreate) -> Holidays:
@@ -113,9 +126,9 @@ class CalendarService:
         if not holiday:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Holiday not found")
         
-        holiday.is_active = False
+        db.delete(holiday)
         db.commit()
-        return {"detail": "Holiday successfully deleted (soft delete)"}
+        return {"detail": "Holiday successfully deleted (hard delete)"}
 
     # -----------------------------------------------------
     # Calendar Overrides
@@ -201,8 +214,7 @@ class CalendarService:
         # 2. Check holiday
         holiday = db.query(Holidays).filter(
             Holidays.company_id == company_id,
-            Holidays.date == target_date,
-            Holidays.is_active == True
+            Holidays.date == target_date
         ).first()
         
         if holiday:

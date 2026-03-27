@@ -52,7 +52,7 @@ const HolidayManagement = () => {
 
     if (loading) return <div className="loading-state">Loading holidays...</div>;
 
-    const activeHolidays = holidays.filter(h => h.is_active);
+    const activeHolidays = holidays;
 
     return (
         <div className="management-card-container">
