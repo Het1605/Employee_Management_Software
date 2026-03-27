@@ -65,7 +65,7 @@ const CalendarDashboard = ({ companies = [] }) => {
                         <button className={`modern-tab ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>Month View</button>
                         <button className={`modern-tab ${activeTab === 'working_days' ? 'active' : ''}`} onClick={() => setActiveTab('working_days')}>Working Days</button>
                         <button className={`modern-tab ${activeTab === 'holidays' ? 'active' : ''}`} onClick={() => setActiveTab('holidays')}>Holidays</button>
-                        <button className={`modern-tab ${activeTab === 'overrides' ? 'active' : ''}`} onClick={() => setActiveTab('overrides')}>Day Adjustments</button>
+                        <button className={`modern-tab ${activeTab === 'overrides' ? 'active' : ''}`} onClick={() => setActiveTab('overrides')}>Custom Days</button>
                     </div>
 
                     <div className="tab-body fade-in">

@@ -49,7 +49,7 @@ class HolidayBase(BaseModel):
 
 
 class HolidayCreate(HolidayBase):
-    pass
+    force: bool = False
 
 class HolidayUpdate(BaseModel):
     date: Optional[dt.date] = None
@@ -57,6 +57,7 @@ class HolidayUpdate(BaseModel):
     type: Optional[HolidayType] = None
     description: Optional[str] = None
     source: Optional[HolidaySource] = None
+    force: Optional[bool] = None
 
 
 class HolidayResponse(HolidayBase):
@@ -75,12 +76,13 @@ class OverrideBase(BaseModel):
     reason: Optional[str] = None
 
 class OverrideCreate(OverrideBase):
-    pass
+    force: bool = False
 
 class OverrideUpdate(BaseModel):
     date: Optional[dt.date] = None
     override_type: Optional[OverrideType] = None
     reason: Optional[str] = None
+    force: Optional[bool] = None
 
 class OverrideResponse(OverrideBase):
     id: int

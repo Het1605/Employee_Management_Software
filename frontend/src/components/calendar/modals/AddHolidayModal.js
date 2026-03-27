@@ -8,6 +8,7 @@ const AddHolidayModal = ({ onClose, editData = null }) => {
     const { showToast } = useToast();
     const { selectedCompanyId } = useCalendarContext();
 
+    const [conflict, setConflict] = useState(null);
     const [formData, setFormData] = useState({
         date: editData ? editData.date : '',
         name: editData ? editData.name : '',
@@ -19,8 +20,9 @@ const AddHolidayModal = ({ onClose, editData = null }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (e, force = false) => {
+        if (e) e.preventDefault();
+        
         if (!formData.date || !formData.name) {
             showToast("Please fill in the required fields (Date and Name).", "warning");
             return;
@@ -32,7 +34,8 @@ const AddHolidayModal = ({ onClose, editData = null }) => {
                     date: formData.date,
                     name: formData.name,
                     type: formData.type,
-                    description: formData.description || null
+                    description: formData.description || null,
+                    force: force
                 });
                 showToast("Holiday updated successfully", "success");
             } else {
@@ -42,12 +45,18 @@ const AddHolidayModal = ({ onClose, editData = null }) => {
                     name: formData.name,
                     type: formData.type,
                     description: formData.description || null,
-                    source: "manual"
+                    source: "manual",
+                    force: force
                 });
                 showToast("Holiday added successfully", "success");
             }
-            onClose(true); // pass true to indicate a refresh is needed in the parent if not handled by context
+            onClose(true); 
         } catch (err) {
+            if (err.response?.status === 409 && err.response.data?.detail?.conflict) {
+                setConflict(err.response.data.detail);
+                return;
+            }
+
             let errorMsg = `Failed to ${editData ? 'update' : 'add'} holiday.`;
             if (err.response?.data?.detail) {
                 const detail = err.response.data.detail;
@@ -66,7 +75,49 @@ const AddHolidayModal = ({ onClose, editData = null }) => {
             <div className="modal-content card" style={{ background: '#ffffff', padding: '2rem', borderRadius: '12px', width: '450px', maxWidth: '90%', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
                 <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Holiday' : 'Add New Holiday'}</h3>
                 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+                    {conflict && (
+                        <div className="conflict-overlay" style={{
+                            position: 'absolute',
+                            inset: '-0.5rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(4px)',
+                            zIndex: 10,
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            padding: '1.5rem',
+                            border: '2px solid #3b82f6',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+                            <h4 style={{ color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700' }}>Conflict Detected</h4>
+                            <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                                {conflict.message}
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                                <button 
+                                    type="button" 
+                                    className="btn-secondary" 
+                                    style={{ flex: 1 }}
+                                    onClick={() => setConflict(null)}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn-primary-action" 
+                                    style={{ flex: 1, backgroundColor: '#ef4444', borderColor: '#ef4444' }}
+                                    onClick={() => handleSubmit(null, true)}
+                                >
+                                    Replace
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Date <span style={{ color: '#ef4444' }}>*</span></label>
                         <input 

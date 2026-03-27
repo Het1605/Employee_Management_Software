@@ -93,6 +93,7 @@ class CalendarService:
     def create_holiday(db: Session, company_id: int, holiday_data: HolidayCreate) -> Holidays:
         CalendarService._ensure_company_exists(db, company_id)
         
+        # Check for duplicate holiday
         existing = db.query(Holidays).filter(
             Holidays.company_id == company_id, 
             Holidays.date == holiday_data.date
@@ -101,7 +102,31 @@ class CalendarService:
         if existing:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Holiday already exists for this date")
 
-        db_holiday = Holidays(company_id=company_id, **holiday_data.dict())
+        # Conflict Management: Check for existing override (Day Adjustment)
+        existing_override = db.query(CalendarOverrides).filter(
+            CalendarOverrides.company_id == company_id,
+            CalendarOverrides.date == holiday_data.date
+        ).first()
+
+        if existing_override:
+            if not holiday_data.force:
+                status_label = "Working Day" if existing_override.override_type == OverrideType.WORKING else "Half Working Day"
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "conflict": True,
+                        "existing_type": "custom_day",
+                        "message": f"A Custom Day ({status_label}) already exists for this date. Do you want to replace it?"
+                    }
+                )
+            # Delete if force is true
+            db.delete(existing_override)
+
+        # Remove force from dict before creating model
+        create_dict = holiday_data.dict()
+        create_dict.pop('force', None)
+        
+        db_holiday = Holidays(company_id=company_id, **create_dict)
         db.add(db_holiday)
         db.commit()
         db.refresh(db_holiday)
@@ -113,7 +138,34 @@ class CalendarService:
         if not holiday:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Holiday not found")
 
-        for key, value in update_data.dict(exclude_unset=True).items():
+        # Conflict Management if date is being updated
+        update_dict = update_data.dict(exclude_unset=True)
+        new_date = update_dict.get('date')
+        force = update_dict.get('force', False)
+        
+        if new_date and new_date != holiday.date:
+            # Check for existing override on new date
+            existing_override = db.query(CalendarOverrides).filter(
+                CalendarOverrides.company_id == holiday.company_id,
+                CalendarOverrides.date == new_date
+            ).first()
+
+            if existing_override:
+                if not force:
+                    status_label = "Working Day" if existing_override.override_type == OverrideType.WORKING else "Half Working Day"
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail={
+                            "conflict": True,
+                            "existing_type": "custom_day",
+                            "message": f"A Custom Day ({status_label}) already exists for this date. Do you want to replace it?"
+                        }
+                    )
+                db.delete(existing_override)
+
+        # Apply updates
+        update_dict.pop('force', None)
+        for key, value in update_dict.items():
             setattr(holiday, key, value)
             
         db.commit()
@@ -150,6 +202,7 @@ class CalendarService:
         CalendarService._ensure_company_exists(db, company_id)
         CalendarService._ensure_day_adjustment_type(override_data.override_type)
         
+        # Check for duplicate override
         existing = db.query(CalendarOverrides).filter(
             CalendarOverrides.company_id == company_id, 
             CalendarOverrides.date == override_data.date
@@ -157,8 +210,31 @@ class CalendarService:
         
         if existing:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Override already exists for this date")
+
+        # Conflict Management: Check for existing holiday
+        existing_holiday = db.query(Holidays).filter(
+            Holidays.company_id == company_id,
+            Holidays.date == override_data.date
+        ).first()
+
+        if existing_holiday:
+            if not override_data.force:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "conflict": True,
+                        "existing_type": "holiday",
+                        "message": "A Holiday already exists for this date. Do you want to replace it?"
+                    }
+                )
+            # Delete if force is true
+            db.delete(existing_holiday)
             
-        db_override = CalendarOverrides(company_id=company_id, **override_data.dict())
+        # Remove force from dict before creating model
+        create_dict = override_data.dict()
+        create_dict.pop('force', None)
+
+        db_override = CalendarOverrides(company_id=company_id, **create_dict)
         db.add(db_override)
         db.commit()
         db.refresh(db_override)
@@ -173,7 +249,32 @@ class CalendarService:
         if update_data.override_type:
             CalendarService._ensure_day_adjustment_type(update_data.override_type)
 
-        for key, value in update_data.dict(exclude_unset=True).items():
+        update_dict = update_data.dict(exclude_unset=True)
+        new_date = update_dict.get('date')
+        force = update_dict.get('force', False)
+
+        if new_date and new_date != override.date:
+            # Check for existing holiday on new date
+            existing_holiday = db.query(Holidays).filter(
+                Holidays.company_id == override.company_id,
+                Holidays.date == new_date
+            ).first()
+
+            if existing_holiday:
+                if not force:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail={
+                            "conflict": True,
+                            "existing_type": "holiday",
+                            "message": "A Holiday already exists for this date. Do you want to replace it?"
+                        }
+                    )
+                db.delete(existing_holiday)
+
+        # Apply updates
+        update_dict.pop('force', None)
+        for key, value in update_dict.items():
             setattr(override, key, value)
             
         db.commit()

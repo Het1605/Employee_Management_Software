@@ -8,6 +8,7 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
     const { showToast } = useToast();
     const { selectedCompanyId } = useCalendarContext();
 
+    const [conflict, setConflict] = useState(null);
     const [formData, setFormData] = useState({
         date: editData ? editData.date : '',
         override_type: editData ? editData.override_type : 'working',
@@ -18,8 +19,9 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (e, force = false) => {
+        if (e) e.preventDefault();
+        
         if (!formData.date || !formData.override_type) {
             showToast("Please fill in the required fields.", "warning");
             return;
@@ -30,21 +32,28 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                 await updateOverride(editData.id, {
                     date: formData.date,
                     override_type: formData.override_type,
-                    reason: formData.reason || null
+                    reason: formData.reason || null,
+                    force: force
                 });
-                showToast("Day adjustment updated successfully", "success");
+                showToast("Custom Day updated successfully", "success");
             } else {
                 await createOverride({
                     company_id: selectedCompanyId,
                     date: formData.date,
                     override_type: formData.override_type,
-                    reason: formData.reason || null
+                    reason: formData.reason || null,
+                    force: force
                 });
-                showToast("Day adjustment added successfully", "success");
+                showToast("Custom Day added successfully", "success");
             }
-            onClose(true); // tells parent to refresh Data
+            onClose(true); 
         } catch (err) {
-            let errorMsg = `Failed to ${editData ? 'update' : 'add'} day adjustment.`;
+            if (err.response?.status === 409 && err.response.data?.detail?.conflict) {
+                setConflict(err.response.data.detail);
+                return;
+            }
+
+            let errorMsg = `Failed to ${editData ? 'update' : 'add'} Custom Day.`;
             if (err.response?.data?.detail) {
                 const detail = err.response.data.detail;
                 if (typeof detail === 'string') {
@@ -60,9 +69,51 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
     return (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className="modal-content card" style={{ background: '#ffffff', padding: '2rem', borderRadius: '12px', width: '450px', maxWidth: '90%', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Day Adjustment' : 'Add Day Adjustment'}</h3>
+                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Custom Day' : 'Add Custom Day'}</h3>
                 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+                    {conflict && (
+                        <div className="conflict-overlay" style={{
+                            position: 'absolute',
+                            inset: '-0.5rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(4px)',
+                            zIndex: 10,
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            padding: '1.5rem',
+                            border: '2px solid #3b82f6',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+                            <h4 style={{ color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700' }}>Conflict Detected</h4>
+                            <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                                {conflict.message}
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                                <button 
+                                    type="button" 
+                                    className="btn-secondary" 
+                                    style={{ flex: 1 }}
+                                    onClick={() => setConflict(null)}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn-primary-action" 
+                                    style={{ flex: 1, backgroundColor: '#ef4444', borderColor: '#ef4444' }}
+                                    onClick={() => handleSubmit(null, true)}
+                                >
+                                    Replace
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Target Date <span style={{ color: '#ef4444' }}>*</span></label>
                         <input 
@@ -77,7 +128,7 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                     </div>
                     
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Adjustment Type <span style={{ color: '#ef4444' }}>*</span></label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Status Type <span style={{ color: '#ef4444' }}>*</span></label>
                         <select 
                             name="override_type"
                             value={formData.override_type}
@@ -99,14 +150,14 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                             onChange={handleChange}
                             className="company-select-modern"
                             style={{ width: '100%', padding: '0.6rem', resize: 'vertical', minHeight: '80px' }}
-                            placeholder="Why is this date adjusted?..."
+                            placeholder="Reason for Custom Day..."
                         ></textarea>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                         <button type="button" className="btn-secondary" onClick={() => onClose(false)} disabled={saving}>Cancel</button>
                         <button type="submit" className="btn-primary-action" disabled={saving}>
-                            {saving ? 'Saving...' : (editData ? 'Update Adjustment' : 'Save Adjustment')}
+                            {saving ? 'Saving...' : (editData ? 'Update Custom Day' : 'Save Custom Day')}
                         </button>
                     </div>
                 </form>
