@@ -32,35 +32,35 @@ const OverrideManagement = () => {
     const [editingOverride, setEditingOverride] = useState(null);
 
     const handleDelete = async (id) => {
-        if (window.confirm("Delete this override?")) {
+        if (window.confirm("Delete this day adjustment?")) {
             try {
                 await deleteOverride(id);
-                showToast("Override deleted", "success");
+                showToast("Day adjustment deleted", "success");
             } catch (err) {
-                showToast("Error deleting override", "error");
+                showToast("Error deleting day adjustment", "error");
             }
         }
     };
 
-    if (loading) return <div className="loading-state">Loading overrides...</div>;
+    if (loading) return <div className="loading-state">Loading day adjustments...</div>;
 
     return (
         <div className="management-card-container">
             <div className="management-card">
                 <div className="management-header">
                     <div className="titles">
-                        <h3>Calendar Overrides</h3>
-                        <p className="subtitle">Manage forced working days or impromptu holidays.</p>
+                        <h3>Manage Day Adjustments</h3>
+                        <p className="subtitle">Adjust working days, holidays, or half days for specific dates.</p>
                     </div>
                     <div className="action-buttons">
-                        <button className="btn-primary-action" onClick={() => setShowAddModal(true)}>+ Add Override</button>
+                        <button className="btn-primary-action" onClick={() => setShowAddModal(true)}>+ Add Adjustment</button>
                     </div>
                 </div>
 
                 <div className="card-list-grid">
                     {overrides.length === 0 ? (
                         <div className="empty-card-state">
-                            <p>No overrides available</p>
+                            <p>No day adjustments available</p>
                         </div>
                     ) : (
                         overrides.map((o) => (
@@ -73,10 +73,10 @@ const OverrideManagement = () => {
                                     </div>
 
                                     <div className="actions">
-                                        <button className="btn-icon-primary" onClick={() => setEditingOverride(o)} title="Edit Override" aria-label={`Edit override for ${o.date}`}>
+                                        <button className="btn-icon-primary" onClick={() => setEditingOverride(o)} title="Edit Day Adjustment" aria-label={`Edit day adjustment for ${o.date}`}>
                                             <EditIcon />
                                         </button>
-                                        <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Override" aria-label={`Delete override for ${o.date}`}>
+                                        <button className="btn-icon-danger" onClick={() => handleDelete(o.id)} title="Delete Day Adjustment" aria-label={`Delete day adjustment for ${o.date}`}>
                                             <TrashIcon />
                                         </button>
                                     </div>

@@ -125,8 +125,17 @@ class CalendarService:
         return db.query(CalendarOverrides).filter(CalendarOverrides.company_id == company_id).all()
 
     @staticmethod
+    def _ensure_day_adjustment_type(override_type):
+        if override_type == OverrideType.HOLIDAY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Holiday cannot be set from Day Adjustments. Please use Holiday Rules."
+            )
+
+    @staticmethod
     def create_override(db: Session, company_id: int, override_data: OverrideCreate) -> CalendarOverrides:
         CalendarService._ensure_company_exists(db, company_id)
+        CalendarService._ensure_day_adjustment_type(override_data.override_type)
         
         existing = db.query(CalendarOverrides).filter(
             CalendarOverrides.company_id == company_id, 
@@ -147,6 +156,9 @@ class CalendarService:
         override = db.query(CalendarOverrides).filter(CalendarOverrides.id == override_id).first()
         if not override:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Override not found")
+
+        if update_data.override_type:
+            CalendarService._ensure_day_adjustment_type(update_data.override_type)
 
         for key, value in update_data.dict(exclude_unset=True).items():
             setattr(override, key, value)

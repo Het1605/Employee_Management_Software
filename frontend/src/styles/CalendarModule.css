@@ -46,6 +46,41 @@
        outline: none;
        transition: border-color 0.2s, box-shadow 0.2s;
    }
+
+   .calendar-company-select-wrapper {
+       position: relative;
+       display: flex;
+       align-items: center;
+       min-width: 260px;
+       max-width: 420px;
+       width: 100%;
+   }
+
+   .calendar-company-select {
+       width: 100%;
+       padding-right: 3rem;
+   }
+
+   .calendar-company-select-wrapper.is-placeholder .calendar-company-select {
+       font-weight: 400;
+       color: #64748b;
+   }
+
+   .calendar-company-select-wrapper.has-value .calendar-company-select {
+       font-weight: 600;
+       color: #1e293b;
+   }
+
+   .calendar-company-select-arrow {
+       position: absolute;
+       right: 1rem;
+       top: 50%;
+       transform: translateY(-50%);
+       color: #64748b;
+       font-size: 0.75rem;
+       pointer-events: none;
+       line-height: 1;
+   }
    
    .company-select-modern:focus {
        border-color: #3b82f6;
@@ -583,6 +618,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .calendar-company-select-wrapper {
+        max-width: none;
+    }
+
+    .calendar-company-select {
+        padding-right: 2.75rem;
     }
 /* Desktop overrides – show full month name and company selector */
 @media (min-width: 1024px) {

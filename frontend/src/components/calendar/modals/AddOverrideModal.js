@@ -32,7 +32,7 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                     override_type: formData.override_type,
                     reason: formData.reason || null
                 });
-                showToast("Override updated successfully", "success");
+                showToast("Day adjustment updated successfully", "success");
             } else {
                 await createOverride({
                     company_id: selectedCompanyId,
@@ -40,11 +40,11 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                     override_type: formData.override_type,
                     reason: formData.reason || null
                 });
-                showToast("Override added successfully", "success");
+                showToast("Day adjustment added successfully", "success");
             }
             onClose(true); // tells parent to refresh Data
         } catch (err) {
-            let errorMsg = `Failed to ${editData ? 'update' : 'add'} override.`;
+            let errorMsg = `Failed to ${editData ? 'update' : 'add'} day adjustment.`;
             if (err.response?.data?.detail) {
                 const detail = err.response.data.detail;
                 if (typeof detail === 'string') {
@@ -60,7 +60,7 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
     return (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className="modal-content card" style={{ background: '#ffffff', padding: '2rem', borderRadius: '12px', width: '450px', maxWidth: '90%', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Override' : 'Add New Override'}</h3>
+                <h3 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>{editData ? 'Edit Day Adjustment' : 'Add Day Adjustment'}</h3>
                 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
@@ -77,7 +77,7 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                     </div>
                     
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Forced Type <span style={{ color: '#ef4444' }}>*</span></label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>Adjustment Type <span style={{ color: '#ef4444' }}>*</span></label>
                         <select 
                             name="override_type"
                             value={formData.override_type}
@@ -87,7 +87,6 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                             required
                         >
                             <option value="working">Working Day</option>
-                            <option value="holiday">Holiday</option>
                             <option value="half_day">Half Day</option>
                         </select>
                     </div>
@@ -100,14 +99,14 @@ const AddOverrideModal = ({ onClose, editData = null }) => {
                             onChange={handleChange}
                             className="company-select-modern"
                             style={{ width: '100%', padding: '0.6rem', resize: 'vertical', minHeight: '80px' }}
-                            placeholder="Why is this date overridden?..."
+                            placeholder="Why is this date adjusted?..."
                         ></textarea>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                         <button type="button" className="btn-secondary" onClick={() => onClose(false)} disabled={saving}>Cancel</button>
                         <button type="submit" className="btn-primary-action" disabled={saving}>
-                            {saving ? 'Saving...' : (editData ? 'Update Override' : 'Save Override')}
+                            {saving ? 'Saving...' : (editData ? 'Update Adjustment' : 'Save Adjustment')}
                         </button>
                     </div>
                 </form>
