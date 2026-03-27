@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.schemas.user import UserCreate, UserUpdate, UserResponse, AdminPasswordReset
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -26,3 +26,6 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     return UserService.delete_user(db, user_id)
+@router.put("/{user_id}/reset-password")
+def admin_reset_password(user_id: int, data: AdminPasswordReset, db: Session = Depends(get_db)):
+    return UserService.admin_reset_password(db, user_id, data.password)

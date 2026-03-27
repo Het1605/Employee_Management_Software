@@ -4,7 +4,9 @@ import styles from '../../styles/CompanyModule.module.css';
 const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
     const [formData, setFormData] = useState({
         name: '',
-        address: '',
+        address_line_1: '',
+        address_line_2: '',
+        address_line_3: '',
         gst_number: '',
         pan_number: '',
         logo_url: ''
@@ -14,7 +16,9 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         if (company) {
             setFormData({
                 name: company.name || '',
-                address: company.address || '',
+                address_line_1: company.address_line_1 || '',
+                address_line_2: company.address_line_2 || '',
+                address_line_3: company.address_line_3 || '',
                 gst_number: company.gst_number || '',
                 pan_number: company.pan_number || '',
                 logo_url: company.logo_url || ''
@@ -22,7 +26,9 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         } else {
             setFormData({
                 name: '',
-                address: '',
+                address_line_1: '',
+                address_line_2: '',
+                address_line_3: '',
                 gst_number: '',
                 pan_number: '',
                 logo_url: ''
@@ -35,22 +41,17 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         
         if (name === 'gst_number') {
             const upperVal = value.toUpperCase();
-            
-            // Automatically extract PAN if string has reached indices 3-12
-            let extractedPan = formData.pan_number;
-            if (upperVal.length >= 12) {
-                extractedPan = upperVal.substring(2, 12);
-            } else if (upperVal.length > 2) {
-                extractedPan = upperVal.substring(2);
-            } else {
-                extractedPan = '';
-            }
-            
-            setFormData(prev => ({
-                ...prev,
-                gst_number: upperVal,
-                pan_number: extractedPan
-            }));
+            setFormData(prev => {
+                const updated = { ...prev, gst_number: upperVal };
+                // Extract PAN if first 12 chars of GST change
+                const oldGstPart = prev.gst_number.substring(0, 12);
+                const newGstPart = upperVal.substring(0, 12);
+                
+                if (newGstPart.length >= 12 && newGstPart !== oldGstPart) {
+                    updated.pan_number = newGstPart.substring(2, 12);
+                }
+                return updated;
+            });
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -108,47 +109,63 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                             </div>
 
                             <div className={styles.inputGroup}>
-                                <label>Address *</label>
-                                <textarea
-                                    name="address"
-                                    value={formData.address}
+                                <label>Address Line 1</label>
+                                <input
+                                    type="text"
+                                    name="address_line_1"
+                                    value={formData.address_line_1}
                                     onChange={handleChange}
-                                    required
-                                    rows="3"
-                                    placeholder="Full physical address"
+                                    placeholder="House/Office No, Street"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Address Line 2</label>
+                                <input
+                                    type="text"
+                                    name="address_line_2"
+                                    value={formData.address_line_2}
+                                    onChange={handleChange}
+                                    placeholder="Area, Landmark"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Address Line 3</label>
+                                <input
+                                    type="text"
+                                    name="address_line_3"
+                                    value={formData.address_line_3}
+                                    onChange={handleChange}
+                                    placeholder="City, State, Zip"
                                 />
                             </div>
 
                             <div className={styles.formRow}>
                                 <div className={styles.inputGroup}>
-                                    <label>GST Number *</label>
+                                    <label>GST Number</label>
                                     <input
                                         type="text"
                                         name="gst_number"
                                         value={formData.gst_number}
                                         onChange={handleChange}
-                                        placeholder="15-digit GSTIN (e.g. 27ABCDE1234F1Z5)"
-                                        pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}[0-9A-Z]{1}$"
-                                        title="Format: 2 digits, 5 letters, 4 digits, 1 letter, followed by 3 alphanumeric characters"
+                                        placeholder="15-digit GSTIN"
                                         maxLength={15}
-                                        required
                                     />
+                                    <small className={styles.helperText}>Optional – used to auto-fill PAN</small>
                                 </div>
 
                                 <div className={styles.inputGroup}>
-                                    <label>PAN Number (Auto-extracted) *</label>
+                                    <label>PAN Number</label>
                                     <input
                                         type="text"
                                         name="pan_number"
                                         value={formData.pan_number}
                                         onChange={handleChange}
                                         placeholder="10-digit PAN"
-                                        pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
-                                        title="PAN is automatically extracted from the GST Number."
-                                        readOnly
-                                        style={{ backgroundColor: '#f8fafc', cursor: 'not-allowed', color: '#64748b' }}
-                                        required
+                                        maxLength={10}
                                     />
+                                    <small className={styles.helperText}>Optional</small>
                                 </div>
                             </div>
 

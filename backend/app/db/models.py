@@ -7,7 +7,8 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     phone = Column(String, nullable=True)
     password = Column(String, nullable=False)
@@ -23,16 +24,18 @@ class Company(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
-    address = Column(String, nullable=False)
-    gst_number = Column(String, unique=True, nullable=False)
-    pan_number = Column(String, unique=True, nullable=False)
+    address_line_1 = Column(String, nullable=True)
+    address_line_2 = Column(String, nullable=True)
+    address_line_3 = Column(String, nullable=True)
+    gst_number = Column(String, unique=True, nullable=True)
+    pan_number = Column(String, unique=True, nullable=True)
     logo_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     __table_args__ = (
-        CheckConstraint('char_length(gst_number) = 15', name='chk_gst_len'),
-        CheckConstraint('char_length(pan_number) = 10', name='chk_pan_len'),
+        CheckConstraint('gst_number IS NULL OR char_length(gst_number) = 15', name='chk_gst_len'),
+        CheckConstraint('pan_number IS NULL OR char_length(pan_number) = 10', name='chk_pan_len'),
     )
 
     # Relationships

@@ -33,7 +33,7 @@ function Login() {
       });
 
       let role = res.data.role;
-      const userName = res.data.user.name;
+      const userName = `${res.data.user.first_name} ${res.data.user.last_name}`;
       const userEmail = res.data.user.email;
       
       role = role ? role.toUpperCase() : "";

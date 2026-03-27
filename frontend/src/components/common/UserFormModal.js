@@ -6,7 +6,8 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
   const isAdmin = currentRole === 'ADMIN';
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
     email: user?.email || '',
     phone: user?.phone || '',
     password: '',
@@ -23,8 +24,8 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
     e.preventDefault();
     setError('');
 
-    // Common validations for New User OR Admin Editing (since it's now compulsory)
-    const isPasswordRequired = !user || (user && isAdmin);
+    // Password is only required for New User
+    const isPasswordRequired = !user;
 
     if (isPasswordRequired) {
       if (!formData.password) {
@@ -46,10 +47,7 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
     
     // Cleanup for submission
     if (user) {
-      if (!isAdmin) {
-        // If non-admin is editing, they shouldn't be sending password fields at all
-        delete payload.password;
-      }
+      delete payload.password;
       delete payload.confirm_password;
     }
     
@@ -67,13 +65,23 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
         {error && <p style={{ color: '#ef4444', backgroundColor: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #fee2e2', fontSize: '0.875rem' }}>{error}</p>}
         
         <form onSubmit={handleSubmit} className={styles.formGrid}>
-          <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-            <label>Full Name</label>
+          <div className={styles.inputGroup}>
+            <label>First Name</label>
             <input 
-              name="name" 
-              value={formData.name} 
+              name="first_name" 
+              value={formData.first_name} 
               onChange={handleChange} 
-              placeholder="John Doe"
+              placeholder="Ankit"
+              required 
+            />
+          </div>
+          <div className={styles.inputGroup}>
+            <label>Last Name</label>
+            <input 
+              name="last_name" 
+              value={formData.last_name} 
+              onChange={handleChange} 
+              placeholder="Sharma"
               required 
             />
           </div>
@@ -98,11 +106,8 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
             />
           </div>
           
-          {/* Show password fields:
-              1. Always for New User
-              2. For Edit Mode ONLY if current user is ADMIN (now compulsory)
-          */}
-          {(!user || (user && isAdmin)) && (
+          {/* Show password fields ONLY for New User */}
+          {!user && (
             <>
               <div className={styles.inputGroup}>
                 <label>Password</label>

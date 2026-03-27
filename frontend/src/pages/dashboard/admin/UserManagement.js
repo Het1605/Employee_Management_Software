@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../../../components/layout/Layout';
 import UserCard from '../../../components/common/UserCard';
 import UserFormModal from '../../../components/common/UserFormModal';
+import ChangePasswordModal from '../../../components/common/ChangePasswordModal';
 import API from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { handleApiError } from '../../../utils/errorHandler';
@@ -11,6 +12,7 @@ import styles from '../../../styles/UserManagement.module.css';
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const { showToast } = useToast();
 
@@ -61,6 +63,7 @@ const UserManagement = () => {
             key={user.id} 
             user={user} 
             onEdit={() => { setSelectedUser(user); setIsModalOpen(true); }} 
+            onChangePassword={() => { setSelectedUser(user); setIsPasswordModalOpen(true); }}
             onDelete={async () => {
               if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
                 try {
@@ -80,6 +83,12 @@ const UserManagement = () => {
           user={selectedUser} 
           onClose={() => setIsModalOpen(false)} 
           onSubmit={selectedUser ? handleUpdate : handleCreate} 
+        />
+      )}
+      {isPasswordModalOpen && (
+        <ChangePasswordModal 
+          user={selectedUser} 
+          onClose={() => setIsPasswordModalOpen(false)} 
         />
       )}
     </Layout>

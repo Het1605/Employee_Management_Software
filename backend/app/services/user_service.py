@@ -30,7 +30,8 @@ class UserService:
         
         hashed_pwd = hash_password(user_data.password)
         db_user = User(
-            name=user_data.name,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
             email=user_data.email,
             phone=user_data.phone,
             password=hashed_pwd,
@@ -67,8 +68,8 @@ class UserService:
                     detail="Email already registered"
                 )
         
-        if "password" in update_data:
-            db_user.password = hash_password(update_data.pop("password"))
+        # Password update removed from this API as per requirement
+        # (It's also removed from UserUpdate schema)
         
         for key, value in update_data.items():
             setattr(db_user, key, value)
@@ -134,3 +135,10 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal server error. Please try again later."
             )
+
+    @staticmethod
+    def admin_reset_password(db: Session, user_id: int, new_password: str):
+        user = UserService.get_user_by_id(db, user_id)
+        user.password = hash_password(new_password)
+        db.commit()
+        return {"message": "Password updated successfully"}

@@ -8,7 +8,15 @@ from sqlalchemy import and_
 class CompanyService:
     @staticmethod
     def create_company(db: Session, company_data: CompanyCreate):
-        db_company = Company(**company_data.model_dump())
+        data = company_data.model_dump()
+        
+        # PAN Auto-Extraction Logic
+        if data.get('gst_number') and len(data['gst_number']) >= 12:
+            extracted_pan = data['gst_number'][2:12]
+            if not data.get('pan_number'):
+                data['pan_number'] = extracted_pan
+        
+        db_company = Company(**data)
         db.add(db_company)
         try:
             db.commit()

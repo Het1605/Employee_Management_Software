@@ -127,16 +127,17 @@ const CompanyAssignment = () => {
     };
 
     const getInitials = (name) => {
+        if (!name) return "??";
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     };
 
     const filteredAvailable = availableUsers.filter(u => 
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredAssigned = assignedUsers.filter(u => 
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -209,8 +210,8 @@ const CompanyAssignment = () => {
                                             {isMobile ? (
                                                 <div className={styles.mobileCard}>
                                                     <div className={styles.mobileRowAvatar}>
-                                                        <div className={styles.userAvatar}>{getInitials(user.name)}</div>
-                                                        <span className={styles.userNameMobile}>{user.name}</span>
+                                                        <div className={styles.userAvatar}>{getInitials(user.full_name)}</div>
+                                                        <span className={styles.userNameMobile}>{user.full_name}</span>
                                                     </div>
                                                     <div className={styles.mobileRow}>
                                                         <span className={styles.userEmailMobile}>{user.email}</span>
@@ -229,9 +230,9 @@ const CompanyAssignment = () => {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div className={styles.userAvatar}>{getInitials(user.name)}</div>
+                                                    <div className={styles.userAvatar}>{getInitials(user.full_name)}</div>
                                                     <div className={styles.userDetails}>
-                                                        <span className={styles.userName}>{user.name}</span>
+                                                        <span className={styles.userName}>{user.full_name}</span>
                                                         <span className={styles.userEmail}>{user.email}</span>
                                                     </div>
                                                     <div className={styles.roleBadge}>{user.role}</div>
@@ -294,8 +295,8 @@ const CompanyAssignment = () => {
                                             {isMobile ? (
                                                 <div className={styles.mobileCard}>
                                                     <div className={styles.mobileRowAvatar}>
-                                                        <div className={styles.userAvatar}>{getInitials(user.name)}</div>
-                                                        <span className={styles.userNameMobile}>{user.name}</span>
+                                                        <div className={styles.userAvatar}>{getInitials(user.full_name)}</div>
+                                                        <span className={styles.userNameMobile}>{user.full_name}</span>
                                                     </div>
                                                     <div className={styles.mobileRow}>
                                                         <span className={styles.userEmailMobile}>{user.email}</span>
@@ -314,9 +315,9 @@ const CompanyAssignment = () => {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div className={styles.userAvatar}>{getInitials(user.name)}</div>
+                                                    <div className={styles.userAvatar}>{getInitials(user.full_name)}</div>
                                                     <div className={styles.userDetails}>
-                                                        <span className={styles.userName}>{user.name}</span>
+                                                        <span className={styles.userName}>{user.full_name}</span>
                                                         <span className={styles.userEmail}>{user.email}</span>
                                                     </div>
                                                     <div className={styles.roleBadge}>{user.role}</div>

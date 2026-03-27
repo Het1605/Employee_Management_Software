@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator, computed_field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -10,7 +10,8 @@ class UserRole(str, Enum):
     EMPLOYEE = "EMPLOYEE"
 
 class UserBase(BaseModel):
-    name: str = Field(..., min_length=2, max_length=100)
+    first_name: str = Field(..., min_length=2, max_length=50)
+    last_name: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
@@ -26,15 +27,20 @@ class UserCreate(UserBase):
         return v
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    first_name: Optional[str] = Field(None, min_length=2, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=2, max_length=50)
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
-    password: Optional[str] = Field(None, min_length=8)
 
 class UserResponse(UserBase):
     id: int
     created_at: datetime
+
+    @computed_field
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
 
     class Config:
         from_attributes = True
@@ -46,7 +52,8 @@ class LoginRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str = Field(..., min_length=8)
-
+class AdminPasswordReset(BaseModel):
+    password: str = Field(..., min_length=8)
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
 
