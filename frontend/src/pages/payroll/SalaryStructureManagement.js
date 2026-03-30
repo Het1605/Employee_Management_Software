@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { handleApiError } from '../../utils/errorHandler';
 import styles from '../../styles/SalaryStructure.module.css';
 import SalaryComponents from './SalaryComponents';
+import StructureInfo from './StructureInfo';
 
 const SalaryStructureManagement = () => {
     const [companies, setCompanies] = useState([]);
@@ -82,7 +83,9 @@ const SalaryStructureManagement = () => {
 
                         {/* Tab Content Placeholder */}
                         <div className={`${styles.contentBody} ${styles.fadeIn}`}>
-                            {activeTab === 'components' ? (
+                            {activeTab === 'info' ? (
+                                <StructureInfo companyId={selectedCompanyId} />
+                            ) : activeTab === 'components' ? (
                                 <SalaryComponents companyId={selectedCompanyId} />
                             ) : (
                                 <div className={styles.comingSoon}>

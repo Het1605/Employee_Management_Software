@@ -66,9 +66,8 @@ class SalaryStructureCreate(SalaryStructureBase):
     company_id: int
 
 class SalaryStructureUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    is_active: Optional[bool] = None
 
 class SalaryStructureResponse(SalaryStructureBase):
     id: int

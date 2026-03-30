@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, status, Query, HTTPException
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.db.database import get_db
-from app.db.models import SalaryStructure, StructureComponent
+from app.db.models import StructureComponent
 from app.schemas.salary_structure import (
     SalaryStructureCreate, SalaryStructureResponse, SalaryStructureDetailResponse,
     StructureComponentCreate, StructureComponentUpdate, SalaryComponentResponse,
-    SalaryStatusUpdate
+    SalaryStatusUpdate, SalaryStructureUpdate
 )
 from app.services.salary_structure_service import SalaryStructureService
 
@@ -30,28 +30,36 @@ def get_structures(
 @router.get("/{structure_id}", response_model=SalaryStructureDetailResponse)
 def get_structure_details(
     structure_id: int,
+    company_id: int = Query(...),
     db: Session = Depends(get_db)
 ):
-    structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
-    if not structure:
-        raise HTTPException(status_code=404, detail="Salary Structure not found")
-    
-    return SalaryStructureService.get_salary_structure_details(db, structure_id)
+    return SalaryStructureService.get_salary_structure_details(db, structure_id, company_id)
+
+@router.put("/{structure_id}", response_model=SalaryStructureResponse)
+def update_structure(
+    structure_id: int,
+    data: SalaryStructureUpdate,
+    company_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+    return SalaryStructureService.update_salary_structure(db, structure_id, company_id, data)
 
 @router.patch("/{structure_id}/status", response_model=SalaryStructureResponse)
 def patch_structure_status(
     structure_id: int,
     data: SalaryStatusUpdate,
+    company_id: int = Query(...),
     db: Session = Depends(get_db)
 ):
-    return SalaryStructureService.toggle_salary_structure_status(db, structure_id, data)
+    return SalaryStructureService.toggle_salary_structure_status(db, structure_id, company_id, data)
 
 @router.delete("/{structure_id}")
 def delete_structure(
     structure_id: int,
+    company_id: int = Query(...),
     db: Session = Depends(get_db)
 ):
-    return SalaryStructureService.delete_salary_structure(db, structure_id)
+    return SalaryStructureService.delete_salary_structure(db, structure_id, company_id)
 
 @router.post("/{structure_id}/components")
 def add_component(

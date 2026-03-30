@@ -153,6 +153,58 @@
     margin: auto;
 }
 
+.structureList {
+    display: grid;
+    gap: 1rem;
+    width: 100%;
+}
+
+.structureItem {
+    background: #ffffff;
+    border: 1px solid #e7edf5;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.structureItem:hover {
+    border-color: #dbe5f0;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    transform: translateY(-1px);
+}
+
+.structureContent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.structureName {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.structureDescriptionText {
+    margin: 0;
+    font-size: 0.94rem;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+.structureActionsRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.15rem;
+}
+
 /* Card Grid Layout */
 .cardGrid {
     display: grid;
@@ -379,9 +431,17 @@ input:checked + .slider:before { transform: translateX(20px); }
     .badgeGroup {
         margin-left: auto;
     }
+
+    .structureActionsRow {
+        flex-wrap: wrap;
+    }
 }
 
 @media (max-width: 520px) {
+    .structureItem {
+        padding: 0.95rem;
+    }
+
     .dataCard {
         padding: 0.9rem;
     }
@@ -396,5 +456,9 @@ input:checked + .slider:before { transform: translateX(20px); }
 
     .cardActions {
         margin-left: auto;
+    }
+
+    .structureActionsRow {
+        align-items: flex-start;
     }
 }

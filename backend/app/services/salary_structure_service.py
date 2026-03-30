@@ -11,6 +11,16 @@ from app.schemas.salary_structure import (
 
 class SalaryStructureService:
     @staticmethod
+    def get_salary_structure_by_id(db: Session, structure_id: int, company_id: int):
+        structure = db.query(SalaryStructure).filter(
+            SalaryStructure.id == structure_id,
+            SalaryStructure.company_id == company_id
+        ).first()
+        if not structure:
+            raise HTTPException(status_code=404, detail="Salary Structure not found")
+        return structure
+
+    @staticmethod
     def create_salary_structure(db: Session, structure_data: SalaryStructureCreate):
         db_structure = SalaryStructure(**structure_data.model_dump())
         db.add(db_structure)
@@ -30,11 +40,14 @@ class SalaryStructureService:
         return db.query(SalaryStructure).filter(SalaryStructure.company_id == company_id).all()
 
     @staticmethod
-    def get_salary_structure_details(db: Session, structure_id: int):
+    def get_salary_structure_details(db: Session, structure_id: int, company_id: int):
         structure = db.query(SalaryStructure).options(
             joinedload(SalaryStructure.components).joinedload(StructureComponent.component),
             joinedload(SalaryStructure.components).joinedload(StructureComponent.based_on_component)
-        ).filter(SalaryStructure.id == structure_id).first()
+        ).filter(
+            SalaryStructure.id == structure_id,
+            SalaryStructure.company_id == company_id
+        ).first()
         
         if not structure:
             raise HTTPException(status_code=404, detail="Salary Structure not found")
@@ -67,6 +80,32 @@ class SalaryStructureService:
             "updated_at": structure.updated_at,
             "components": results
         }
+
+    @staticmethod
+    def update_salary_structure(db: Session, structure_id: int, company_id: int, data: SalaryStructureUpdate):
+        structure = SalaryStructureService.get_salary_structure_by_id(db, structure_id, company_id)
+
+        name_normalized = data.name.strip()
+        if not name_normalized:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Structure name is required.")
+
+        existing = db.query(SalaryStructure).filter(
+            SalaryStructure.company_id == company_id,
+            func.lower(SalaryStructure.name) == name_normalized.lower(),
+            SalaryStructure.id != structure_id
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Structure with name '{name_normalized}' already exists for this company."
+            )
+
+        structure.name = name_normalized
+        structure.description = data.description
+
+        db.commit()
+        db.refresh(structure)
+        return structure
 
     @staticmethod
     def add_component_to_structure(db: Session, structure_id: int, data: StructureComponentCreate):
@@ -278,10 +317,8 @@ class SalaryStructureService:
         return {"message": "Component deleted successfully"}
 
     @staticmethod
-    def delete_salary_structure(db: Session, structure_id: int):
-        structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
-        if not structure:
-            raise HTTPException(status_code=404, detail="Salary Structure not found")
+    def delete_salary_structure(db: Session, structure_id: int, company_id: int):
+        structure = SalaryStructureService.get_salary_structure_by_id(db, structure_id, company_id)
         
         # In a real system, you might check for assigned employees here
         
@@ -293,10 +330,8 @@ class SalaryStructureService:
         return {"message": "Salary Structure deleted successfully"}
 
     @staticmethod
-    def toggle_salary_structure_status(db: Session, structure_id: int, status_data: SalaryStatusUpdate):
-        structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
-        if not structure:
-            raise HTTPException(status_code=404, detail="Salary Structure not found")
+    def toggle_salary_structure_status(db: Session, structure_id: int, company_id: int, status_data: SalaryStatusUpdate):
+        structure = SalaryStructureService.get_salary_structure_by_id(db, structure_id, company_id)
         
         structure.is_active = status_data.is_active
         db.commit()
