@@ -13,6 +13,7 @@ class User(Base):
     phone = Column(String, nullable=True)
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)  # ADMIN, HR, MANAGER, EMPLOYEE
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -27,6 +28,7 @@ class Company(Base):
     address_line_1 = Column(String, nullable=True)
     address_line_2 = Column(String, nullable=True)
     address_line_3 = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
     gst_number = Column(String, unique=True, nullable=True)
     pan_number = Column(String, unique=True, nullable=True)
     logo_url = Column(String, nullable=True)

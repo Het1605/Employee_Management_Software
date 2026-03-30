@@ -84,7 +84,7 @@ class CompanyService:
             return {"message": "Company deleted successfully"}
         except IntegrityError:
             db.rollback()
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete company because it has active associations")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete company because it has active users")
         except Exception:
             db.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error. Please try again later.")

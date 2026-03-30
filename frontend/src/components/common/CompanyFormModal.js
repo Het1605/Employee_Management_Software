@@ -7,6 +7,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         address_line_1: '',
         address_line_2: '',
         address_line_3: '',
+        postal_code: '',
         gst_number: '',
         pan_number: '',
         logo_url: ''
@@ -19,6 +20,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 address_line_1: company.address_line_1 || '',
                 address_line_2: company.address_line_2 || '',
                 address_line_3: company.address_line_3 || '',
+                postal_code: company.postal_code || '',
                 gst_number: company.gst_number || '',
                 pan_number: company.pan_number || '',
                 logo_url: company.logo_url || ''
@@ -29,6 +31,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 address_line_1: '',
                 address_line_2: '',
                 address_line_3: '',
+                postal_code: '',
                 gst_number: '',
                 pan_number: '',
                 logo_url: ''
@@ -137,7 +140,18 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                                     name="address_line_3"
                                     value={formData.address_line_3}
                                     onChange={handleChange}
-                                    placeholder="City, State, Zip"
+                                    placeholder="City, State"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Postal Code</label>
+                                <input
+                                    type="text"
+                                    name="postal_code"
+                                    value={formData.postal_code}
+                                    onChange={handleChange}
+                                    placeholder="Enter postal code"
                                 />
                             </div>
 

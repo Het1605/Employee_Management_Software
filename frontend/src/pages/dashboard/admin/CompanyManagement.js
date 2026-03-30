@@ -139,9 +139,9 @@ const CompanyManagement = () => {
                             <div className={styles.companyInfo}>
                                 <h3>{company.name}</h3>
                                 <div className={styles.companyDetails}>
-                                    {(company.address_line_1 || company.address_line_2 || company.address_line_3) && (
+                                    {(company.address_line_1 || company.address_line_2 || company.address_line_3 || company.postal_code) && (
                                         <div className={styles.detailItem}>
-                                            📍 {[company.address_line_1, company.address_line_2, company.address_line_3].filter(Boolean).join(', ')}
+                                            📍 {[company.address_line_1, company.address_line_2, company.address_line_3, company.postal_code].filter(Boolean).join(', ')}
                                         </div>
                                     )}
                                     {company.gst_number && (

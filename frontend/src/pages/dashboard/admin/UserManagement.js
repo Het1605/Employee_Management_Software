@@ -51,6 +51,16 @@ const UserManagement = () => {
     }
   };
 
+  const handleToggleStatus = async (userId, isActive) => {
+    try {
+      await API.patch(`/users/${userId}/toggle-status`, { is_active: isActive });
+      showToast(`User ${isActive ? 'activated' : 'deactivated'} successfully`, 'success');
+      fetchUsers();
+    } catch (err) {
+      showToast(handleApiError(err), 'error');
+    }
+  };
+
   return (
     <Layout 
       title="User Management" 
@@ -64,6 +74,7 @@ const UserManagement = () => {
             user={user} 
             onEdit={() => { setSelectedUser(user); setIsModalOpen(true); }} 
             onChangePassword={() => { setSelectedUser(user); setIsPasswordModalOpen(true); }}
+            onStatusChange={handleToggleStatus}
             onDelete={async () => {
               if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
                 try {

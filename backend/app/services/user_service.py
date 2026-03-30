@@ -142,3 +142,10 @@ class UserService:
         user.password = hash_password(new_password)
         db.commit()
         return {"message": "Password updated successfully"}
+
+    @staticmethod
+    def toggle_user_status(db: Session, user_id: int, is_active: bool):
+        user = UserService.get_user_by_id(db, user_id)
+        user.is_active = is_active
+        db.commit()
+        return {"message": "User status updated"}

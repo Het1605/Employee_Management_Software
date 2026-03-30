@@ -24,7 +24,7 @@ const LockIcon = () => (
   </svg>
 );
 
-const UserCard = ({ user, onEdit, onDelete, onChangePassword }) => {
+const UserCard = ({ user, onEdit, onDelete, onChangePassword, onStatusChange }) => {
   const currentUserRole = localStorage.getItem('role');
   const isAdmin = currentUserRole === 'ADMIN';
 
@@ -45,31 +45,47 @@ const UserCard = ({ user, onEdit, onDelete, onChangePassword }) => {
       </div>
 
       <div className={styles.cardActions}>
-        <button 
-          className={styles.iconBtn} 
-          onClick={() => onEdit(user)}
-          title="Edit User"
-        >
-          <EditIcon />
-        </button>
-        
-        {isAdmin && (
+        <div className={styles.statusToggle}>
+          <label className={styles.switch}>
+            <input 
+              type="checkbox" 
+              checked={user.is_active} 
+              onChange={(e) => onStatusChange(user.id, e.target.checked)}
+            />
+            <span className={styles.slider}></span>
+          </label>
+          <span className={styles.statusLabel}>
+            {user.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+
+        <div className={styles.actionButtons}>
           <button 
             className={styles.iconBtn} 
-            onClick={() => onChangePassword(user)}
-            title="Change Password"
+            onClick={() => onEdit(user)}
+            title="Edit User"
           >
-            <LockIcon />
+            <EditIcon />
           </button>
-        )}
-        
-        <button 
-          className={`${styles.iconBtn} ${styles.delete}`} 
-          onClick={() => onDelete(user)}
-          title="Delete User"
-        >
-          <TrashIcon />
-        </button>
+          
+          {isAdmin && (
+            <button 
+              className={styles.iconBtn} 
+              onClick={() => onChangePassword(user)}
+              title="Change Password"
+            >
+              <LockIcon />
+            </button>
+          )}
+          
+          <button 
+            className={`${styles.iconBtn} ${styles.delete}`} 
+            onClick={() => onDelete(user)}
+            title="Delete User"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
     </div>
   );

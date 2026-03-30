@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
+    is_active: bool = True
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
@@ -60,3 +61,6 @@ class ResetPasswordRequest(BaseModel):
 class ResetPasswordConfirm(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8)
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
