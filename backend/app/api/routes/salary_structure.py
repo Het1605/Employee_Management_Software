@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.db.database import get_db
 from app.db.models import SalaryStructure, StructureComponent
 from app.schemas.salary_structure import (
     SalaryStructureCreate, SalaryStructureResponse, SalaryStructureDetailResponse,
-    StructureComponentCreate, StructureComponentUpdate, SalaryComponentResponse
+    StructureComponentCreate, StructureComponentUpdate, SalaryComponentResponse,
+    SalaryStatusUpdate
 )
 from app.services.salary_structure_service import SalaryStructureService
 
@@ -37,6 +38,21 @@ def get_structure_details(
     
     return SalaryStructureService.get_salary_structure_details(db, structure_id)
 
+@router.patch("/{structure_id}/status", response_model=SalaryStructureResponse)
+def patch_structure_status(
+    structure_id: int,
+    data: SalaryStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    return SalaryStructureService.toggle_salary_structure_status(db, structure_id, data)
+
+@router.delete("/{structure_id}")
+def delete_structure(
+    structure_id: int,
+    db: Session = Depends(get_db)
+):
+    return SalaryStructureService.delete_salary_structure(db, structure_id)
+
 @router.post("/{structure_id}/components")
 def add_component(
     structure_id: int,
@@ -51,10 +67,12 @@ def add_component(
 
 @router.get("/master-components/all", response_model=List[SalaryComponentResponse])
 def get_master_components(
+    company_id: int = Query(...),
+    is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
-    # Available to all authenticated users
-    return SalaryStructureService.get_salary_components(db)
+    # Available to all authenticated users, scoped to the selected company
+    return SalaryStructureService.get_salary_components(db, company_id, is_active)
 
 # Structure Components Management
 

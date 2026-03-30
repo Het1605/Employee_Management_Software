@@ -6,6 +6,7 @@ from app.db.models import ComponentType, CalculationType, BasedOnType
 
 class SalaryComponentResponse(BaseModel):
     id: int
+    company_id: int
     name: str
     type: ComponentType
     is_taxable: bool
@@ -18,11 +19,16 @@ class SalaryComponentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     type: ComponentType
     is_taxable: bool = True
+    company_id: int
 
 class SalaryComponentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
+    type: Optional[ComponentType] = None
     is_taxable: Optional[bool] = None
     is_active: Optional[bool] = None
+
+class SalaryStatusUpdate(BaseModel):
+    is_active: bool
 
 class StructureComponentBase(BaseModel):
     component_id: int
@@ -58,6 +64,11 @@ class SalaryStructureBase(BaseModel):
 
 class SalaryStructureCreate(SalaryStructureBase):
     company_id: int
+
+class SalaryStructureUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class SalaryStructureResponse(SalaryStructureBase):
     id: int

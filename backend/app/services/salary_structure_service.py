@@ -1,10 +1,12 @@
+from typing import Optional
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from app.db.models import SalaryStructure, SalaryComponent, StructureComponent, BasedOnType
+from app.db.models import SalaryStructure, SalaryComponent, StructureComponent, BasedOnType, Company
 from app.schemas.salary_structure import (
-    SalaryStructureCreate, StructureComponentCreate, StructureComponentUpdate,
-    SalaryComponentCreate, SalaryComponentUpdate
+    SalaryStructureCreate, SalaryStructureUpdate, StructureComponentCreate, StructureComponentUpdate,
+    SalaryComponentCreate, SalaryComponentUpdate, SalaryStatusUpdate
 )
 
 class SalaryStructureService:
@@ -77,6 +79,8 @@ class SalaryStructureService:
         component = db.query(SalaryComponent).filter(SalaryComponent.id == data.component_id).first()
         if not component:
             raise HTTPException(status_code=404, detail="Salary Component not found")
+        if component.company_id != structure.company_id:
+            raise HTTPException(status_code=400, detail="Salary Component does not belong to this company")
 
         # 3. Check if component already in structure
         existing_mapping = db.query(StructureComponent).filter(
@@ -93,7 +97,15 @@ class SalaryStructureService:
             
             if data.based_on_component_id == data.component_id:
                 raise HTTPException(status_code=400, detail="Component cannot depend on itself")
-            
+
+            dep_component = db.query(SalaryComponent).filter(
+                SalaryComponent.id == data.based_on_component_id
+            ).first()
+            if not dep_component:
+                raise HTTPException(status_code=404, detail="Dependent Salary Component not found")
+            if dep_component.company_id != structure.company_id:
+                raise HTTPException(status_code=400, detail="Dependent Salary Component does not belong to this company")
+
             # Verify dependency exists in the same structure
             dep_exists = db.query(StructureComponent).filter(
                 StructureComponent.structure_id == structure_id,
@@ -153,57 +165,81 @@ class SalaryStructureService:
         return {"message": "Component removed successfully"}
 
     @staticmethod
-    def get_salary_components(db: Session):
-        return db.query(SalaryComponent).all()
+    def get_salary_components(db: Session, company_id: int, is_active: Optional[bool] = None):
+        query = db.query(SalaryComponent).filter(SalaryComponent.company_id == company_id)
+        if is_active is not None:
+            query = query.filter(SalaryComponent.is_active == is_active)
+        return query.order_by(SalaryComponent.name.asc()).all()
 
     @staticmethod
     def create_salary_component(db: Session, data: SalaryComponentCreate):
         # Name Normalization
         name_normalized = data.name.strip()
+        if not name_normalized:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Salary component name is required.")
+
+        company = db.query(Company).filter(Company.id == data.company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
         
         # Unique Check (case-insensitive)
         existing = db.query(SalaryComponent).filter(
-            SalaryComponent.name.ilike(name_normalized)
+            SalaryComponent.company_id == data.company_id,
+            func.lower(SalaryComponent.name) == name_normalized.lower()
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Salary component '{name_normalized}' already exists."
+                detail=f"Salary component '{name_normalized}' already exists for this company."
             )
         
         db_component = SalaryComponent(
+            company_id=data.company_id,
             name=name_normalized,
             type=data.type,
             is_taxable=data.is_taxable
         )
         db.add(db_component)
-        db.commit()
-        db.refresh(db_component)
-        return db_component
+        try:
+            db.commit()
+            db.refresh(db_component)
+            return db_component
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to create salary component. Please check company and name uniqueness."
+            )
 
     @staticmethod
-    def get_salary_component_by_id(db: Session, component_id: int):
-        component = db.query(SalaryComponent).filter(SalaryComponent.id == component_id).first()
+    def get_salary_component_by_id(db: Session, component_id: int, company_id: int):
+        component = db.query(SalaryComponent).filter(
+            SalaryComponent.id == component_id,
+            SalaryComponent.company_id == company_id
+        ).first()
         if not component:
             raise HTTPException(status_code=404, detail="Salary Component not found")
         return component
 
     @staticmethod
-    def update_salary_component(db: Session, component_id: int, data: SalaryComponentUpdate):
-        db_component = SalaryStructureService.get_salary_component_by_id(db, component_id)
+    def update_salary_component(db: Session, component_id: int, company_id: int, data: SalaryComponentUpdate):
+        db_component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
         
         update_data = data.model_dump(exclude_unset=True)
         if "name" in update_data:
             name_normalized = update_data["name"].strip()
+            if not name_normalized:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Salary component name is required.")
             # Unique Check excluding self
             existing = db.query(SalaryComponent).filter(
-                SalaryComponent.name.ilike(name_normalized),
+                SalaryComponent.company_id == company_id,
+                func.lower(SalaryComponent.name) == name_normalized.lower(),
                 SalaryComponent.id != component_id
             ).first()
             if existing:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Salary component '{name_normalized}' already exists."
+                    detail=f"Salary component '{name_normalized}' already exists for this company."
                 )
             update_data["name"] = name_normalized
 
@@ -215,8 +251,16 @@ class SalaryStructureService:
         return db_component
 
     @staticmethod
-    def delete_salary_component(db: Session, component_id: int):
-        db_component = SalaryStructureService.get_salary_component_by_id(db, component_id)
+    def toggle_salary_component_status(db: Session, component_id: int, company_id: int, status_data: SalaryStatusUpdate):
+        db_component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
+        db_component.is_active = status_data.is_active
+        db.commit()
+        db.refresh(db_component)
+        return db_component
+
+    @staticmethod
+    def delete_salary_component(db: Session, component_id: int, company_id: int):
+        db_component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
         
         # Check if used in any structure
         is_used = db.query(StructureComponent).filter(
@@ -224,11 +268,37 @@ class SalaryStructureService:
         ).first()
         
         if is_used:
-            # Mark as inactive instead of deleting
-            db_component.is_active = False
-            db.commit()
-            return {"message": "Component is in use and has been marked as inactive"}
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete component as it is used in one or more salary structures. Deactivate it instead."
+            )
         
         db.delete(db_component)
         db.commit()
         return {"message": "Component deleted successfully"}
+
+    @staticmethod
+    def delete_salary_structure(db: Session, structure_id: int):
+        structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
+        if not structure:
+            raise HTTPException(status_code=404, detail="Salary Structure not found")
+        
+        # In a real system, you might check for assigned employees here
+        
+        # First delete all structure-component mappings
+        db.query(StructureComponent).filter(StructureComponent.structure_id == structure_id).delete()
+        
+        db.delete(structure)
+        db.commit()
+        return {"message": "Salary Structure deleted successfully"}
+
+    @staticmethod
+    def toggle_salary_structure_status(db: Session, structure_id: int, status_data: SalaryStatusUpdate):
+        structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
+        if not structure:
+            raise HTTPException(status_code=404, detail="Salary Structure not found")
+        
+        structure.is_active = status_data.is_active
+        db.commit()
+        db.refresh(structure)
+        return structure

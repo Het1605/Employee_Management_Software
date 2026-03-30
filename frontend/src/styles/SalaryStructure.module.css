@@ -1,0 +1,400 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #334155;
+}
+
+.headerCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.iconBuilding {
+    font-size: 1.5rem;
+}
+
+.companySelectWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 260px;
+    max-width: 420px;
+    width: 100%;
+}
+
+.companySelect {
+    appearance: none;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.6rem 2.5rem 0.6rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.companySelect:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.selectArrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 0.75rem;
+    pointer-events: none;
+    line-height: 1;
+}
+
+.companySelectWrapper.placeholder .companySelect {
+    font-weight: 400;
+    color: #64748b;
+}
+
+/* Tabs Styling - Match modern-tabs-container */
+.tabsContainer {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.4rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.tabsContainer::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    padding: 0.4rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.tab:hover {
+    color: #334155;
+}
+
+.tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.contentBody {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #f1f5f9;
+    min-height: 400px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.tabHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.tabTitles h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.25rem;
+}
+
+.tabSubtitle {
+    margin: 0.25rem 0 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.comingSoon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #64748b;
+    text-align: center;
+    margin: auto;
+}
+
+/* Card Grid Layout */
+.cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.dataCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    transition: all 0.2s;
+}
+
+.dataCard:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.cardTopRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cardTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badgeGroup {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.cardBottomRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cardActions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+/* iOS Toggle Style - Match User Management */
+.statusToggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px; width: 14px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider { background-color: #10b981; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.statusLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.pillBadge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.earning { background: #dcfce7; color: #166534; }
+.deduction { background: #fee2e2; color: #991b1b; }
+.taxable { background: #fef3c7; color: #92400e; }
+.nonTaxable { background: #f1f5f9; color: #475569; }
+
+/* Icon Buttons */
+.iconBtn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem;
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.iconBtn:hover {
+    background: #f1f5f9;
+    color: #3b82f6;
+}
+
+.iconBtn.delete:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+/* Empty State */
+.emptyCardState {
+    grid-column: 1 / -1;
+    padding: 4rem 2rem;
+    text-align: center;
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    color: #64748b;
+}
+
+.placeholderIcon {
+    font-size: 2.5rem;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem;
+    text-align: center;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
+.emptyState h3 {
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+.emptyState p {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+.fadeIn {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .headerCard {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .companySelectWrapper {
+        max-width: none;
+        min-width: 0;
+    }
+    
+    .tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .cardTopRow,
+    .cardBottomRow {
+        align-items: center;
+    }
+
+    .cardTopRow {
+        flex-wrap: wrap;
+    }
+
+    .badgeGroup {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .dataCard {
+        padding: 0.9rem;
+    }
+
+    .cardTopRow {
+        gap: 0.5rem;
+    }
+
+    .cardBottomRow {
+        flex-wrap: wrap;
+    }
+
+    .cardActions {
+        margin-left: auto;
+    }
+}

@@ -18,6 +18,7 @@ import CompanyManagement from '../pages/dashboard/admin/CompanyManagement';
 import CompanyAssignment from '../pages/dashboard/admin/CompanyAssignment';
 import AdminCalendarManagement from '../pages/dashboard/admin/CalendarManagement';
 import HRCalendarManagement from '../pages/dashboard/hr/CalendarManagement';
+import SalaryStructureManagement from '../pages/payroll/SalaryStructureManagement';
 
 const AppRouter = () => {
   return (
@@ -70,6 +71,14 @@ const AppRouter = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/admin/salary-structure" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <SalaryStructureManagement />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* HR Routes */}
         <Route 
@@ -93,6 +102,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
               <HRCalendarManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/salary-structure" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <SalaryStructureManagement />
             </ProtectedRoute>
           } 
         />

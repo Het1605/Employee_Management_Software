@@ -43,6 +43,7 @@ class Company(Base):
     # Relationships
     users = relationship("User", secondary="user_company_mapping", back_populates="companies")
     salary_structures = relationship("SalaryStructure", back_populates="company", cascade="all, delete-orphan")
+    salary_components = relationship("SalaryComponent", back_populates="company", cascade="all, delete-orphan")
 
 class UserCompanyMapping(Base):
     __tablename__ = "user_company_mapping"
@@ -90,14 +91,20 @@ class SalaryComponent(Base):
     __tablename__ = "salary_components"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    name = Column(String, index=True, nullable=False)
     type = Column(Enum(ComponentType), nullable=False)
     is_taxable = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
+    company = relationship("Company", back_populates="salary_components")
     structure_mappings = relationship("StructureComponent", foreign_keys="[StructureComponent.component_id]", back_populates="component")
+
+    __table_args__ = (
+        UniqueConstraint('company_id', 'name', name='uq_salary_component_name_per_company'),
+    )
 
 class StructureComponent(Base):
     __tablename__ = "structure_components"
