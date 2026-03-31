@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from app.db.models import ComponentType, CalculationType, BasedOnType
+from app.db.models import ComponentType
 
 class SalaryComponentResponse(BaseModel):
     id: int
@@ -30,59 +30,65 @@ class SalaryComponentUpdate(BaseModel):
 class SalaryStatusUpdate(BaseModel):
     is_active: bool
 
-class StructureComponentBase(BaseModel):
-    component_id: int
-    calculation_type: CalculationType
-    value: Optional[Decimal] = Field(None, ge=0)
-    based_on: Optional[BasedOnType] = None
-    based_on_component_id: Optional[int] = None
-    formula: Optional[str] = None
-    sequence: int = Field(..., gt=0)
-    is_active: bool = True
+# ---------------- New Salary Structure Schema ----------------
 
-class StructureComponentCreate(StructureComponentBase):
-    pass
-
-class StructureComponentUpdate(BaseModel):
-    calculation_type: CalculationType
-    value: Optional[Decimal] = Field(None, ge=0)
-    based_on: Optional[BasedOnType] = None
-    based_on_component_id: Optional[int] = None
-    formula: Optional[str] = None
-    sequence: int = Field(..., gt=0)
-
-class StructureComponentResponse(StructureComponentBase):
-    id: int
-    component_name: str
-    type: ComponentType
-    based_on_component_name: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class SalaryStructureBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = None
-    is_active: bool = True
-
-class SalaryStructureCreate(SalaryStructureBase):
+class SalaryStructureDefinitionCreate(BaseModel):
+    structure_name: str = Field(..., min_length=1, max_length=150)
     company_id: int
 
-class SalaryStructureUpdate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = None
 
-class SalaryStructureResponse(SalaryStructureBase):
+class SalaryStructureDefinitionUpdate(BaseModel):
+    structure_name: str = Field(..., min_length=1, max_length=150)
+
+
+class SalaryStructureDefinitionResponse(BaseModel):
     id: int
     company_id: int
+    structure_name: str
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
-class SalaryStructureDetailResponse(SalaryStructureResponse):
-    components: List[StructureComponentResponse] = []
+
+class SalaryStructureDetailItem(BaseModel):
+    component_id: int
+    percentage: Decimal = Field(..., gt=0)
+
+
+class SalaryStructureDetailCreate(BaseModel):
+    items: List[SalaryStructureDetailItem]
+
+
+class SalaryStructureDetailUpdate(BaseModel):
+    percentage: Decimal = Field(..., gt=0)
+
+
+class SalaryStructureDetailResponse(BaseModel):
+    id: int
+    structure_id: int
+    component_id: int
+    percentage: Decimal
+
+    class Config:
+        from_attributes = True
+
+
+class UserSalaryStructureCreate(BaseModel):
+    user_id: int
+    structure_id: int
+
+
+class UserSalaryStructureUpdate(BaseModel):
+    structure_id: int
+
+
+class UserSalaryStructureResponse(BaseModel):
+    id: int
+    user_id: int
+    structure_id: int
+    assigned_at: datetime
 
     class Config:
         from_attributes = True

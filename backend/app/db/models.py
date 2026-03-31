@@ -42,8 +42,8 @@ class Company(Base):
 
     # Relationships
     users = relationship("User", secondary="user_company_mapping", back_populates="companies")
-    salary_structures = relationship("SalaryStructure", back_populates="company", cascade="all, delete-orphan")
     salary_components = relationship("SalaryComponent", back_populates="company", cascade="all, delete-orphan")
+    salary_structure_definitions = relationship("SalaryStructureDefinition", back_populates="company", cascade="all, delete-orphan")
 
 class UserCompanyMapping(Base):
     __tablename__ = "user_company_mapping"
@@ -60,34 +60,6 @@ class ComponentType(enum.Enum):
     DEDUCTION = "DEDUCTION"
     EMPLOYER_CONTRIBUTION = "EMPLOYER_CONTRIBUTION"
 
-class CalculationType(enum.Enum):
-    FIXED = "FIXED"
-    PERCENTAGE = "PERCENTAGE"
-    FORMULA = "FORMULA"
-
-class BasedOnType(enum.Enum):
-    CTC = "CTC"
-    COMPONENT = "COMPONENT"
-
-class SalaryStructure(Base):
-    __tablename__ = "salary_structures"
-
-    id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    company = relationship("Company", back_populates="salary_structures")
-    components = relationship("StructureComponent", back_populates="structure", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        UniqueConstraint('company_id', 'name', name='uq_structure_name_per_company'),
-    )
-
 class SalaryComponent(Base):
     __tablename__ = "salary_components"
 
@@ -101,35 +73,55 @@ class SalaryComponent(Base):
 
     # Relationships
     company = relationship("Company", back_populates="salary_components")
-    structure_mappings = relationship("StructureComponent", foreign_keys="[StructureComponent.component_id]", back_populates="component")
 
     __table_args__ = (
         UniqueConstraint('company_id', 'name', name='uq_salary_component_name_per_company'),
     )
 
-class StructureComponent(Base):
-    __tablename__ = "structure_components"
+
+# ----------------- NEW SALARY STRUCTURE SCHEMA -----------------
+
+class SalaryStructureDefinition(Base):
+    __tablename__ = "salary_structure_definitions"
 
     id = Column(Integer, primary_key=True, index=True)
-    structure_id = Column(Integer, ForeignKey("salary_structures.id"), nullable=False)
-    component_id = Column(Integer, ForeignKey("salary_components.id"), nullable=False)
-    
-    calculation_type = Column(Enum(CalculationType), nullable=False)
-    value = Column(Numeric(precision=12, scale=2), nullable=True)  # Supports large amounts with 2 decimal places
-    
-    based_on = Column(Enum(BasedOnType), nullable=True)
-    based_on_component_id = Column(Integer, ForeignKey("salary_components.id"), nullable=True)
-    formula = Column(String, nullable=True)
-    
-    sequence = Column(Integer, nullable=False)
-    is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    structure_name = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
-    structure = relationship("SalaryStructure", back_populates="components")
-    component = relationship("SalaryComponent", foreign_keys=[component_id], back_populates="structure_mappings")
-    based_on_component = relationship("SalaryComponent", foreign_keys=[based_on_component_id])
+    company = relationship("Company", back_populates="salary_structure_definitions")
+    details = relationship("SalaryStructureDetail", back_populates="structure", cascade="all, delete-orphan")
+    user_assignments = relationship("UserSalaryStructure", back_populates="structure", cascade="all, delete-orphan")
 
     __table_args__ = (
-        UniqueConstraint('structure_id', 'sequence', name='uq_sequence_per_structure'),
-        CheckConstraint('value >= 0', name='chk_positive_value'),
+        UniqueConstraint('company_id', 'structure_name', name='uq_structure_name_per_company'),
     )
+
+
+class SalaryStructureDetail(Base):
+    __tablename__ = "salary_structure_details"
+
+    id = Column(Integer, primary_key=True, index=True)
+    structure_id = Column(Integer, ForeignKey("salary_structure_definitions.id"), nullable=False)
+    component_id = Column(Integer, ForeignKey("salary_components.id"), nullable=False)
+    percentage = Column(Numeric(precision=7, scale=4), nullable=False)
+
+    structure = relationship("SalaryStructureDefinition", back_populates="details")
+    component = relationship("SalaryComponent")
+
+    __table_args__ = (
+        UniqueConstraint('structure_id', 'component_id', name='uq_component_per_structure'),
+    )
+
+
+class UserSalaryStructure(Base):
+    __tablename__ = "user_salary_structures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    structure_id = Column(Integer, ForeignKey("salary_structure_definitions.id"), nullable=False)
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    structure = relationship("SalaryStructureDefinition", back_populates="user_assignments")
+    user = relationship("User")
