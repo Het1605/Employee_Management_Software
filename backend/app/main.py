@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
+from app.db.schema_sync import sync_structure_component_schema
 from app.db import models
 from app.models import calendar  # Register Calendar models to Base
 from app.api.routes import auth, users, company, calendar, salary_structure, salary_component
@@ -19,6 +20,7 @@ app.add_middleware(
 
 # 🔥 This line creates tables in DB
 Base.metadata.create_all(bind=engine)
+sync_structure_component_schema(engine)
 
 app.include_router(auth.router)
 app.include_router(users.router)

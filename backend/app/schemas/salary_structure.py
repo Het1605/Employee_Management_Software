@@ -33,9 +33,10 @@ class SalaryStatusUpdate(BaseModel):
 class StructureComponentBase(BaseModel):
     component_id: int
     calculation_type: CalculationType
-    value: Decimal = Field(..., ge=0)
-    based_on: BasedOnType
+    value: Optional[Decimal] = Field(None, ge=0)
+    based_on: Optional[BasedOnType] = None
     based_on_component_id: Optional[int] = None
+    formula: Optional[str] = None
     sequence: int = Field(..., gt=0)
     is_active: bool = True
 
@@ -44,9 +45,10 @@ class StructureComponentCreate(StructureComponentBase):
 
 class StructureComponentUpdate(BaseModel):
     calculation_type: CalculationType
-    value: Decimal = Field(..., ge=0)
-    based_on: BasedOnType
+    value: Optional[Decimal] = Field(None, ge=0)
+    based_on: Optional[BasedOnType] = None
     based_on_component_id: Optional[int] = None
+    formula: Optional[str] = None
     sequence: int = Field(..., gt=0)
 
 class StructureComponentResponse(StructureComponentBase):

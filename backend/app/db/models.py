@@ -63,6 +63,7 @@ class ComponentType(enum.Enum):
 class CalculationType(enum.Enum):
     FIXED = "FIXED"
     PERCENTAGE = "PERCENTAGE"
+    FORMULA = "FORMULA"
 
 class BasedOnType(enum.Enum):
     CTC = "CTC"
@@ -114,10 +115,11 @@ class StructureComponent(Base):
     component_id = Column(Integer, ForeignKey("salary_components.id"), nullable=False)
     
     calculation_type = Column(Enum(CalculationType), nullable=False)
-    value = Column(Numeric(precision=12, scale=2), nullable=False)  # Supports large amounts with 2 decimal places
+    value = Column(Numeric(precision=12, scale=2), nullable=True)  # Supports large amounts with 2 decimal places
     
-    based_on = Column(Enum(BasedOnType), nullable=False)
+    based_on = Column(Enum(BasedOnType), nullable=True)
     based_on_component_id = Column(Integer, ForeignKey("salary_components.id"), nullable=True)
+    formula = Column(String, nullable=True)
     
     sequence = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)

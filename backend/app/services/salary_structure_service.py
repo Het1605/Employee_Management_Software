@@ -1,15 +1,183 @@
 from typing import Optional
+import re
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from app.db.models import SalaryStructure, SalaryComponent, StructureComponent, BasedOnType, Company
+from app.db.models import SalaryStructure, SalaryComponent, StructureComponent, BasedOnType, Company, CalculationType
 from app.schemas.salary_structure import (
     SalaryStructureCreate, SalaryStructureUpdate, StructureComponentCreate, StructureComponentUpdate,
     SalaryComponentCreate, SalaryComponentUpdate, SalaryStatusUpdate
 )
 
 class SalaryStructureService:
+    @staticmethod
+    def _ensure_formula_token_boundary(formula: str, end_pos: int) -> bool:
+        if end_pos >= len(formula):
+            return True
+        return formula[end_pos].isspace() or formula[end_pos] in "+-*/()"
+
+    @staticmethod
+    def _extract_formula_dependencies(formula: str, available_names: list[str], self_name: str):
+        token_candidates = sorted(
+            {name for name in [self_name, *available_names] if name},
+            key=len,
+            reverse=True
+        )
+        referenced_names = []
+        pos = 0
+        number_pattern = re.compile(r"\d+(\.\d+)?")
+
+        while pos < len(formula):
+            if formula[pos].isspace():
+                pos += 1
+                continue
+
+            if formula[pos] in "+-*/()":
+                pos += 1
+                continue
+
+            number_match = number_pattern.match(formula, pos)
+            if number_match:
+                pos = number_match.end()
+                continue
+
+            matched_name = None
+            for candidate in token_candidates:
+                if formula.startswith(candidate, pos) and SalaryStructureService._ensure_formula_token_boundary(formula, pos + len(candidate)):
+                    matched_name = candidate
+                    referenced_names.append(candidate)
+                    pos += len(candidate)
+                    break
+
+            if matched_name:
+                continue
+
+            unknown_end = pos
+            while unknown_end < len(formula) and not formula[unknown_end].isspace() and formula[unknown_end] not in "+-*/()":
+                unknown_end += 1
+            unknown_token = formula[pos:unknown_end]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown token '{unknown_token}' in formula."
+            )
+
+        if self_name in referenced_names:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Component cannot reference itself in formula.")
+
+        return [name for name in referenced_names if name != self_name]
+
+    @staticmethod
+    def _validate_structure_component_config(db: Session, structure: SalaryStructure, component: SalaryComponent, data):
+        value = data.value
+        based_on = data.based_on
+        based_on_component_id = data.based_on_component_id
+        formula = data.formula.strip() if isinstance(data.formula, str) else None
+        if data.calculation_type == CalculationType.FIXED:
+            if value is None:
+                raise HTTPException(status_code=400, detail="value is required when calculation_type is FIXED")
+            if based_on is not None or based_on_component_id is not None:
+                raise HTTPException(status_code=400, detail="based_on and based_on_component_id must be null when calculation_type is FIXED")
+            if formula:
+                raise HTTPException(status_code=400, detail="formula must be null when calculation_type is FIXED")
+            return {
+                "value": value,
+                "based_on": None,
+                "based_on_component_id": None,
+                "formula": None
+            }
+
+        if data.calculation_type == CalculationType.PERCENTAGE:
+            if value is None:
+                raise HTTPException(status_code=400, detail="value is required when calculation_type is PERCENTAGE")
+            if based_on is None:
+                raise HTTPException(status_code=400, detail="based_on is required when calculation_type is PERCENTAGE")
+            if formula:
+                raise HTTPException(status_code=400, detail="formula must be null when calculation_type is PERCENTAGE")
+
+            if based_on == BasedOnType.CTC:
+                if based_on_component_id is not None:
+                    raise HTTPException(status_code=400, detail="based_on_component_id must be null when based_on is CTC")
+                return {
+                    "value": value,
+                    "based_on": based_on,
+                    "based_on_component_id": None,
+                    "formula": None
+                }
+
+            if based_on != BasedOnType.COMPONENT:
+                raise HTTPException(status_code=400, detail="Invalid based_on value for calculation_type PERCENTAGE")
+            if based_on_component_id is None:
+                raise HTTPException(status_code=400, detail="based_on_component_id is required when based_on is COMPONENT")
+            if based_on_component_id == component.id:
+                raise HTTPException(status_code=400, detail="Component cannot depend on itself")
+
+            dep_mapping = db.query(StructureComponent).options(
+                joinedload(StructureComponent.component)
+            ).filter(
+                StructureComponent.structure_id == structure.id,
+                StructureComponent.component_id == based_on_component_id
+            ).first()
+            if not dep_mapping:
+                raise HTTPException(status_code=400, detail="Dependent component must be part of the same structure")
+            if dep_mapping.component.company_id != structure.company_id:
+                raise HTTPException(status_code=400, detail="Dependent Salary Component does not belong to this company")
+            if dep_mapping.sequence >= data.sequence:
+                raise HTTPException(status_code=400, detail="Dependent component must come before this component in sequence")
+
+            return {
+                "value": value,
+                "based_on": based_on,
+                "based_on_component_id": based_on_component_id,
+                "formula": None
+            }
+
+        if data.calculation_type == CalculationType.FORMULA:
+            if not formula:
+                raise HTTPException(status_code=400, detail="formula is required when calculation_type is FORMULA")
+            if value is not None:
+                raise HTTPException(status_code=400, detail="value must be null when calculation_type is FORMULA")
+            if based_on is not None or based_on_component_id is not None:
+                raise HTTPException(status_code=400, detail="based_on and based_on_component_id must be null when calculation_type is FORMULA")
+
+            structure_components = db.query(StructureComponent).options(
+                joinedload(StructureComponent.component)
+            ).filter(StructureComponent.structure_id == structure.id).all()
+            company_components = db.query(SalaryComponent).filter(
+                SalaryComponent.company_id == structure.company_id
+            ).all()
+            available_names = [comp.name for comp in company_components if comp.id != component.id]
+            referenced_names = SalaryStructureService._extract_formula_dependencies(
+                formula,
+                available_names,
+                component.name
+            )
+
+            if referenced_names:
+                name_to_mapping = {
+                    mapping.component.name: mapping
+                    for mapping in structure_components
+                    if mapping.component_id != component.id
+                }
+                for referenced_name in referenced_names:
+                    dep_mapping = name_to_mapping.get(referenced_name)
+                    if not dep_mapping:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Component '{referenced_name}' must be part of the same structure before it can be used in a formula."
+                        )
+                    if dep_mapping.sequence >= data.sequence:
+                        raise HTTPException(status_code=400, detail="Formula dependencies must come before this component in sequence")
+
+            return {
+                "value": None,
+                "based_on": None,
+                "based_on_component_id": None,
+                "formula": formula
+            }
+
+        raise HTTPException(status_code=400, detail="Unsupported calculation_type")
+
     @staticmethod
     def get_structure_component_by_id(db: Session, mapping_id: int):
         mapping = db.query(StructureComponent).options(
@@ -75,6 +243,7 @@ class SalaryStructureService:
                 "value": mapping.value,
                 "based_on": mapping.based_on,
                 "based_on_component_id": mapping.based_on_component_id,
+                "formula": mapping.formula,
                 "based_on_component_name": mapping.based_on_component.name if mapping.based_on_component else None,
                 "sequence": mapping.sequence,
                 "is_active": mapping.is_active
@@ -140,33 +309,19 @@ class SalaryStructureService:
             raise HTTPException(status_code=400, detail="This component is already part of this structure")
 
         # 4. Dependency Validation
-        if data.based_on == BasedOnType.COMPONENT:
-            if not data.based_on_component_id:
-                raise HTTPException(status_code=400, detail="based_on_component_id is required when based_on is COMPONENT")
-            
-            if data.based_on_component_id == data.component_id:
-                raise HTTPException(status_code=400, detail="Component cannot depend on itself")
-
-            dep_component = db.query(SalaryComponent).filter(
-                SalaryComponent.id == data.based_on_component_id
-            ).first()
-            if not dep_component:
-                raise HTTPException(status_code=404, detail="Dependent Salary Component not found")
-            if dep_component.company_id != structure.company_id:
-                raise HTTPException(status_code=400, detail="Dependent Salary Component does not belong to this company")
-
-            # Verify dependency exists in the same structure
-            dep_exists = db.query(StructureComponent).filter(
-                StructureComponent.structure_id == structure_id,
-                StructureComponent.component_id == data.based_on_component_id
-            ).first()
-            if not dep_exists:
-                raise HTTPException(status_code=400, detail="Dependent component must be added to the structure first")
+        validated_config = SalaryStructureService._validate_structure_component_config(db, structure, component, data)
 
         # 5. Create mapping
         db_mapping = StructureComponent(
             structure_id=structure_id,
-            **data.model_dump()
+            component_id=data.component_id,
+            calculation_type=data.calculation_type,
+            value=validated_config["value"],
+            based_on=validated_config["based_on"],
+            based_on_component_id=validated_config["based_on_component_id"],
+            formula=validated_config["formula"],
+            sequence=data.sequence,
+            is_active=data.is_active
         )
         db.add(db_mapping)
         try:
@@ -181,37 +336,13 @@ class SalaryStructureService:
     def update_structure_component(db: Session, mapping_id: int, data: StructureComponentUpdate):
         mapping = SalaryStructureService.get_structure_component_by_id(db, mapping_id)
         structure = mapping.structure
-
-        based_on_component_id = data.based_on_component_id
-        if data.based_on == BasedOnType.CTC:
-            based_on_component_id = None
-        elif not based_on_component_id:
-            raise HTTPException(status_code=400, detail="based_on_component_id is required when based_on is COMPONENT")
-
-        if based_on_component_id == mapping.component_id:
-            raise HTTPException(status_code=400, detail="Component cannot depend on itself")
-
-        if based_on_component_id is not None:
-            dep_component = db.query(SalaryComponent).filter(
-                SalaryComponent.id == based_on_component_id
-            ).first()
-            if not dep_component:
-                raise HTTPException(status_code=404, detail="Dependent Salary Component not found")
-            if dep_component.company_id != structure.company_id:
-                raise HTTPException(status_code=400, detail="Dependent Salary Component does not belong to this company")
-
-            dep_exists = db.query(StructureComponent).filter(
-                StructureComponent.structure_id == mapping.structure_id,
-                StructureComponent.component_id == based_on_component_id,
-                StructureComponent.id != mapping_id
-            ).first()
-            if not dep_exists:
-                raise HTTPException(status_code=400, detail="Dependent component must be part of the same structure")
+        validated_config = SalaryStructureService._validate_structure_component_config(db, structure, mapping.component, data)
 
         mapping.calculation_type = data.calculation_type
-        mapping.value = data.value
-        mapping.based_on = data.based_on
-        mapping.based_on_component_id = based_on_component_id
+        mapping.value = validated_config["value"]
+        mapping.based_on = validated_config["based_on"]
+        mapping.based_on_component_id = validated_config["based_on_component_id"]
+        mapping.formula = validated_config["formula"]
         mapping.sequence = data.sequence
         
         try:
