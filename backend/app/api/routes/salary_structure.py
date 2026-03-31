@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.db.database import get_db
-from app.db.models import StructureComponent
+from app.db.models import SalaryStructure, StructureComponent
 from app.schemas.salary_structure import (
     SalaryStructureCreate, SalaryStructureResponse, SalaryStructureDetailResponse,
     StructureComponentCreate, StructureComponentUpdate, SalaryComponentResponse,
@@ -95,6 +95,14 @@ def update_component_mapping(
         raise HTTPException(status_code=404, detail="Component mapping not found")
     
     return SalaryStructureService.update_structure_component(db, mapping_id, data)
+
+@router.patch("/components/{mapping_id}/status")
+def patch_component_mapping_status(
+    mapping_id: int,
+    data: SalaryStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    return SalaryStructureService.toggle_structure_component_status(db, mapping_id, data)
 
 @router.delete("/components/{mapping_id}")
 def delete_component_mapping(

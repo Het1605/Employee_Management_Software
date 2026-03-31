@@ -43,10 +43,11 @@ class StructureComponentCreate(StructureComponentBase):
     pass
 
 class StructureComponentUpdate(BaseModel):
-    calculation_type: Optional[CalculationType] = None
-    value: Optional[Decimal] = Field(None, ge=0)
-    sequence: Optional[int] = Field(None, gt=0)
-    is_active: Optional[bool] = None
+    calculation_type: CalculationType
+    value: Decimal = Field(..., ge=0)
+    based_on: BasedOnType
+    based_on_component_id: Optional[int] = None
+    sequence: int = Field(..., gt=0)
 
 class StructureComponentResponse(StructureComponentBase):
     id: int

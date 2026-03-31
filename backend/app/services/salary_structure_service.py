@@ -11,6 +11,16 @@ from app.schemas.salary_structure import (
 
 class SalaryStructureService:
     @staticmethod
+    def get_structure_component_by_id(db: Session, mapping_id: int):
+        mapping = db.query(StructureComponent).options(
+            joinedload(StructureComponent.structure),
+            joinedload(StructureComponent.component)
+        ).filter(StructureComponent.id == mapping_id).first()
+        if not mapping:
+            raise HTTPException(status_code=404, detail="Component mapping not found")
+        return mapping
+
+    @staticmethod
     def get_salary_structure_by_id(db: Session, structure_id: int, company_id: int):
         structure = db.query(SalaryStructure).filter(
             SalaryStructure.id == structure_id,
@@ -169,13 +179,40 @@ class SalaryStructureService:
 
     @staticmethod
     def update_structure_component(db: Session, mapping_id: int, data: StructureComponentUpdate):
-        mapping = db.query(StructureComponent).filter(StructureComponent.id == mapping_id).first()
-        if not mapping:
-            raise HTTPException(status_code=404, detail="Component mapping not found")
+        mapping = SalaryStructureService.get_structure_component_by_id(db, mapping_id)
+        structure = mapping.structure
 
-        update_data = data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(mapping, key, value)
+        based_on_component_id = data.based_on_component_id
+        if data.based_on == BasedOnType.CTC:
+            based_on_component_id = None
+        elif not based_on_component_id:
+            raise HTTPException(status_code=400, detail="based_on_component_id is required when based_on is COMPONENT")
+
+        if based_on_component_id == mapping.component_id:
+            raise HTTPException(status_code=400, detail="Component cannot depend on itself")
+
+        if based_on_component_id is not None:
+            dep_component = db.query(SalaryComponent).filter(
+                SalaryComponent.id == based_on_component_id
+            ).first()
+            if not dep_component:
+                raise HTTPException(status_code=404, detail="Dependent Salary Component not found")
+            if dep_component.company_id != structure.company_id:
+                raise HTTPException(status_code=400, detail="Dependent Salary Component does not belong to this company")
+
+            dep_exists = db.query(StructureComponent).filter(
+                StructureComponent.structure_id == mapping.structure_id,
+                StructureComponent.component_id == based_on_component_id,
+                StructureComponent.id != mapping_id
+            ).first()
+            if not dep_exists:
+                raise HTTPException(status_code=400, detail="Dependent component must be part of the same structure")
+
+        mapping.calculation_type = data.calculation_type
+        mapping.value = data.value
+        mapping.based_on = data.based_on
+        mapping.based_on_component_id = based_on_component_id
+        mapping.sequence = data.sequence
         
         try:
             db.commit()
@@ -184,6 +221,14 @@ class SalaryStructureService:
         except IntegrityError:
             db.rollback()
             raise HTTPException(status_code=400, detail="Database constraint violated (likely duplicate sequence)")
+
+    @staticmethod
+    def toggle_structure_component_status(db: Session, mapping_id: int, status_data: SalaryStatusUpdate):
+        mapping = SalaryStructureService.get_structure_component_by_id(db, mapping_id)
+        mapping.is_active = status_data.is_active
+        db.commit()
+        db.refresh(mapping)
+        return mapping
 
     @staticmethod
     def delete_structure_component(db: Session, mapping_id: int):
