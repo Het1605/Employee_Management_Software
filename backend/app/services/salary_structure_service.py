@@ -104,8 +104,11 @@ class SalaryStructureService:
             raise HTTPException(status_code=400, detail="Structure name already exists for this company")
 
     @staticmethod
-    def list_definitions(db: Session):
-        return db.query(SalaryStructureDefinition).all()
+    def list_definitions(db: Session, company_id: Optional[int] = None):
+        query = db.query(SalaryStructureDefinition)
+        if company_id is not None:
+            query = query.filter(SalaryStructureDefinition.company_id == company_id)
+        return query.all()
 
     @staticmethod
     def get_definition(db: Session, structure_id: int):
@@ -122,9 +125,10 @@ class SalaryStructureService:
             db.commit()
             db.refresh(definition)
             return definition
-        except IntegrityError:
+        except IntegrityError as exc:
             db.rollback()
-            raise HTTPException(status_code=400, detail="Structure name already exists for this company")
+            # uniqueness should ignore self; if still triggered, return meaningful message
+            raise HTTPException(status_code=400, detail="Structure name already exists for this company") from exc
 
     @staticmethod
     def delete_definition(db: Session, structure_id: int):
@@ -157,12 +161,27 @@ class SalaryStructureService:
         except IntegrityError:
             db.rollback()
             raise HTTPException(status_code=400, detail="Duplicate component for this structure")
-        return db.query(SalaryStructureDetail).filter(SalaryStructureDetail.structure_id == structure_id).all()
+        return SalaryStructureService.list_details(db, structure_id)
 
     @staticmethod
     def list_details(db: Session, structure_id: int):
         SalaryStructureService.get_definition(db, structure_id)
-        return db.query(SalaryStructureDetail).filter(SalaryStructureDetail.structure_id == structure_id).all()
+        rows = (
+            db.query(SalaryStructureDetail, SalaryComponent.name.label("component_name"))
+            .join(SalaryComponent, SalaryComponent.id == SalaryStructureDetail.component_id)
+            .filter(SalaryStructureDetail.structure_id == structure_id)
+            .all()
+        )
+        return [
+            {
+                "id": d.id,
+                "structure_id": d.structure_id,
+                "component_id": d.component_id,
+                "percentage": d.percentage,
+                "component_name": comp_name,
+            }
+            for d, comp_name in rows
+        ]
 
     @staticmethod
     def update_detail(db: Session, structure_id: int, component_id: int, data):
@@ -175,7 +194,14 @@ class SalaryStructureService:
         detail.percentage = data.percentage
         db.commit()
         db.refresh(detail)
-        return detail
+        comp_name = db.query(SalaryComponent.name).filter(SalaryComponent.id == detail.component_id).scalar()
+        return {
+            "id": detail.id,
+            "structure_id": detail.structure_id,
+            "component_id": detail.component_id,
+            "percentage": detail.percentage,
+            "component_name": comp_name,
+        }
 
     @staticmethod
     def delete_detail(db: Session, structure_id: int, component_id: int):

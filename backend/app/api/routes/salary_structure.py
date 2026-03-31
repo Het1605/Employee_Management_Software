@@ -25,8 +25,8 @@ def create_structure(data: SalaryStructureDefinitionCreate, db: Session = Depend
 
 
 @router.get("/", response_model=list[SalaryStructureDefinitionResponse])
-def list_structures(db: Session = Depends(get_db)):
-    return SalaryStructureService.list_definitions(db)
+def list_structures(company_id: int | None = None, db: Session = Depends(get_db)):
+    return SalaryStructureService.list_definitions(db, company_id)
 
 
 @router.get("/{structure_id}", response_model=SalaryStructureDefinitionResponse)

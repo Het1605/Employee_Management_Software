@@ -54,7 +54,7 @@ class SalaryStructureDefinitionResponse(BaseModel):
 
 class SalaryStructureDetailItem(BaseModel):
     component_id: int
-    percentage: Decimal = Field(..., gt=0)
+    percentage: Decimal = Field(..., ge=0)
 
 
 class SalaryStructureDetailCreate(BaseModel):
@@ -62,7 +62,7 @@ class SalaryStructureDetailCreate(BaseModel):
 
 
 class SalaryStructureDetailUpdate(BaseModel):
-    percentage: Decimal = Field(..., gt=0)
+    percentage: Decimal = Field(..., ge=0)
 
 
 class SalaryStructureDetailResponse(BaseModel):
@@ -70,6 +70,7 @@ class SalaryStructureDetailResponse(BaseModel):
     structure_id: int
     component_id: int
     percentage: Decimal
+    component_name: str
 
     class Config:
         from_attributes = True
