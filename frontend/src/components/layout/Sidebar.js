@@ -83,10 +83,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className={styles.navGroup}>
             <div className={styles.groupTitle}>Payroll</div>
             <div className={styles.subMenu}>
-              <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>
+              <NavLink 
+                to={`/${role.toLowerCase()}/salary-structure`} 
+                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
                 <span className={styles.icon}>💰</span>
                 <span className={styles.linkText}>Salary Structure</span>
-              </div>
+              </NavLink>
             </div>
             <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>
           </div>

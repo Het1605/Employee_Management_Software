@@ -6,7 +6,7 @@ from fastapi import Query
 
 from app.db.database import get_db
 from app.schemas.salary_structure import (
-    SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
+    SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse, SalaryStatusUpdate
 )
 from app.services.salary_structure_service import SalaryStructureService
 
@@ -43,6 +43,16 @@ def update_component(
     db: Session = Depends(get_db)
 ):
     return SalaryStructureService.update_salary_component(db, component_id,company_id, data)
+
+@router.patch("/{component_id}/status", response_model=SalaryComponentResponse)
+def patch_component_status(
+    component_id: int,
+    data: SalaryStatusUpdate,
+    company_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+    return SalaryStructureService.update_salary_component_status(db, component_id, company_id, data)
+
 @router.delete("/{component_id}")
 def delete_component(
     component_id: int,

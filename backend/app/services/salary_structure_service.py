@@ -79,6 +79,14 @@ class SalaryStructureService:
         db.commit()
         return {"detail": "Component deleted successfully"}
 
+    @staticmethod
+    def update_salary_component_status(db: Session, component_id: int, company_id: int, data):
+        component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
+        component.is_active = data.is_active
+        db.commit()
+        db.refresh(component)
+        return component
+
     # ---------- Salary Structure Definitions ----------
     @staticmethod
     def create_definition(db: Session, data):

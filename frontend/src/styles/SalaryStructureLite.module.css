@@ -1,0 +1,301 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #334155;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.selectorCard {
+  padding: 0.85rem 1.5rem;
+}
+
+.tabsWrap {
+  margin-top: 0.25rem;
+}
+
+.placeholderCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  color: #475569;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Components Tab */
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.tabTitles h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.tabSubtitle {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.componentGrid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.9rem;
+}
+
+.componentCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardName {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badgeEarning {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badgeDeduction {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badgeTaxable {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgeNonTaxable {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.statusToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 20px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px; width: 14px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+input:checked + .slider { background-color: #10b981; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.statusLabel {
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.iconBtn {
+  background: transparent;
+  border: none;
+  padding: 0.35rem;
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.iconBtn:hover {
+  background: #f1f5f9;
+  color: #3b82f6;
+}
+
+.iconBtn.delete:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.emptyCard {
+  border: 1px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  grid-column: 1 / -1;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem 1.4rem;
+  width: 480px;
+  max-width: 95%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.inputGroup label {
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.inputGroup input,
+.inputGroup select {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.secondaryBtn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryBtn {
+  border: none;
+  background: #3b82f6;
+  color: white;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .tabHeader { flex-direction: column; align-items: flex-start; }
+  .cardBottom { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+}
