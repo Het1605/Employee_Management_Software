@@ -1,5 +1,5 @@
 import React from 'react';
-import AppRouter from './routing/AppRouter';
+import AppRouter from './core/routing/AppRouter';
 import './styles/Global.css';
 
 import { ToastProvider } from './contexts/ToastContext';
