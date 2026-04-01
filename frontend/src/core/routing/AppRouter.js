@@ -20,6 +20,7 @@ import CompanyAssignment from '../../modules/company/pages/js/CompanyAssignment'
 import AdminCalendarManagement from '../../modules/calendar/pages/js/AdminCalendarManagement';
 import HRCalendarManagement from '../../modules/calendar/pages/js/HRCalendarManagement';
 import SalaryStructureManagement from '../../modules/payroll/pages/js/SalaryStructureManagement';
+import DocumentsPage from '../../modules/documents/pages/js/DocumentsPage';
 
 const AppRouter = () => {
   return (
@@ -150,6 +151,15 @@ const AppRouter = () => {
               <InternDashboard />
             </ProtectedRoute>
           }
+        />
+
+        <Route 
+          path="/documents" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <DocumentsPage />
+            </ProtectedRoute>
+          } 
         />
 
         {/* Fallback */}

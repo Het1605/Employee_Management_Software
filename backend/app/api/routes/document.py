@@ -26,12 +26,8 @@ def create_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)
 
 
 @router.get("/documents", response_model=list[GeneratedDocumentResponse])
-def list_documents(
-    company_id: int | None = None,
-    user_id: int | None = None,
-    db: Session = Depends(get_db),
-):
-    return DocumentService.list_documents(db, company_id, user_id)
+def list_documents(db: Session = Depends(get_db)):
+    return DocumentService.list_documents(db)
 
 
 @router.get("/documents/{document_id}", response_model=GeneratedDocumentResponse)

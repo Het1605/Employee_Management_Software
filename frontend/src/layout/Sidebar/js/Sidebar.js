@@ -95,6 +95,22 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>
           </div>
         )}
+
+        {(role === 'HR' || role === 'ADMIN') && (
+          <div className={styles.navGroup}>
+            <div className={styles.groupTitle}>Documents</div>
+            <div className={styles.subMenu}>
+              <NavLink 
+                to="/documents" 
+                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={handleLinkClick}
+              >
+                <span className={styles.icon}>📄</span>
+                <span className={styles.linkText}>Documents</span>
+              </NavLink>
+            </div>
+          </div>
+        )}
         
         <div className={styles.navGroup}>
           <div className={styles.groupTitle}>Self Service</div>

@@ -24,9 +24,7 @@ app.add_middleware(
 with engine.begin() as conn:
     conn.execute(text("DROP TABLE IF EXISTS structure_components CASCADE"))
     conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
-    conn.execute(text("DROP TABLE IF EXISTS generated_documents CASCADE"))
     conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
-    conn.execute(text("DROP TABLE IF EXISTS document_types CASCADE"))
 
 # 🔥 Create tables in DB
 Base.metadata.create_all(bind=engine)

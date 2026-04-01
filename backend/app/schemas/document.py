@@ -22,8 +22,6 @@ class DocumentStatus(str, Enum):
 
 
 class GeneratedDocumentCreate(BaseModel):
-    user_id: int
-    company_id: int
     document_type_id: int
     title: str = Field(..., min_length=2, max_length=200)
     content: str = Field(..., min_length=1)
@@ -46,8 +44,6 @@ class SendDocumentRequest(BaseModel):
 
 class GeneratedDocumentResponse(BaseModel):
     id: int
-    user_id: int
-    company_id: int
     document_type_id: int
     title: str
     content: str

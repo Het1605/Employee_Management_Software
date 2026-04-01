@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 import smtplib
 
 from app.core.config import settings
-from app.db.models import Company, DocumentType, GeneratedDocument, User
+from app.db.models import DocumentType, GeneratedDocument, User
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
@@ -45,13 +45,6 @@ class DocumentService:
         return db.query(DocumentType).order_by(DocumentType.name.asc()).all()
 
     @staticmethod
-    def _get_company(db: Session, company_id: int):
-        company = db.query(Company).filter(Company.id == company_id).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Company not found")
-        return company
-
-    @staticmethod
     def _get_user(db: Session, user_id: int):
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -74,16 +67,7 @@ class DocumentService:
 
     @staticmethod
     def create_document(db: Session, data: GeneratedDocumentCreate):
-        company = DocumentService._get_company(db, data.company_id)
-        user = DocumentService._get_user(db, data.user_id)
         DocumentService._get_document_type(db, data.document_type_id)
-
-        if not any(mapped_company.id == company.id for mapped_company in user.companies):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User is not assigned to the selected company",
-            )
-
         document = GeneratedDocument(**data.model_dump())
         db.add(document)
         db.commit()
@@ -102,15 +86,8 @@ class DocumentService:
         return document
 
     @staticmethod
-    def list_documents(db: Session, company_id: int | None = None, user_id: int | None = None):
-        query = db.query(GeneratedDocument)
-
-        if company_id is not None:
-            query = query.filter(GeneratedDocument.company_id == company_id)
-        if user_id is not None:
-            query = query.filter(GeneratedDocument.user_id == user_id)
-
-        return query.order_by(GeneratedDocument.created_at.desc()).all()
+    def list_documents(db: Session):
+        return db.query(GeneratedDocument).order_by(GeneratedDocument.created_at.desc()).all()
 
     @staticmethod
     def get_document(db: Session, document_id: int):
@@ -127,12 +104,6 @@ class DocumentService:
     def send_document(db: Session, document_id: int, payload: SendDocumentRequest):
         document = DocumentService._get_generated_document(db, document_id)
         user = DocumentService._get_user(db, payload.user_id)
-
-        if document.user_id != user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This document does not belong to the selected user",
-            )
 
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
             raise HTTPException(
