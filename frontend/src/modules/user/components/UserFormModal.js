@@ -139,6 +139,7 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
                 <option value="HR">HR</option>
                 <option value="MANAGER">MANAGER</option>
                 <option value="EMPLOYEE">EMPLOYEE</option>
+                <option value="INTERN">INTERN</option>
               </select>
             </div>
           </div>

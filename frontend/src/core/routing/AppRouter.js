@@ -14,6 +14,7 @@ import UserManagement from '../../modules/user/pages/js/UserManagement';
 import HRDashboard from '../../layout/dashboards/hr/js/HRDashboard';
 import ManagerDashboard from '../../layout/dashboards/manager/js/ManagerDashboard';
 import EmployeeDashboard from '../../layout/dashboards/employee/js/EmployeeDashboard';
+import InternDashboard from '../../layout/dashboards/intern/js/InternDashboard';
 import CompanyManagement from '../../modules/company/pages/js/CompanyManagement';
 import CompanyAssignment from '../../modules/company/pages/js/CompanyAssignment';
 import AdminCalendarManagement from '../../modules/calendar/pages/js/AdminCalendarManagement';
@@ -141,6 +142,14 @@ const AppRouter = () => {
               <EmployeeDashboard />
             </ProtectedRoute>
           } 
+        />
+        <Route
+          path="/intern"
+          element={
+            <ProtectedRoute allowedRoles={['INTERN']}>
+              <InternDashboard />
+            </ProtectedRoute>
+          }
         />
 
         {/* Fallback */}

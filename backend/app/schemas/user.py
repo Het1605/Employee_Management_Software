@@ -8,6 +8,7 @@ class UserRole(str, Enum):
     HR = "HR"
     MANAGER = "MANAGER"
     EMPLOYEE = "EMPLOYEE"
+    INTERN = "INTERN"
 
 class UserBase(BaseModel):
     first_name: str = Field(..., min_length=2, max_length=50)
