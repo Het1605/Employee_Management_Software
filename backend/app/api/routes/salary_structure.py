@@ -77,8 +77,8 @@ def assign_structure(data: UserSalaryStructureCreate, db: Session = Depends(get_
 
 
 @assign_router.get("/", response_model=list[UserSalaryStructureResponse])
-def list_assignments(db: Session = Depends(get_db)):
-    return SalaryStructureService.list_assignments(db)
+def list_assignments(company_id: int | None = None, db: Session = Depends(get_db)):
+    return SalaryStructureService.list_assignments(db, company_id)
 
 
 @assign_router.get("/{assignment_id}", response_model=UserSalaryStructureResponse)

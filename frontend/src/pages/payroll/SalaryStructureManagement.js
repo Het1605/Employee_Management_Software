@@ -13,12 +13,18 @@ const SalaryStructureManagement = () => {
   const [activeTab, setActiveTab] = useState('structures');
   const [componentsList, setComponentsList] = useState([]);
   const [loadingComponents, setLoadingComponents] = useState(false);
+  const [assignments, setAssignments] = useState([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState(null);
   const [structuresList, setStructuresList] = useState([]);
   const [loadingStructures, setLoadingStructures] = useState(false);
   const [structureModalOpen, setStructureModalOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState(null);
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
 
   useEffect(() => {
     const loadCompanies = async () => {
@@ -67,7 +73,7 @@ const SalaryStructureManagement = () => {
               const comps = await API.get(`/salary-structures/${d.id}/components`);
               const compRows = comps.data || [];
               const total = compRows.reduce((sum, r) => sum + Number(r.percentage || 0), 0);
-              return { ...d, components: compRows, total: Number(total.toFixed(2)) };
+              return { ...d, components: compRows, total };
             } catch {
               return { ...d, components: [], total: 0 };
             }
@@ -82,6 +88,54 @@ const SalaryStructureManagement = () => {
     };
     fetchStructures();
   }, [selectedCompanyId, showToast]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!selectedCompanyId) {
+        setUsers([]);
+        return;
+      }
+      setLoadingUsers(true);
+      try {
+        const res = await API.get(`/companies/${selectedCompanyId}/users`);
+        setUsers(res.data || []);
+      } catch (err) {
+        showToast('Failed to load users: ' + handleApiError(err), 'error');
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, [selectedCompanyId, showToast]);
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      if (!selectedCompanyId) {
+        setAssignments([]);
+        return;
+      }
+      setLoadingAssignments(true);
+      try {
+        const res = await API.get(`/user-salary-structures?company_id=${selectedCompanyId}`);
+        setAssignments(res.data || []);
+      } catch (err) {
+        showToast('Failed to load assignments: ' + handleApiError(err), 'error');
+      } finally {
+        setLoadingAssignments(false);
+      }
+    };
+    fetchAssignments();
+  }, [selectedCompanyId, showToast]);
+
+  const refreshAssignments = async () => {
+    if (!selectedCompanyId) return;
+    try {
+      const res = await API.get(`/user-salary-structures?company_id=${selectedCompanyId}`);
+      setAssignments(res.data || []);
+    } catch (err) {
+      showToast('Failed to load assignments: ' + handleApiError(err), 'error');
+    }
+  };
 
   return (
     <Layout title="Salary Structure Management">
@@ -109,7 +163,7 @@ const SalaryStructureManagement = () => {
           {[
             { id: 'components', label: 'Components' },
             { id: 'structures', label: 'Salary Structures' },
-            { id: 'assignment', label: 'Structure Assignment' },
+            { id: 'assignment', label: 'Salary Assignment' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -158,7 +212,7 @@ const SalaryStructureManagement = () => {
                     const comps = await API.get(`/salary-structures/${d.id}/components`);
                     const compRows = comps.data || [];
                     const total = compRows.reduce((sum, r) => sum + Number(r.percentage || 0), 0);
-                    return { ...d, components: compRows, total: Number(total.toFixed(2)) };
+                    return { ...d, components: compRows, total };
                   })
                 );
                 setStructuresList(withComponents);
@@ -174,10 +228,70 @@ const SalaryStructureManagement = () => {
             showToast={showToast}
             handleApiError={handleApiError}
           />
+        ) : activeTab === 'assignment' ? (
+          <AssignmentTab
+            companyId={selectedCompanyId}
+            users={users}
+            structures={structuresList}
+            assignments={assignments}
+            loading={loadingAssignments || loadingUsers}
+            onOpenModal={(assignment = null) => {
+              setEditingAssignment(assignment);
+              setAssignmentModalOpen(true);
+            }}
+            onDelete={async (assignment) => {
+              if (!window.confirm('Are you sure you want to delete this assignment?')) return;
+              try {
+                await API.delete(`/user-salary-structures/${assignment.id}`);
+                refreshAssignments();
+                showToast('Assignment deleted', 'success');
+              } catch (err) {
+                showToast('Delete failed: ' + handleApiError(err), 'error');
+              }
+            }}
+          />
         ) : (
           <div className={styles.placeholderCard}>
             <p>Select a company and a tab to continue. Functionality coming soon.</p>
           </div>
+        )}
+
+        {(assignmentModalOpen || editingAssignment) && (
+          <AssignmentModal
+            isOpen={assignmentModalOpen}
+            onClose={async (data) => {
+              if (!data) {
+                setAssignmentModalOpen(false);
+                setEditingAssignment(null);
+                return;
+              }
+
+              try {
+                if (editingAssignment) {
+                  await API.put(`/user-salary-structures/${editingAssignment.id}`, {
+                    user_id: data.user_id,
+                    structure_id: data.structure_id,
+                  });
+                  showToast('Assignment updated', 'success');
+                } else {
+                  await API.post('/user-salary-structures', {
+                    user_id: data.user_id,
+                    structure_id: data.structure_id,
+                  });
+                  showToast('Assignment created', 'success');
+                }
+                setAssignmentModalOpen(false);
+                setEditingAssignment(null);
+                refreshAssignments();
+              } catch (err) {
+                showToast('Save failed: ' + handleApiError(err), 'error');
+              }
+            }}
+            users={users}
+            structures={structuresList}
+            companyId={selectedCompanyId}
+            editData={editingAssignment}
+          />
         )}
       </div>
     </Layout>
@@ -201,6 +315,125 @@ const TrashIcon = () => (
     <line x1="14" y1="11" x2="14" y2="17"></line>
   </svg>
 );
+
+const AssignmentTab = ({ companyId, users, structures, assignments, loading, onOpenModal, onDelete }) => {
+  const userMap = users.reduce((acc, user) => ({
+    ...acc,
+    [user.id]: user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+  }), {});
+  const structureMap = structures.reduce((acc, st) => ({ ...acc, [st.id]: st.structure_name || st.name }), {});
+
+  return (
+    <div className="management-card">
+      <div className="management-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="titles">
+          <h3>User Salary Assignment</h3>
+          <p className="subtitle">Assign salary structures to users based on company</p>
+        </div>
+        <div className="action-buttons">
+          <button className="btn-primary-action" onClick={() => onOpenModal(null)} disabled={!companyId}>+ Create Assignment</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className={styles.placeholderCard}>Loading assignments...</div>
+      ) : assignments.length === 0 ? (
+        <div className={styles.placeholderCard}>No salary structures assigned to users yet</div>
+      ) : (
+        <div className={styles.structureCard} style={{ boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+          <table className={styles.structureTable}>
+            <thead>
+              <tr>
+                <th>Users</th>
+                <th>Assigned Structure</th>
+                <th style={{ width: '120px' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignments.map((assignment) => (
+                <tr key={assignment.id}>
+                  <td>{userMap[assignment.user_id] || `User ${assignment.user_id}`}</td>
+                  <td>{structureMap[assignment.structure_id] || `Structure ${assignment.structure_id}`}</td>
+                  <td>
+                    <div className={styles.inlineActions}>
+                      <button className={styles.iconBtn} onClick={() => onOpenModal(assignment)} title="Edit">
+                        <EditIcon />
+                      </button>
+                      <button className={`${styles.iconBtn} ${styles.delete}`} onClick={() => onDelete(assignment)} title="Delete">
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editData }) => {
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedStructure, setSelectedStructure] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (editData) {
+      setSelectedUser(editData.user_id || '');
+      setSelectedStructure(editData.structure_id || '');
+    } else {
+      setSelectedUser('');
+      setSelectedStructure('');
+    }
+  }, [isOpen, editData]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedUser || !selectedStructure) return;
+    onClose({ user_id: Number(selectedUser), structure_id: Number(selectedStructure) });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onMouseDown={() => onClose(null)}>
+      <div className={styles.modalCard} onMouseDown={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3>{editData ? 'Edit Assignment' : 'Assign Salary Structure'}</h3>
+          <button className={styles.closeBtn} onClick={() => onClose(null)} aria-label="Close">&times;</button>
+        </div>
+        <form className={styles.formGrid} onSubmit={handleSubmit}>
+          <div className={styles.inputGroup}>
+            <label>User</label>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} required>
+              <option value="" disabled>Select user</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>{user.full_name || `${user.first_name} ${user.last_name}`.trim()}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.inputGroup}>
+            <label>Salary Structure</label>
+            <select value={selectedStructure} onChange={(e) => setSelectedStructure(e.target.value)} required>
+              <option value="" disabled>Select structure</option>
+              {structures
+                .filter((s) => Number(s.company_id) === Number(companyId))
+                .map((structure) => (
+                  <option key={structure.id} value={structure.id}>{structure.structure_name || structure.name}</option>
+                ))}
+            </select>
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className={styles.secondaryBtn} onClick={() => onClose(null)}>Cancel</button>
+            <button type="submit" className={styles.primaryBtn}>Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const ComponentsTab = ({ components, setComponents, isModalOpen, setIsModalOpen, editingComponent, setEditingComponent, loading, companyId, refreshComponents, showToast, handleApiError }) => {
   const openModal = (comp = null) => {
@@ -255,13 +488,15 @@ const ComponentsTab = ({ components, setComponents, isModalOpen, setIsModalOpen,
   };
 
   return (
-    <div>
-      <div className={styles.tabHeader}>
-        <div className={styles.tabTitles}>
+    <div className="management-card">
+      <div className="management-header">
+        <div className="titles">
           <h3>Manage Components</h3>
-          <p className={styles.tabSubtitle}>Create and manage salary components such as Basic, HRA, PF, etc.</p>
+          <p className="subtitle">Create and manage salary components such as Basic, HRA, PF, etc.</p>
         </div>
-        <button className={`btn-primary-action ${styles.noWrapBtn}`} onClick={() => openModal(null)}>+ Add Component</button>
+        <div className="action-buttons">
+          <button className={`btn-primary-action ${styles.noWrapBtn}`} onClick={() => openModal(null)}>+ Add Component</button>
+        </div>
       </div>
 
       <div className={styles.componentGrid}>
@@ -458,17 +693,19 @@ const StructuresTab = ({ companyId, components, structures, refreshStructures, i
   };
 
   return (
-    <div>
-      <div className={styles.tabHeader}>
-        <div className={styles.tabTitles}>
+    <div className="management-card">
+      <div className="management-header">
+        <div className="titles">
           <h3>Manage Salary Structures</h3>
-          <p className={styles.tabSubtitle}>
+          <p className="subtitle">
             Create and manage salary structures by defining percentage distribution across all components (all percentages are strictly based on CTC).
           </p>
         </div>
-        <button className={`btn-primary-action ${styles.noWrapBtn}`} onClick={() => openModal(null)} disabled={!companyId || components.length === 0}>
-          + Create Structure
-        </button>
+        <div className="action-buttons">
+          <button className={`btn-primary-action ${styles.noWrapBtn}`} onClick={() => openModal(null)} disabled={!companyId || components.length === 0}>
+            + Create Structure
+          </button>
+        </div>
       </div>
 
       {!companyId ? (
@@ -548,8 +785,7 @@ const StructuresTab = ({ companyId, components, structures, refreshStructures, i
 const formatPercent = (val) => {
   const num = Number(val);
   if (Number.isNaN(num)) return val;
-  const fixed = Number(num.toFixed(4));
-  return Number(fixed % 1 === 0 ? fixed.toFixed(0) : fixed.toString());
+  return Number.isFinite(num) ? Number(num.toString()) : val;
 };
 
 const StructureModal = ({ isOpen, onClose, components, editData }) => {
@@ -570,7 +806,7 @@ const StructureModal = ({ isOpen, onClose, components, editData }) => {
       setName(editData.structure_name || editData.name || '');
       const initial = {};
       editData.components.forEach((c) => {
-        initial[c.component_id] = c.percentage;
+        initial[c.component_id] = Number(c.percentage);
       });
       setPercentages(initial);
     } else {
@@ -603,7 +839,7 @@ const StructureModal = ({ isOpen, onClose, components, editData }) => {
         component_name: c.name,
         percentage: Number(percentages[c.id] || 0),
       })),
-      total: Number(total.toFixed(2)),
+      total,
     };
     onClose(payload);
   };
@@ -655,10 +891,10 @@ const StructureModal = ({ isOpen, onClose, components, editData }) => {
                         <tr key={c.id}>
                           <td>{c.name}</td>
                           <td>
-                            <input
+                              <input
                               type="number"
                               min="0"
-                              step="0.01"
+                              step="any"
                               value={percentages[c.id] ?? 0}
                               onChange={(e) => updatePercentage(c.id, e.target.value)}
                               style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}
@@ -669,9 +905,9 @@ const StructureModal = ({ isOpen, onClose, components, editData }) => {
                     </tbody>
                   </table>
                 </div>
-                <div className={styles.totalRow}>Total: {total.toFixed(2)}%</div>
+                <div className={styles.totalRow}>Total: {formatPercent(total)}%</div>
                 {!totalValid && <div className={styles.errorText}>Total percentage must be 100%</div>}
-                {totalValid && hasComponents && <div className={styles.successText}>Total looks good.</div>}
+                {totalValid && hasComponents && <div className={styles.successText}>Total is valid (100%).</div>}
               </div>
             )}
 

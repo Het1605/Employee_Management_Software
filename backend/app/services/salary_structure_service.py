@@ -234,8 +234,15 @@ class SalaryStructureService:
             raise HTTPException(status_code=400, detail="Assignment already exists or invalid")
 
     @staticmethod
-    def list_assignments(db: Session):
-        return db.query(UserSalaryStructure).all()
+    def list_assignments(db: Session, company_id: Optional[int] = None):
+        query = db.query(UserSalaryStructure)
+        if company_id is not None:
+            query = (
+                query
+                .join(SalaryStructureDefinition, SalaryStructureDefinition.id == UserSalaryStructure.structure_id)
+                .filter(SalaryStructureDefinition.company_id == company_id)
+            )
+        return query.all()
 
     @staticmethod
     def get_assignment(db: Session, assignment_id: int):
