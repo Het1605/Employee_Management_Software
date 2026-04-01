@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, CheckConstraint, Boolean, Enum, Numeric, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, CheckConstraint, Boolean, Enum, Numeric, UniqueConstraint, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -19,6 +19,7 @@ class User(Base):
 
     # Relationships
     companies = relationship("Company", secondary="user_company_mapping", back_populates="users")
+    generated_documents = relationship("GeneratedDocument", back_populates="user", cascade="all, delete-orphan")
 
 class Company(Base):
     __tablename__ = "companies"
@@ -44,6 +45,7 @@ class Company(Base):
     users = relationship("User", secondary="user_company_mapping", back_populates="companies")
     salary_components = relationship("SalaryComponent", back_populates="company", cascade="all, delete-orphan")
     salary_structure_definitions = relationship("SalaryStructureDefinition", back_populates="company", cascade="all, delete-orphan")
+    generated_documents = relationship("GeneratedDocument", back_populates="company", cascade="all, delete-orphan")
 
 class UserCompanyMapping(Base):
     __tablename__ = "user_company_mapping"
@@ -125,3 +127,33 @@ class UserSalaryStructure(Base):
 
     structure = relationship("SalaryStructureDefinition", back_populates="user_assignments")
     user = relationship("User")
+
+
+class DocumentType(Base):
+    __tablename__ = "document_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    code = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    generated_documents = relationship("GeneratedDocument", back_populates="document_type")
+
+class GeneratedDocument(Base):
+    __tablename__ = "generated_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    document_type_id = Column(Integer, ForeignKey("document_types.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    file_url = Column(String, nullable=True)
+    file_name = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="draft")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="generated_documents")
+    company = relationship("Company", back_populates="generated_documents")
+    document_type = relationship("DocumentType", back_populates="generated_documents")

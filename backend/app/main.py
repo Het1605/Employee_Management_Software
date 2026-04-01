@@ -4,8 +4,10 @@ from sqlalchemy import text
 from app.db.database import Base, engine
 from app.db import models
 from app.models import calendar  # Register Calendar models to Base
-from app.api.routes import auth, users, company, calendar, salary_component, salary_structure
+from app.api.routes import auth, users, company, calendar, salary_component, salary_structure, document
 from app.core.config import settings
+from app.db.database import SessionLocal
+from app.services.document_service import DocumentService
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -22,9 +24,15 @@ app.add_middleware(
 with engine.begin() as conn:
     conn.execute(text("DROP TABLE IF EXISTS structure_components CASCADE"))
     conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
+    conn.execute(text("DROP TABLE IF EXISTS generated_documents CASCADE"))
+    conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
+    conn.execute(text("DROP TABLE IF EXISTS document_types CASCADE"))
 
 # 🔥 Create tables in DB
 Base.metadata.create_all(bind=engine)
+
+with SessionLocal() as db:
+    DocumentService.seed_document_types(db)
 
 app.include_router(auth.router)
 app.include_router(users.router)
@@ -33,6 +41,7 @@ app.include_router(calendar.router)
 app.include_router(salary_component.router)
 app.include_router(salary_structure.router)
 app.include_router(salary_structure.assign_router)
+app.include_router(document.router)
 
 @app.get("/")
 def home():
