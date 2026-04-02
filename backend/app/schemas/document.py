@@ -40,6 +40,7 @@ class GeneratedDocumentUpdate(BaseModel):
 
 class SendDocumentRequest(BaseModel):
     user_id: int
+    document_id: int
 
 
 class GeneratedDocumentResponse(BaseModel):

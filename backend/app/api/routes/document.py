@@ -28,6 +28,10 @@ def create_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)
 def generate_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)):
     return DocumentService.generate_document_pdf(db, data)
 
+@router.post("/documents/send")
+def send_document(data: SendDocumentRequest, db: Session = Depends(get_db)):
+    return DocumentService.send_document_email(db, data)
+
 
 @router.get("/documents", response_model=list[GeneratedDocumentResponse])
 def list_documents(db: Session = Depends(get_db)):
@@ -48,7 +52,3 @@ def update_document(document_id: int, data: GeneratedDocumentUpdate, db: Session
 def delete_document(document_id: int, db: Session = Depends(get_db)):
     return DocumentService.delete_document(db, document_id)
 
-
-@router.post("/documents/{document_id}/send")
-def send_document(document_id: int, data: SendDocumentRequest, db: Session = Depends(get_db)):
-    return DocumentService.send_document(db, document_id, data)

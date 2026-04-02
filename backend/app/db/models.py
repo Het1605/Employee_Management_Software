@@ -151,3 +151,14 @@ class GeneratedDocument(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     document_type = relationship("DocumentType", back_populates="generated_documents")
+
+
+class SentDocument(Base):
+    __tablename__ = "sent_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("generated_documents.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    status = Column(String, nullable=False)
+    error_message = Column(Text, nullable=True)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())

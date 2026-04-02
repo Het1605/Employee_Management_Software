@@ -7,9 +7,11 @@ import os
 import time
 import re
 from weasyprint import HTML
+from email.mime.base import MIMEBase
+from email import encoders
 
 from app.core.config import settings
-from app.db.models import DocumentType, GeneratedDocument, User
+from app.db.models import DocumentType, GeneratedDocument, User, SentDocument
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
@@ -139,35 +141,73 @@ class DocumentService:
         return {"message": "Document deleted successfully"}
 
     @staticmethod
-    def send_document(db: Session, document_id: int, payload: SendDocumentRequest):
-        document = DocumentService._get_generated_document(db, document_id)
+    def send_document_email(db: Session, payload: SendDocumentRequest):
+        document = DocumentService._get_generated_document(db, payload.document_id)
         user = DocumentService._get_user(db, payload.user_id)
 
-        if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="SMTP credentials are not configured",
-            )
-
-        message = MIMEMultipart()
-        message["From"] = settings.SMTP_USER
-        message["To"] = user.email
-        message["Subject"] = document.title
-        message.attach(MIMEText(document.content, "html"))
+        sent_status = "failed"
+        error_msg = None
 
         try:
+            if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="SMTP credentials are not configured",
+                )
+
+            # Resolve file path from file_url
+            file_path = None
+            if document.file_url:
+                relative = document.file_url.lstrip("/")
+                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+                candidate = os.path.join(base_dir, relative)
+                if os.path.isfile(candidate):
+                    file_path = candidate
+
+            if not file_path:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Document file not found on server",
+                )
+
+            message = MIMEMultipart()
+            message["From"] = settings.SMTP_USER
+            message["To"] = user.email
+            message["Subject"] = f"Your Document - {document.title}"
+            body = "Hello,\n\nPlease find your document attached.\n\nRegards,\nHR Team"
+            message.attach(MIMEText(body, "plain"))
+
+            with open(file_path, "rb") as f:
+                mime_part = MIMEBase("application", "pdf")
+                mime_part.set_payload(f.read())
+                encoders.encode_base64(mime_part)
+                mime_part.add_header("Content-Disposition", f'attachment; filename="{document.file_name or "document.pdf"}"')
+                message.attach(mime_part)
+
             server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(message)
             server.quit()
+            sent_status = "sent"
         except Exception as exc:
+            error_msg = str(exc)
+            if isinstance(exc, HTTPException):
+                raise
+        finally:
+            record = SentDocument(
+                document_id=document.id,
+                user_id=user.id,
+                status=sent_status,
+                error_message=error_msg,
+            )
+            db.add(record)
+            db.commit()
+
+        if sent_status != "sent":
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to send email: {exc}",
-            ) from exc
+                detail=error_msg or "Failed to send email",
+            )
 
-        document.status = "sent"
-        db.commit()
-        db.refresh(document)
-        return {"message": "Document sent successfully", "document_id": document.id, "status": document.status}
+        return {"message": "Email sent successfully"}
