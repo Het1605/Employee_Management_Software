@@ -8,6 +8,8 @@ from app.api.routes import auth, users, company, calendar, salary_component, sal
 from app.core.config import settings
 from app.db.database import SessionLocal
 from app.services.document_service import DocumentService
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -31,6 +33,10 @@ Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as db:
     DocumentService.seed_document_types(db)
+
+uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploads'))
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(users.router)

@@ -13,7 +13,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [documentTypeId, setDocumentTypeId] = useState('');
   const [content, setContent] = useState(defaultContent);
   const [documentTypes, setDocumentTypes] = useState([]);
-  const [saving, setSaving] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [loadingList, setLoadingList] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const canSave = useMemo(() => title.trim().length >= 2 && content.trim().length > 0 && documentTypeId, [title, content, documentTypeId]);
 
@@ -29,30 +32,50 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     fetchTypes();
   }, [showToast]);
 
+  const fetchDocuments = async () => {
+    try {
+      setLoadingList(true);
+      const res = await API.get('/documents');
+      setDocuments(res.data || []);
+    } catch (err) {
+      showToast('Failed to load documents: ' + handleApiError(err), 'error');
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'list') {
+      fetchDocuments();
+    }
+  }, [activeView]);
+
   const resetForm = () => {
     setTitle('');
     setDocumentTypeId('');
     setContent(defaultContent);
   };
 
-  const handleSave = async () => {
-    if (!canSave) return;
-    setSaving(true);
+  const handleGeneratePdf = async () => {
+    if (!canSave) {
+      showToast('Please add a title, type, and content before generating.', 'error');
+      return;
+    }
+    setGenerating(true);
     try {
-      await API.post('/documents', {
+      await API.post('/documents/generate', {
         title: title.trim(),
-        content,
         document_type_id: Number(documentTypeId),
-        status: 'draft',
+        content,
       });
-      showToast('Letter saved', 'success');
+      await fetchDocuments();
+      showToast('Document generated successfully', 'success');
       resetForm();
       setActiveView('list');
-      // TODO: refresh list once list view is implemented
     } catch (err) {
-      showToast('Save failed: ' + handleApiError(err), 'error');
+      showToast('Generate failed: ' + handleApiError(err), 'error');
     } finally {
-      setSaving(false);
+      setGenerating(false);
     }
   };
 
@@ -65,11 +88,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
             <p className="subtitle">Write and create official letter</p>
           </div>
           <div className="action-buttons" style={{ gap: '0.5rem' }}>
-            <button className="btn-secondary" onClick={() => setActiveView('list')} disabled={saving}>
+            <button className="btn-secondary" onClick={() => setActiveView('list')}>
               Cancel
             </button>
-            <button className="btn-primary-action" onClick={handleSave} disabled={!canSave || saving}>
-              {saving ? 'Saving...' : 'Save'}
+            <button className="btn-primary-action" onClick={handleGeneratePdf} disabled={generating}>
+              {generating ? 'Generating...' : 'Generate PDF'}
             </button>
           </div>
         </div>
@@ -106,7 +129,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 height: 460,
                 menubar: true,
                 menu: {
-                  file: { title: 'File', items: 'preview print' },
+                  file: { title: 'File', items: 'preview' },
                   edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
                   view: { title: 'View', items: 'code visualaid visualblocks preview fullscreen' },
                   insert: { title: 'Insert', items: 'link image media table charmap hr insertdatetime' },
@@ -116,25 +139,44 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   help: { title: 'Help', items: 'help' },
                 },
                 plugins: [
-                  'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+                  'advlist', 'autolink', 'lists', 'link', 'image', 'imagetools', 'charmap', 'preview', 'anchor',
                   'searchreplace', 'visualblocks', 'code', 'fullscreen',
                   'insertdatetime', 'media', 'table', 'help', 'wordcount'
                 ],
                 toolbar:
                   'undo redo | formatselect fontselect fontsizeselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | table | removeformat code fullscreen',
+                image_toolbar: 'alignleft aligncenter alignright | rotateleft rotateright | scaleX scaleY',
+                quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote | alignleft aligncenter alignright',
+                object_resizing: true,
+                image_advtab: true,
+                image_caption: true,
                 paste_data_images: true,
-                images_upload_handler: (blobInfo, success, failure) => {
-                  try {
-                    const base64 = blobInfo.base64();
-                    success(`data:${blobInfo.blob().type};base64,${base64}`);
-                  } catch (err) {
-                    failure('Image upload failed');
-                  }
+                file_picker_types: 'image',
+                file_picker_callback: (callback) => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const base64 = reader.result;
+                      if (typeof base64 === 'string') {
+                        callback(base64, { title: file.name });
+                      }
+                    };
+                    reader.onerror = () => {
+                      // TinyMCE failure handler is not provided here; rely on images_upload_handler for errors
+                    };
+                    reader.readAsDataURL(file);
+                  };
+                  input.click();
                 },
                 branding: false,
                 statusbar: true,
                 content_style:
-                  'body { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; }',
+                  'body { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; }',
               }}
             />
           </div>
@@ -157,7 +199,75 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         </div>
       </div>
 
-      <div className={styles.placeholderArea}></div>
+      {documents.length === 0 ? (
+        <div className={styles.placeholderArea}>{loadingList ? 'Loading documents...' : 'No saved documents yet. Use "Create Letter" to add one.'}</div>
+      ) : (
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Created Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((doc) => (
+                <tr key={doc.id}>
+                  <td>{doc.title}</td>
+                  <td>{doc.document_type}</td>
+                  <td>{new Date(doc.created_at).toLocaleDateString()}</td>
+                  <td className={styles.actionsCell}>
+                    {doc.file_url && (
+                      <button className="btn-primary-action" onClick={() => window.open(doc.file_url, '_blank')}>
+                        Download
+                      </button>
+                    )}
+                    <button className="btn-secondary" onClick={() => setPreviewDoc(doc)}>View</button>
+                    <button
+                      className="btn-secondary"
+                      onClick={async () => {
+                        try {
+                          await API.delete(`/documents/${doc.id}`);
+                          await fetchDocuments();
+                          showToast('Document deleted', 'success');
+                        } catch (err) {
+                          showToast('Delete failed: ' + handleApiError(err), 'error');
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {previewDoc && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>{previewDoc.title}</h3>
+                <p className={styles.modalSubtitle}>{previewDoc.document_type}</p>
+              </div>
+              <div className={styles.modalActions}>
+                {previewDoc.file_url && (
+                  <button className="btn-secondary" onClick={() => window.open(previewDoc.file_url, '_blank')}>
+                    Download
+                  </button>
+                )}
+                <button className="btn-primary-action" onClick={() => setPreviewDoc(null)}>Close</button>
+              </div>
+            </div>
+            <div className={styles.modalBody} dangerouslySetInnerHTML={{ __html: previewDoc.content }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

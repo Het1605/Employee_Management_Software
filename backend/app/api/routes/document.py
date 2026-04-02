@@ -24,6 +24,10 @@ def list_document_types(db: Session = Depends(get_db)):
 def create_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)):
     return DocumentService.create_document(db, data)
 
+@router.post("/documents/generate", response_model=GeneratedDocumentResponse, status_code=status.HTTP_201_CREATED)
+def generate_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)):
+    return DocumentService.generate_document_pdf(db, data)
+
 
 @router.get("/documents", response_model=list[GeneratedDocumentResponse])
 def list_documents(db: Session = Depends(get_db)):

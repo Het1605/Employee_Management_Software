@@ -3,6 +3,10 @@ from fastapi import HTTPException, status
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+import os
+import time
+import re
+from weasyprint import HTML
 
 from app.core.config import settings
 from app.db.models import DocumentType, GeneratedDocument, User
@@ -69,6 +73,40 @@ class DocumentService:
     def create_document(db: Session, data: GeneratedDocumentCreate):
         DocumentService._get_document_type(db, data.document_type_id)
         document = GeneratedDocument(**data.model_dump())
+        db.add(document)
+        db.commit()
+        db.refresh(document)
+        return document
+
+    @staticmethod
+    def _slugify(value: str) -> str:
+        value = re.sub(r'[^a-zA-Z0-9\\-\\s]', '', value)
+        value = re.sub(r'\\s+', '-', value.strip())
+        return value.lower() or 'document'
+
+    @staticmethod
+    def generate_document_pdf(db: Session, data: GeneratedDocumentCreate):
+        DocumentService._get_document_type(db, data.document_type_id)
+
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        upload_dir = os.path.join(base_dir, 'uploads', 'documents')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = f"{DocumentService._slugify(data.title)}_{int(time.time())}.pdf"
+        file_path = os.path.join(upload_dir, filename)
+
+        HTML(string=data.content).write_pdf(file_path)
+
+        file_url = f"/uploads/documents/{filename}"
+
+        payload = data.model_dump()
+        payload.update({
+            "file_url": file_url,
+            "file_name": filename,
+            "status": "generated",
+        })
+
+        document = GeneratedDocument(**payload)
         db.add(document)
         db.commit()
         db.refresh(document)
