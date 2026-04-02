@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import API from '../../../../core/api/apiClient';
 import { useToast } from '../../../../contexts/ToastContext';
 import { handleApiError } from '../../../../utils/errorHandler';
+import { generateTemplateContent } from '../../templates';
+import { OfferLetterForm1 } from '../../templates/offerLetter/OfferLetterForm/OfferLetterForm1';
+import { OfferLetterPreview1 } from '../../templates/offerLetter/OfferLetterPreview/OfferLetterPreview1';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -101,80 +104,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     reader.readAsDataURL(file);
   };
 
-  const buildHtmlContent = () => {
-    const safe = (v) => v || '';
-    const hW = headerWidth || '100%';
-    const hH = headerHeight || 'auto';
-    const fW = footerWidth || '100%';
-    const fH = footerHeight || 'auto';
-    const sW = signatureWidth || '120px';
-    const sH = signatureHeight || 'auto';
-    return `
-    <html>
-      <head>
-        <style>
-          @page { size: A4; margin: 0; }
-          * { box-sizing: border-box; }
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; line-height: 1.5; }
-          .page { width: 794px; min-height: 1123px; margin: 0 auto; position: relative; }
-          .header { width: 100%; margin: 0; padding: 0; }
-          .header img { width: 100%; display: block; margin: 0; padding: 0; }
-          .content-area { padding: 40px; }
-          .content { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
-          .content p { margin: 8px 0; line-height: 1.5; }
-          .top-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-          .date { text-align: right; max-width: 40%; }
-          .footer { width: 100%; position: absolute; bottom: 0; left: 0; }
-          .footer img { width: 100%; display: block; }
-          img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
-          .spacer-xl { height: 16px; }
-          .signature { margin-top: 32px; text-align: right; }
-          .signature .sig-img { display: inline-block; }
-        </style>
-      </head>
-      <body>
-        <div class="page">
-          <div class="header">
-            ${headerData ? `<img class="header-img" src="${headerData}" alt="Header" style="width:${hW}; height:${hH};" />` : ''}
-          </div>
-          <div class="content-area">
-            <div class="spacer-xl"></div>
-            <div style="text-align:center;"><h2>OFFER LETTER</h2></div>
-            <div class="top-row">
-              <div><strong>To:</strong> <strong>${safe(username)}</strong></div>
-              <div class="date"><strong>Date:</strong> <strong>${safe(offerDate)}</strong></div>
-            </div>
-            <div class="spacer-xl"></div>
-            <div class="content">
-              <p><strong>Dear ${safe(username)},</strong></p>
-
-              <p>We are pleased to offer you the position of <strong>${safe(position)}</strong> at <strong>${safe(companyName)}</strong>. Based on your skills, experience, and interview performance, we are confident that you will be a valuable addition to our organization.</p>
-
-              <p>Your employment with us will commence from <strong>${safe(startDate)}</strong>. You will be expected to carry out your responsibilities diligently and contribute effectively to the growth and success of the team and the company.</p>
-
-              <p>During your tenure, you will be involved in various projects and assignments aligned with your role. You are expected to maintain professionalism, follow company policies, and demonstrate a strong commitment to quality and timely delivery of work.</p>
-
-              <p>This offer is subject to the terms and conditions of employment, including company policies, code of conduct, and performance expectations. Further details regarding your role, responsibilities, and compensation structure will be shared with you separately.</p>
-
-              <p>We are excited to have you join our team and look forward to a successful and mutually beneficial association. We wish you a rewarding career with <strong>${safe(companyName)}</strong>.</p>
-
-              <div class="spacer-xl"></div>
-              <div class="signature">
-                <p><strong>Sincerely,</strong></p>
-                ${signatureData ? `<div class="sig-img"><img src="${signatureData}" alt="Signature" style="width:${sW}; height:${sH};" /></div>` : ''}
-                <p>${safe(signerName)}</p>
-                <p>${safe(signerRole)}</p>
-              </div>
-            </div>
-          </div>
-          <div class="footer">
-            ${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}
-          </div>
-        </div>
-      </body>
-    </html>
-    `;
-  };
+  const handleHeaderUpload = (files) => toDataUrl(files?.[0], setHeaderImg, setHeaderData);
+  const handleSignatureUpload = (files) => toDataUrl(files?.[0], setSignatureImg, setSignatureData);
+  const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
 
   const handleGeneratePdf = async () => {
     if (!title.trim() || !documentTypeId || !username.trim() || !position.trim() || !companyName.trim() || !startDate || !headerData || !signatureData || !signerName.trim() || !signerRole.trim()) {
@@ -183,7 +115,26 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     }
     setGenerating(true);
     try {
-      const content = buildHtmlContent();
+      const content = generateTemplateContent({
+        title,
+        documentTypeId,
+        username,
+        position,
+        companyName,
+        startDate,
+        offerDate,
+        headerData,
+        footerData,
+        signatureData,
+        signerName,
+        signerRole,
+        headerWidth,
+        headerHeight,
+        footerWidth,
+        footerHeight,
+        signatureWidth,
+        signatureHeight,
+      });
       await API.post('/documents/generate', {
         title: title.trim(),
         document_type_id: Number(documentTypeId),
@@ -238,133 +189,57 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
 
         {documentTypeId && (
           <div className={styles.dualLayout}>
-            <div className={styles.formColumn}>
-              <div className={styles.formGrid}>
-                <div className={styles.formField}>
-                  <label>Username</label>
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter username" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Date</label>
-                  <input type="date" value={offerDate} onChange={(e) => setOfferDate(e.target.value)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>Position</label>
-                  <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Enter position" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Company Name</label>
-                  <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Enter company name" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Start Date</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>Header Image</label>
-                  <input type="file" accept="image/*" onChange={(e) => toDataUrl(e.target.files?.[0], setHeaderImg, setHeaderData)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>Header Width (e.g., 100% or 700px)</label>
-                  <input type="text" value={headerWidth} onChange={(e) => setHeaderWidth(e.target.value)} placeholder="Default 100%" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Header Height (px)</label>
-                  <input type="text" value={headerHeight} onChange={(e) => setHeaderHeight(e.target.value)} placeholder="Default auto" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Signature Image</label>
-                  <input type="file" accept="image/*" onChange={(e) => toDataUrl(e.target.files?.[0], setSignatureImg, setSignatureData)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>Signature Width (px)</label>
-                  <input type="text" value={signatureWidth} onChange={(e) => setSignatureWidth(e.target.value)} placeholder="Default 120px" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Signature Height (px)</label>
-                  <input type="text" value={signatureHeight} onChange={(e) => setSignatureHeight(e.target.value)} placeholder="Default auto" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Signer Name</label>
-                  <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Required" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Signer Role/Designation</label>
-                  <input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} placeholder="Required" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Footer Image</label>
-                  <input type="file" accept="image/*" onChange={(e) => toDataUrl(e.target.files?.[0], setFooterImg, setFooterData)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>Footer Width (e.g., 100% or 700px)</label>
-                  <input type="text" value={footerWidth} onChange={(e) => setFooterWidth(e.target.value)} placeholder="Default 100%" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Footer Height (px)</label>
-                  <input type="text" value={footerHeight} onChange={(e) => setFooterHeight(e.target.value)} placeholder="Default auto" />
-                </div>
-              </div>
-              <div className={styles.actionsRow}>
-                <button className="btn-primary-action" onClick={handleGeneratePdf} disabled={generating}>
-                  {generating ? 'Generating...' : 'Generate PDF'}
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.previewColumn}>
-              <div className={styles.a4Preview}>
-                {headerImg && (
-                  <img
-                    src={headerImg}
-                    alt="Header"
-                    className={styles.previewImage}
-                    style={{ width: headerWidth || '100%', height: headerHeight || 'auto' }}
-                  />
-                )}
-                <div className={styles.previewTitle}>OFFER LETTER</div>
-                <div className={styles.previewRow}>
-                  <span><strong>To:</strong> {username || '____________'}</span>
-                  <span><strong>Date:</strong> {offerDate || '____________'}</span>
-                </div>
-                <div className={styles.previewContent}>
-                  <p><strong>Dear {username || '________'},</strong></p>
-
-                  <p>We are pleased to offer you the position of <strong>{position || '________'}</strong> at <strong>{companyName || '________'}</strong>. Based on your skills, experience, and interview performance, we are confident that you will be a valuable addition to our organization.</p>
-
-                  <p>Your employment with us will commence from <strong>{startDate || '________'}</strong>. You will be expected to carry out your responsibilities diligently and contribute effectively to the growth and success of the team and the company.</p>
-
-                  <p>During your tenure, you will be involved in various projects and assignments aligned with your role. You are expected to maintain professionalism, follow company policies, and demonstrate a strong commitment to quality and timely delivery of work.</p>
-
-                  <p>This offer is subject to the terms and conditions of employment, including company policies, code of conduct, and performance expectations. Further details regarding your role, responsibilities, and compensation structure will be shared with you separately.</p>
-
-                  <p>We are excited to have you join our team and look forward to a successful and mutually beneficial association. We wish you a rewarding career with <strong>{companyName || '________'}</strong>.</p>
-
-                  <div className={styles.spacerXL}></div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p><strong>Sincerely,</strong></p>
-                    {signatureImg && (
-                      <img
-                        src={signatureImg}
-                        alt="Signature"
-                        className={styles.previewSignatureImage}
-                        style={{ width: signatureWidth || '120px', height: signatureHeight || 'auto' }}
-                      />
-                    )}
-                    <p>{signerName || '________'}</p>
-                    <p>{signerRole || '________'}</p>
-                  </div>
-                </div>
-                {footerImg && (
-                  <img
-                    src={footerImg}
-                    alt="Footer"
-                    className={styles.previewImage}
-                    style={{ width: footerWidth || '100%', height: footerHeight || 'auto' }}
-                  />
-                )}
-              </div>
-            </div>
+            <OfferLetterForm1
+              username={username}
+              onUsernameChange={setUsername}
+              offerDate={offerDate}
+              onOfferDateChange={setOfferDate}
+              position={position}
+              onPositionChange={setPosition}
+              companyName={companyName}
+              onCompanyNameChange={setCompanyName}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              headerWidth={headerWidth}
+              onHeaderWidthChange={setHeaderWidth}
+              headerHeight={headerHeight}
+              onHeaderHeightChange={setHeaderHeight}
+              footerWidth={footerWidth}
+              onFooterWidthChange={setFooterWidth}
+              footerHeight={footerHeight}
+              onFooterHeightChange={setFooterHeight}
+              signatureWidth={signatureWidth}
+              onSignatureWidthChange={setSignatureWidth}
+              signatureHeight={signatureHeight}
+              onSignatureHeightChange={setSignatureHeight}
+              signerName={signerName}
+              onSignerNameChange={setSignerName}
+              signerRole={signerRole}
+              onSignerRoleChange={setSignerRole}
+              onHeaderImageChange={handleHeaderUpload}
+              onSignatureImageChange={handleSignatureUpload}
+              onFooterImageChange={handleFooterUpload}
+              generating={generating}
+              onGenerate={handleGeneratePdf}
+            />
+            <OfferLetterPreview1
+              username={username}
+              offerDate={offerDate}
+              position={position}
+              companyName={companyName}
+              startDate={startDate}
+              headerImg={headerImg}
+              footerImg={footerImg}
+              signatureImg={signatureImg}
+              signatureWidth={signatureWidth}
+              signatureHeight={signatureHeight}
+              signerName={signerName}
+              signerRole={signerRole}
+              headerWidth={headerWidth}
+              headerHeight={headerHeight}
+              footerWidth={footerWidth}
+              footerHeight={footerHeight}
+            />
           </div>
         )}
       </div>
