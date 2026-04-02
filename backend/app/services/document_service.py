@@ -103,15 +103,57 @@ class DocumentService:
           <style>
             @page {{
               size: A4;
-              margin: 40px;
+              margin: 0;
             }}
             * {{
               box-sizing: border-box;
             }}
             body {{
-              width: 794px;
-              margin: 0 auto;
+              margin: 0;
+              padding: 0;
               font-family: Arial, sans-serif;
+              color: #111;
+            }}
+            .page {{
+              width: 794px;
+              min-height: 1123px;
+              margin: 0 auto;
+              position: relative;
+              box-sizing: border-box;
+            }}
+            .content-area {{
+              padding: 40px;
+            }}
+            .content {{
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              white-space: normal;
+            }}
+            .content p {{
+              margin: 8px 0;
+              line-height: 1.5;
+            }}
+            .top-row {{
+              display: flex;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 8px;
+            }}
+            .date {{
+              text-align: right;
+              max-width: 40%;
+            }}
+            .header-img {{
+              width: 100%;
+              display: block;
+              margin: 0;
+              padding: 0;
+            }}
+            .footer-img {{
+              width: 100%;
+              position: absolute;
+              bottom: 0;
+              left: 0;
             }}
             img {{
               max-width: 100%;
@@ -119,15 +161,10 @@ class DocumentService:
               display: block;
               page-break-inside: avoid;
             }}
-            .document {{
-              width: 100%;
-            }}
           </style>
         </head>
         <body>
-          <div class="document">
-            {data.content}
-          </div>
+          {data.content}
         </body>
         </html>
         """
