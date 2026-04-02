@@ -97,7 +97,42 @@ class DocumentService:
         filename = f"{DocumentService._slugify(data.title)}_{int(time.time())}.pdf"
         file_path = os.path.join(upload_dir, filename)
 
-        HTML(string=data.content).write_pdf(file_path)
+        pdf_html = f"""
+        <html>
+        <head>
+          <style>
+            @page {{
+              size: A4;
+              margin: 40px;
+            }}
+            * {{
+              box-sizing: border-box;
+            }}
+            body {{
+              width: 794px;
+              margin: 0 auto;
+              font-family: Arial, sans-serif;
+            }}
+            img {{
+              max-width: 100%;
+              height: auto;
+              display: block;
+              page-break-inside: avoid;
+            }}
+            .document {{
+              width: 100%;
+            }}
+          </style>
+        </head>
+        <body>
+          <div class="document">
+            {data.content}
+          </div>
+        </body>
+        </html>
+        """
+
+        HTML(string=pdf_html, base_url=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))).write_pdf(file_path)
 
         file_url = f"/uploads/documents/{filename}"
 

@@ -126,8 +126,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
               value={content}
               onEditorChange={(val) => setContent(val)}
               init={{
-                height: 560,
+                height: 600,
                 menubar: true,
+                resize: true,
                 menu: {
                   file: { title: 'File', items: 'newdocument | preview | print' },
                   edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
@@ -168,9 +169,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                         callback(base64, { title: file.name });
                       }
                     };
-                    reader.onerror = () => {
-                      // TinyMCE failure handler is not provided here; rely on images_upload_handler for errors
-                    };
+                    reader.onerror = () => {};
                     reader.readAsDataURL(file);
                   };
                   input.click();
@@ -178,7 +177,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 branding: false,
                 statusbar: true,
                 content_style:
-                  'body { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; } table { width: 100%; border-collapse: collapse; } table, th, td { border: 1px solid #e2e8f0; } th, td { padding: 8px; }',
+                  'body { font-family: Arial, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; } table { width: 100%; border-collapse: collapse; } table, th, td { border: 1px solid #e2e8f0; } th, td { padding: 8px; }',
               }}
             />
           </div>
