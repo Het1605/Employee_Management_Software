@@ -29,6 +29,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [footerWidth, setFooterWidth] = useState('');
   const [footerHeight, setFooterHeight] = useState('');
   const [signatureWidth, setSignatureWidth] = useState('');
+  const [signatureHeight, setSignatureHeight] = useState('');
   const [signerName, setSignerName] = useState('');
   const [signerRole, setSignerRole] = useState('');
 
@@ -86,6 +87,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setFooterWidth('');
     setFooterHeight('');
     setSignatureWidth('');
+    setSignatureHeight('');
     setSignerName('');
     setSignerRole('');
   };
@@ -106,6 +108,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const fW = footerWidth || '100%';
     const fH = footerHeight || 'auto';
     const sW = signatureWidth || '120px';
+    const sH = signatureHeight || 'auto';
     return `
     <html>
       <head>
@@ -124,7 +127,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
           .footer { width: 100%; position: absolute; bottom: 0; left: 0; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
-          .spacer-xl { height: 48px; }
+          .spacer-xl { height: 16px; }
           .signature { margin-top: 32px; text-align: right; }
           .signature .sig-img { display: inline-block; }
         </style>
@@ -135,6 +138,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
             ${headerData ? `<img class="header-img" src="${headerData}" alt="Header" style="width:${hW}; height:${hH};" />` : ''}
           </div>
           <div class="content-area">
+            <div class="spacer-xl"></div>
             <div style="text-align:center;"><h2>OFFER LETTER</h2></div>
             <div class="top-row">
               <div><strong>To:</strong> <strong>${safe(username)}</strong></div>
@@ -157,9 +161,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
               <div class="spacer-xl"></div>
               <div class="signature">
                 <p><strong>Sincerely,</strong></p>
-                ${signatureData ? `<div class="sig-img"><img src="${signatureData}" alt="Signature" style="width:${sW};" /></div>` : ''}
-                <p><strong>${safe(signerName)}</strong></p>
-                <p><strong>${safe(signerRole)}</strong></p>
+                ${signatureData ? `<div class="sig-img"><img src="${signatureData}" alt="Signature" style="width:${sW}; height:${sH};" /></div>` : ''}
+                <p>${safe(signerName)}</p>
+                <p>${safe(signerRole)}</p>
               </div>
             </div>
           </div>
@@ -277,6 +281,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   <input type="text" value={signatureWidth} onChange={(e) => setSignatureWidth(e.target.value)} placeholder="Default 120px" />
                 </div>
                 <div className={styles.formField}>
+                  <label>Signature Height (px)</label>
+                  <input type="text" value={signatureHeight} onChange={(e) => setSignatureHeight(e.target.value)} placeholder="Default auto" />
+                </div>
+                <div className={styles.formField}>
                   <label>Signer Name</label>
                   <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Required" />
                 </div>
@@ -340,11 +348,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                         src={signatureImg}
                         alt="Signature"
                         className={styles.previewSignatureImage}
-                        style={{ width: signatureWidth || '120px' }}
+                        style={{ width: signatureWidth || '120px', height: signatureHeight || 'auto' }}
                       />
                     )}
-                    <p><strong>{signerName || '________'}</strong></p>
-                    <p><strong>{signerRole || '________'}</strong></p>
+                    <p>{signerName || '________'}</p>
+                    <p>{signerRole || '________'}</p>
                   </div>
                 </div>
                 {footerImg && (
