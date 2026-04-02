@@ -126,27 +126,29 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
               value={content}
               onEditorChange={(val) => setContent(val)}
               init={{
-                height: 460,
+                height: 560,
                 menubar: true,
                 menu: {
-                  file: { title: 'File', items: 'preview' },
+                  file: { title: 'File', items: 'newdocument | preview | print' },
                   edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-                  view: { title: 'View', items: 'code visualaid visualblocks preview fullscreen' },
-                  insert: { title: 'Insert', items: 'link image media table charmap hr insertdatetime' },
-                  format: { title: 'Format', items: 'bold italic underline strikethrough forecolor backcolor | formats | removeformat' },
+                  view: { title: 'View', items: 'visualaid visualblocks visualchars code fullscreen' },
+                  insert: { title: 'Insert', items: 'link image media table hr charmap emoticons insertdatetime pagebreak toc codesample anchor' },
+                  format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript | formats | removeformat | forecolor backcolor' },
                   tools: { title: 'Tools', items: 'code wordcount' },
                   table: { title: 'Table', items: 'inserttable | cell row column deletetable' },
                   help: { title: 'Help', items: 'help' },
                 },
                 plugins: [
-                  'advlist', 'autolink', 'lists', 'link', 'image', 'imagetools', 'charmap', 'preview', 'anchor',
-                  'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                  'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                  'advlist', 'autolink', 'lists', 'link', 'image', 'imagetools', 'media',
+                  'charmap', 'emoticons', 'preview', 'anchor', 'searchreplace', 'visualblocks',
+                  'visualchars', 'code', 'fullscreen', 'insertdatetime', 'table', 'help',
+                  'wordcount', 'pagebreak', 'toc', 'hr', 'codesample', 'directionality'
                 ],
                 toolbar:
-                  'undo redo | formatselect fontselect fontsizeselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | table | removeformat code fullscreen',
-                image_toolbar: 'alignleft aligncenter alignright | rotateleft rotateright | scaleX scaleY',
-                quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote | alignleft aligncenter alignright',
+                  'undo redo | bold italic underline strikethrough superscript subscript | fontselect fontsizeselect formatselect | forecolor backcolor | alignleft aligncenter alignright alignjustify | outdent indent | bullist numlist checklist | lineheight | link image media codesample | table | pagebreak toc | ltr rtl | removeformat fullscreen code',
+                image_toolbar: 'alignleft aligncenter alignright | rotateleft rotateright | scaleX scaleY | editimage imageoptions',
+                quickbars_selection_toolbar: 'bold italic underline | h2 h3 blockquote | alignleft aligncenter alignright | bullist numlist',
+                quickbars_insert_toolbar: 'link image media table hr pagebreak',
                 object_resizing: true,
                 image_advtab: true,
                 image_caption: true,
@@ -176,7 +178,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 branding: false,
                 statusbar: true,
                 content_style:
-                  'body { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; }',
+                  'body { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 16px; color: #0f172a; line-height: 1.6; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; } table { width: 100%; border-collapse: collapse; } table, th, td { border: 1px solid #e2e8f0; } th, td { padding: 8px; }',
               }}
             />
           </div>
@@ -207,7 +209,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
             <thead>
               <tr>
                 <th>Title</th>
-                <th>Type</th>
                 <th>Created Date</th>
                 <th>Actions</th>
               </tr>
@@ -216,17 +217,17 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
               {documents.map((doc) => (
                 <tr key={doc.id}>
                   <td>{doc.title}</td>
-                  <td>{doc.document_type}</td>
                   <td>{new Date(doc.created_at).toLocaleDateString()}</td>
                   <td className={styles.actionsCell}>
-                    {doc.file_url && (
-                      <button className="btn-primary-action" onClick={() => window.open(doc.file_url, '_blank')}>
-                        Download
-                      </button>
-                    )}
-                    <button className="btn-secondary" onClick={() => setPreviewDoc(doc)}>View</button>
+                    <button className={styles.iconBtn} onClick={() => setPreviewDoc(doc)} title="View">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button className={styles.iconBtn} title="Edit" disabled>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    </button>
                     <button
-                      className="btn-secondary"
+                      className={`${styles.iconBtn} ${styles.deleteIcon}`}
+                      title="Delete"
                       onClick={async () => {
                         try {
                           await API.delete(`/documents/${doc.id}`);
@@ -237,7 +238,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                         }
                       }}
                     >
-                      Delete
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                     </button>
                   </td>
                 </tr>
@@ -253,15 +254,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
             <div className={styles.modalHeader}>
               <div>
                 <h3 className={styles.modalTitle}>{previewDoc.title}</h3>
-                <p className={styles.modalSubtitle}>{previewDoc.document_type}</p>
               </div>
               <div className={styles.modalActions}>
-                {previewDoc.file_url && (
-                  <button className="btn-secondary" onClick={() => window.open(previewDoc.file_url, '_blank')}>
-                    Download
-                  </button>
-                )}
-                <button className="btn-primary-action" onClick={() => setPreviewDoc(null)}>Close</button>
+                <button className={styles.iconBtn} onClick={() => setPreviewDoc(null)} aria-label="Close">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
             </div>
             <div className={styles.modalBody} dangerouslySetInnerHTML={{ __html: previewDoc.content }} />
