@@ -407,9 +407,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
           <p className="subtitle">{editingDocId ? 'Update existing document' : 'Write and create official letter'}</p>
         </div>
           <div className="action-buttons" style={{ gap: '0.5rem' }}>
-            <button className="btn-secondary" onClick={() => setActiveView('list')}>
-              Cancel
-            </button>
+          <button className="btn-secondary" onClick={() => { resetForm(); setActiveView('list'); }}>
+            Cancel
+          </button>
           </div>
         </div>
 
@@ -640,7 +640,13 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
           <p className="subtitle">Create and manage official letters for employees</p>
         </div>
         <div className="action-buttons">
-          <button className={`btn-primary-action ${styles.noWrapBtn}`} onClick={() => setActiveView('create')}>
+          <button
+            className={`btn-primary-action ${styles.noWrapBtn}`}
+            onClick={() => {
+              resetForm();
+              setActiveView('create');
+            }}
+          >
             + Create Letter
           </button>
         </div>
