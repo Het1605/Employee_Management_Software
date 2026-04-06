@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import API from '../../../../core/api/apiClient';
 import { useToast } from '../../../../contexts/ToastContext';
 import { handleApiError } from '../../../../utils/errorHandler';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import { generateTemplateContent } from '../../templates';
 import { OfferLetterForm1 } from '../../templates/offerLetter/OfferLetterForm/OfferLetterForm1';
 import { OfferLetterPreview1 } from '../../templates/offerLetter/OfferLetterPreview/OfferLetterPreview1';
@@ -13,6 +14,7 @@ import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
   const { showToast } = useToast();
+  const { selectedCompanyId } = useCompanyContext();
   const [title, setTitle] = useState('');
   const [documentTypeId, setDocumentTypeId] = useState('');
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -74,8 +76,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
 
   const fetchDocuments = async () => {
     try {
+      if (!selectedCompanyId) {
+        setDocuments([]);
+        return;
+      }
       setLoadingList(true);
-      const res = await API.get('/documents');
+      const res = await API.get(`/documents?company_id=${selectedCompanyId}`);
       setDocuments(res.data || []);
     } catch (err) {
       showToast('Failed to load documents: ' + handleApiError(err), 'error');
@@ -88,7 +94,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     if (activeView === 'list') {
       fetchDocuments();
     }
-  }, [activeView]);
+  }, [activeView, selectedCompanyId]);
 
   const resetForm = () => {
     setTitle('');
@@ -216,6 +222,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   };
 
   const handleGeneratePdf = async () => {
+    if (!selectedCompanyId) {
+      showToast('Select a company from the header first.', 'error');
+      return;
+    }
     const docName = selectedDocType?.name?.toLowerCase() || '';
     const isInternship = docName.includes('intern');
     const isExperience = docName.includes('experience');
@@ -373,14 +383,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeName: selectedDocType?.name,
       });
       if (editingDocId) {
-        await API.put(`/documents/${editingDocId}`, {
+        await API.put(`/documents/${editingDocId}?company_id=${selectedCompanyId}`, {
           title: title.trim(),
           document_type_id: Number(documentTypeId),
           content,
           form_data: formDataPayload,
         });
       } else {
-        await API.post('/documents/generate', {
+        await API.post('/documents', {
+          company_id: Number(selectedCompanyId),
           title: title.trim(),
           document_type_id: Number(documentTypeId),
           content,
@@ -681,7 +692,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                       title="Delete"
                       onClick={async () => {
                         try {
-                          await API.delete(`/documents/${doc.id}`);
+                          await API.delete(`/documents/${doc.id}?company_id=${selectedCompanyId}`);
                           await fetchDocuments();
                           showToast('Document deleted', 'success');
                         } catch (err) {

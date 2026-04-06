@@ -11,7 +11,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 from app.core.config import settings
-from app.db.models import DocumentType, GeneratedDocument, User, SentDocument
+from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
@@ -70,20 +70,26 @@ class DocumentService:
         return document_type
 
     @staticmethod
-    def _get_generated_document(db: Session, document_id: int):
+    def _get_company(db: Session, company_id: int):
+        company = db.query(Company).filter(Company.id == company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        return company
+
+    @staticmethod
+    def _get_generated_document(db: Session, document_id: int, company_id: Optional[int] = None):
         document = db.query(GeneratedDocument).filter(GeneratedDocument.id == document_id).first()
         if not document:
+            raise HTTPException(status_code=404, detail="Generated document not found")
+        if company_id is not None and document.company_id is not None and document.company_id != company_id:
             raise HTTPException(status_code=404, detail="Generated document not found")
         return document
 
     @staticmethod
     def create_document(db: Session, data: GeneratedDocumentCreate):
         DocumentService._get_document_type(db, data.document_type_id)
-        document = GeneratedDocument(**data.model_dump())
-        db.add(document)
-        db.commit()
-        db.refresh(document)
-        return DocumentService._ensure_form_data(document)
+        DocumentService._get_company(db, data.company_id)
+        return DocumentService.generate_document_pdf(db, data)
 
     @staticmethod
     def _slugify(value: str) -> str:
@@ -94,6 +100,7 @@ class DocumentService:
     @staticmethod
     def generate_document_pdf(db: Session, data: GeneratedDocumentCreate):
         DocumentService._get_document_type(db, data.document_type_id)
+        DocumentService._get_company(db, data.company_id)
 
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         upload_dir = os.path.join(base_dir, 'uploads', 'documents')
@@ -192,8 +199,8 @@ class DocumentService:
         return DocumentService._ensure_form_data(document)
 
     @staticmethod
-    def update_document(db: Session, document_id: int, data: GeneratedDocumentUpdate):
-        document = DocumentService._get_generated_document(db, document_id)
+    def update_document(db: Session, document_id: int, data: GeneratedDocumentUpdate, company_id: Optional[int] = None):
+        document = DocumentService._get_generated_document(db, document_id, company_id)
 
         for key, value in data.model_dump(exclude_unset=True).items():
             setattr(document, key, value)
@@ -203,20 +210,23 @@ class DocumentService:
         return DocumentService._ensure_form_data(document)
 
     @staticmethod
-    def list_documents(db: Session):
-        documents = db.query(GeneratedDocument).order_by(GeneratedDocument.created_at.desc()).all()
+    def list_documents(db: Session, company_id: Optional[int] = None):
+        query = db.query(GeneratedDocument)
+        if company_id is not None:
+            query = query.filter((GeneratedDocument.company_id == company_id) | (GeneratedDocument.company_id.is_(None)))
+        documents = query.order_by(GeneratedDocument.created_at.desc()).all()
         for document in documents:
             DocumentService._ensure_form_data(document)
         return documents
 
     @staticmethod
-    def get_document(db: Session, document_id: int):
-        document = DocumentService._get_generated_document(db, document_id)
+    def get_document(db: Session, document_id: int, company_id: Optional[int] = None):
+        document = DocumentService._get_generated_document(db, document_id, company_id)
         return DocumentService._ensure_form_data(document)
 
     @staticmethod
-    def delete_document(db: Session, document_id: int):
-        document = DocumentService._get_generated_document(db, document_id)
+    def delete_document(db: Session, document_id: int, company_id: Optional[int] = None):
+        document = DocumentService._get_generated_document(db, document_id, company_id)
         db.query(SentDocument).filter(SentDocument.document_id == document.id).delete(synchronize_session=False)
         db.delete(document)
         db.commit()

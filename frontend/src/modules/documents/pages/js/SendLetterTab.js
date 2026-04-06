@@ -22,7 +22,11 @@ const SendLetterTab = () => {
     const loadDocs = async () => {
       setLoadingDocs(true);
       try {
-        const res = await API.get('/documents');
+        if (!selectedCompanyId) {
+          setDocuments([]);
+          return;
+        }
+        const res = await API.get(`/documents?company_id=${selectedCompanyId}`);
         setDocuments(res.data || []);
       } catch (err) {
         showToast('Failed to load documents: ' + handleApiError(err), 'error');
@@ -31,7 +35,7 @@ const SendLetterTab = () => {
       }
     };
     loadDocs();
-  }, [showToast]);
+  }, [showToast, selectedCompanyId]);
 
   useEffect(() => {
     if (!selectedCompanyId) {

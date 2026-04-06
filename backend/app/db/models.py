@@ -149,6 +149,7 @@ class GeneratedDocument(Base):
     __tablename__ = "generated_documents"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     document_type_id = Column(Integer, ForeignKey("document_types.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
@@ -160,6 +161,7 @@ class GeneratedDocument(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     document_type = relationship("DocumentType", back_populates="generated_documents")
+    company = relationship("Company")
 
 
 class SentDocument(Base):
