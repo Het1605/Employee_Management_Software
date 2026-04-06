@@ -208,6 +208,7 @@ class DocumentService:
     @staticmethod
     def delete_document(db: Session, document_id: int):
         document = DocumentService._get_generated_document(db, document_id)
+        db.query(SentDocument).filter(SentDocument.document_id == document.id).delete(synchronize_session=False)
         db.delete(document)
         db.commit()
         return {"message": "Document deleted successfully"}

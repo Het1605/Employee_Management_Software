@@ -33,15 +33,15 @@ export function generateOfferLetterTemplate1(payload) {
           @page { size: A4; margin: 0; }
           * { box-sizing: border-box; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; line-height: 1.5; }
-          .page { width: 794px; min-height: 1123px; margin: 0 auto; position: relative; }
-          .header { width: 100%; margin: 0; padding: 0; }
+          .page { width: 794px; height: 1123px; margin: 0 auto; display: flex; flex-direction: column; box-sizing: border-box; }
+          .header { width: 100%; flex: 0 0 auto; margin: 0; padding: 0; }
           .header img { width: 100%; display: block; margin: 0; padding: 0; }
-          .content-area { padding: 40px;}
+          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 180px; overflow: hidden; }
           .content { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
           .content p { margin: 8px 0; line-height: 1.5; }
           .top-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
           .date { text-align: right; max-width: 40%; }
-          .footer { width: 100%; position: absolute; bottom: 0; left: 0; }
+          .footer { width: 100%; flex: 0 0 auto; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
           .spacer-xl { height: 16px; }
