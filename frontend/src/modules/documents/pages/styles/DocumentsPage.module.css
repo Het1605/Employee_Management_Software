@@ -105,6 +105,14 @@
   gap: 0.5rem;
 }
 
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
 .dualLayout {
   display: flex;
   gap: 1rem;

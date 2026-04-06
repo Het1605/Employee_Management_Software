@@ -14,7 +14,7 @@ import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
   const { showToast } = useToast();
-  const { selectedCompanyId } = useCompanyContext();
+  const { selectedCompanyId, companies } = useCompanyContext();
   const [title, setTitle] = useState('');
   const [documentTypeId, setDocumentTypeId] = useState('');
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -24,7 +24,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [generating, setGenerating] = useState(false);
   const [editingDocId, setEditingDocId] = useState(null);
   const [username, setUsername] = useState('');
-  const [offerDate, setOfferDate] = useState('');
+  const [offerDate, setOfferDate] = useState(new Date().toISOString().slice(0, 10));
   const [position, setPosition] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -43,6 +43,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [signerName, setSignerName] = useState('');
   const [signerRole, setSignerRole] = useState('');
   const [personTitle, setPersonTitle] = useState('Mr');
+  const [offerUserId, setOfferUserId] = useState('');
+  const [offerUsers, setOfferUsers] = useState([]);
+  const [includeFooter, setIncludeFooter] = useState(true);
   const [signatoryName, setSignatoryName] = useState('');
   const [designation, setDesignation] = useState('');
   const [sealImg, setSealImg] = useState(null);
@@ -60,6 +63,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const selectedDocType = useMemo(
     () => documentTypes.find((t) => String(t.id) === String(documentTypeId)),
     [documentTypes, documentTypeId]
+  );
+
+  const selectedCompany = useMemo(
+    () => companies.find((c) => String(c.id) === String(selectedCompanyId)),
+    [companies, selectedCompanyId]
   );
 
   useEffect(() => {
@@ -101,7 +109,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setDocumentTypeId('');
     setEditingDocId(null);
     setUsername('');
-    setOfferDate('');
+    setOfferDate(new Date().toISOString().slice(0, 10));
     setPosition('');
     setCompanyName('');
     setStartDate('');
@@ -120,6 +128,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setSignerName('');
     setSignerRole('');
     setPersonTitle('Mr');
+    setOfferUserId('');
+    setOfferUsers([]);
+    setIncludeFooter(true);
     setSignatoryName('');
     setDesignation('');
     setSealImg(null);
@@ -150,6 +161,33 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const handleStampUpload = (files) => toDataUrl(files?.[0], setStampImg, setStampData);
   const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
 
+  useEffect(() => {
+    const isOffer = selectedDocType?.name?.toLowerCase().includes('offer');
+    if (activeView !== 'create' || !isOffer) return;
+    if (!selectedCompanyId) {
+      setOfferUsers([]);
+      return;
+    }
+    API.get(`/companies/${selectedCompanyId}/users`)
+      .then((res) => setOfferUsers(res.data || []))
+      .catch(() => setOfferUsers([]));
+  }, [selectedCompanyId, activeView, selectedDocType]);
+
+  useEffect(() => {
+    if (!offerUserId) {
+      setUsername('');
+      setPosition('');
+      setStartDate('');
+      return;
+    }
+    const found = offerUsers.find((u) => String(u.id) === String(offerUserId));
+    if (!found) return;
+    const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
+    if (!position && found.position) setPosition(found.position);
+    if (!startDate && found.start_date) setStartDate(found.start_date);
+  }, [offerUserId, offerUsers]);
+
   const hydrateFromDocument = (doc) => {
     if (!doc) return;
     const normalizeDateInput = (val) => {
@@ -168,7 +206,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     if (doc.form_data) {
       const { template_type, data = {}, images = {}, styles = {} } = doc.form_data;
       setPersonTitle(data.title || (template_type === 'offer_letter' ? 'Mr' : personTitle));
-      setUsername(data.username || '');
+      if (template_type === 'offer_letter') {
+        setOfferUserId(data.user_id ? String(data.user_id) : '');
+        setIncludeFooter(data.include_footer !== false);
+      } else {
+        setUsername(data.username || '');
+      }
       setCompanyName(data.company_name || '');
       setPosition(data.position || '');
       setDepartment(data.department || '');
@@ -256,8 +299,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         return;
       }
     } else {
-      if (!title.trim() || !documentTypeId || !username.trim() || !position.trim() || !companyName.trim() || !startDate || !headerData || !signatureData || !signerName.trim() || !signerRole.trim()) {
-        showToast('Please fill all required fields and upload header & signature images (footer optional).', 'error');
+      if (!selectedCompany) {
+        showToast('Select a company from the header first.', 'error');
+        return;
+      }
+      if (!title.trim() || !documentTypeId || !offerUserId || !position.trim() || !startDate || !offerDate || !signerName.trim() || !signerRole.trim()) {
+        showToast('Please select a user and fill all required fields.', 'error');
         return;
       }
     }
@@ -274,27 +321,16 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
 
       if (templateType === 'offer_letter') {
         formDataPayload.data = {
-          username,
+          user_id: Number(offerUserId),
           offer_date: offerDate,
           position,
-          company_name: companyName,
           start_date: startDate,
           signer_name: signerName,
           signer_role: signerRole,
+          include_footer: includeFooter,
         };
-        formDataPayload.images = {
-          header: headerData,
-          signature: signatureData,
-          footer: footerData,
-        };
-        formDataPayload.styles = {
-          headerWidth,
-          headerHeight,
-          signatureWidth,
-          signatureHeight,
-          footerWidth,
-          footerHeight,
-        };
+        formDataPayload.images = {};
+        formDataPayload.styles = {};
       } else if (templateType === 'internship_letter') {
         formDataPayload.data = {
           title: personTitle,
@@ -354,15 +390,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeId,
         username,
         position,
-        companyName,
+        companyName: docName.includes('offer') ? (selectedCompany?.name || '') : companyName,
         startDate,
         offerDate,
         enrollmentNumber,
         department,
         endDate,
-        headerData,
-        footerData,
-        signatureData,
+        headerData: docName.includes('offer') ? (selectedCompany?.header_image || '') : headerData,
+        footerData: docName.includes('offer') && includeFooter ? (selectedCompany?.footer_image || '') : footerData,
+        signatureData: docName.includes('offer') ? (selectedCompany?.signature_image || '') : signatureData,
         stampData,
         signerName,
         signerRole,
@@ -379,6 +415,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         sealWidth,
         sealHeight,
         sealData,
+        includeFooter,
         personTitle,
         documentTypeName: selectedDocType?.name,
       });
@@ -582,35 +619,21 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 ) : (
               <>
                 <OfferLetterForm1
-                  username={username}
-                  onUsernameChange={setUsername}
+                  users={offerUsers}
+                  selectedUserId={offerUserId}
+                  onUserChange={setOfferUserId}
                   offerDate={offerDate}
                   onOfferDateChange={setOfferDate}
                   position={position}
                   onPositionChange={setPosition}
-                  companyName={companyName}
-                  onCompanyNameChange={setCompanyName}
                   startDate={startDate}
                   onStartDateChange={setStartDate}
-                  headerWidth={headerWidth}
-                  onHeaderWidthChange={setHeaderWidth}
-                  headerHeight={headerHeight}
-                  onHeaderHeightChange={setHeaderHeight}
-                  footerWidth={footerWidth}
-                  onFooterWidthChange={setFooterWidth}
-                  footerHeight={footerHeight}
-                  onFooterHeightChange={setFooterHeight}
-                  signatureWidth={signatureWidth}
-                  onSignatureWidthChange={setSignatureWidth}
-                  signatureHeight={signatureHeight}
-                  onSignatureHeightChange={setSignatureHeight}
                   signerName={signerName}
                   onSignerNameChange={setSignerName}
                   signerRole={signerRole}
                   onSignerRoleChange={setSignerRole}
-                  onHeaderImageChange={handleHeaderUpload}
-                  onSignatureImageChange={handleSignatureUpload}
-                  onFooterImageChange={handleFooterUpload}
+                  includeFooter={includeFooter}
+                  onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
@@ -619,19 +642,14 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   username={username}
                   offerDate={offerDate}
                   position={position}
-                  companyName={companyName}
+                  companyName={selectedCompany?.name || ''}
                   startDate={startDate}
-                  headerImg={headerImg}
-                  footerImg={footerImg}
-                  signatureImg={signatureImg}
-                  signatureWidth={signatureWidth}
-                  signatureHeight={signatureHeight}
+                  headerImg={selectedCompany?.header_image || ''}
+                  footerImg={selectedCompany?.footer_image || ''}
+                  signatureImg={selectedCompany?.signature_image || ''}
                   signerName={signerName}
                   signerRole={signerRole}
-                  headerWidth={headerWidth}
-                  headerHeight={headerHeight}
-                  footerWidth={footerWidth}
-                  footerHeight={footerHeight}
+                  includeFooter={includeFooter}
                 />
               </>
                 )}

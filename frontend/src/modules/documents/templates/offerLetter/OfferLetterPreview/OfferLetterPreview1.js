@@ -10,14 +10,9 @@ export const OfferLetterPreview1 = ({
   headerImg,
   footerImg,
   signatureImg,
-  signatureWidth,
-  signatureHeight,
   signerName,
   signerRole,
-  headerWidth,
-  headerHeight,
-  footerWidth,
-  footerHeight,
+  includeFooter,
 }) => (
   <div className={styles.previewColumn}>
     <div className={styles.a4Preview}>
@@ -26,7 +21,6 @@ export const OfferLetterPreview1 = ({
           src={headerImg}
           alt="Header"
           className={styles.previewImage}
-          style={{ width: headerWidth || '100%', height: headerHeight || 'auto' }}
         />
       )}
       <div className={styles.previewTitle}>OFFER LETTER</div>
@@ -55,19 +49,17 @@ export const OfferLetterPreview1 = ({
               src={signatureImg}
               alt="Signature"
               className={styles.previewSignatureImage}
-              style={{ width: signatureWidth || '120px', height: signatureHeight || 'auto' }}
             />
           )}
           <p>{signerName || '________'}</p>
           <p>{signerRole || '________'}</p>
         </div>
       </div>
-      {footerImg && (
+      {includeFooter && footerImg && (
         <img
           src={footerImg}
           alt="Footer"
           className={styles.previewImage}
-          style={{ width: footerWidth || '100%', height: footerHeight || 'auto' }}
         />
       )}
     </div>

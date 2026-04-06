@@ -1,7 +1,7 @@
 from pydantic import BaseModel, HttpUrl, Field, field_validator, model_validator, computed_field
 from typing import Optional, List
 import re
-from datetime import datetime
+from datetime import datetime, date
 
 class TaxIdMixin(BaseModel):
     gst_number: Optional[str] = Field(None)
@@ -91,6 +91,8 @@ class CompanyUserResponse(BaseModel):
     last_name: str
     email: str
     role: str
+    position: Optional[str] = None
+    start_date: Optional[date] = None
 
     @computed_field
     @property

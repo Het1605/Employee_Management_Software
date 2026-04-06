@@ -11,20 +11,8 @@ export function generateOfferLetterTemplate1(payload) {
     signatureData,
     signerName,
     signerRole,
-    headerWidth,
-    headerHeight,
-    footerWidth,
-    footerHeight,
-    signatureWidth,
-    signatureHeight,
+    includeFooter,
   } = payload;
-
-  const hW = headerWidth || '100%';
-  const hH = headerHeight || 'auto';
-  const fW = footerWidth || '100%';
-  const fH = footerHeight || 'auto';
-  const sW = signatureWidth || '120px';
-  const sH = signatureHeight || 'auto';
 
   return `
     <html>
@@ -52,7 +40,7 @@ export function generateOfferLetterTemplate1(payload) {
       <body>
         <div class="page">
           <div class="header">
-            ${headerData ? `<img class="header-img" src="${headerData}" alt="Header" style="width:${hW}; height:${hH};" />` : ''}
+            ${headerData ? `<img class="header-img" src="${headerData}" alt="Header" />` : ''}
           </div>
           <div class="content-area">
             <div class="spacer-xl"></div>
@@ -78,14 +66,14 @@ export function generateOfferLetterTemplate1(payload) {
               <div class="spacer-xl"></div>
               <div class="signature">
                 <p><strong>Sincerely,</strong></p>
-                ${signatureData ? `<div class="sig-img"><img src="${signatureData}" alt="Signature" style="width:${sW}; height:${sH};" /></div>` : ''}
+                ${signatureData ? `<div class="sig-img"><img src="${signatureData}" alt="Signature" /></div>` : ''}
                 <p>${safe(signerName)}</p>
                 <p>${safe(signerRole)}</p>
               </div>
             </div>
           </div>
           <div class="footer">
-            ${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}
+            ${includeFooter && footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" />` : ''}
           </div>
         </div>
       </body>
