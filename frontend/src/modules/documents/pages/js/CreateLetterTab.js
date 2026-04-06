@@ -7,6 +7,8 @@ import { OfferLetterForm1 } from '../../templates/offerLetter/OfferLetterForm/Of
 import { OfferLetterPreview1 } from '../../templates/offerLetter/OfferLetterPreview/OfferLetterPreview1';
 import { InternshipForm1 } from '../../templates/internshipLetter/InternshipForm/InternshipForm1';
 import { InternshipPreview1 } from '../../templates/internshipLetter/InternshipPreview/InternshipPreview1';
+import { ExperienceForm1 } from '../../templates/experienceLetter/ExperienceForm/ExperienceForm1';
+import { ExperiencePreview1 } from '../../templates/experienceLetter/ExperiencePreview/ExperiencePreview1';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -38,6 +40,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [signerName, setSignerName] = useState('');
   const [signerRole, setSignerRole] = useState('');
   const [personTitle, setPersonTitle] = useState('Mr');
+  const [signatoryName, setSignatoryName] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [sealImg, setSealImg] = useState(null);
+  const [sealData, setSealData] = useState('');
+  const [sealWidth, setSealWidth] = useState('');
+  const [sealHeight, setSealHeight] = useState('');
   const [enrollmentNumber, setEnrollmentNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -104,6 +112,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setSignerName('');
     setSignerRole('');
     setPersonTitle('Mr');
+    setSignatoryName('');
+    setDesignation('');
+    setSealImg(null);
+    setSealData('');
+    setSealWidth('');
+    setSealHeight('');
     setEnrollmentNumber('');
     setDepartment('');
     setEndDate('');
@@ -126,13 +140,36 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const handleSignatureUpload = (files) => toDataUrl(files?.[0], setSignatureImg, setSignatureData);
   const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
   const handleStampUpload = (files) => toDataUrl(files?.[0], setStampImg, setStampData);
+  const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
 
   const handleGeneratePdf = async () => {
-    const isInternship = selectedDocType && selectedDocType.name && selectedDocType.name.toLowerCase().includes('intern');
+    const docName = selectedDocType?.name?.toLowerCase() || '';
+    const isInternship = docName.includes('intern');
+    const isExperience = docName.includes('experience');
 
     if (isInternship) {
       if (!title.trim() || !documentTypeId || !personTitle || !username.trim() || !enrollmentNumber.trim() || !companyName.trim() || !department.trim() || !startDate || !endDate || !offerDate || !headerData || !stampData) {
         showToast('Please fill all required fields and upload header & stamp images (footer optional).', 'error');
+        return;
+      }
+    } else if (isExperience) {
+      if (
+        !title.trim() ||
+        !documentTypeId ||
+        !personTitle ||
+        !username.trim() ||
+        !companyName.trim() ||
+        !position.trim() ||
+        !startDate ||
+        !endDate ||
+        !offerDate ||
+        !headerData ||
+        !signatureData ||
+        !sealData ||
+        !signatoryName.trim() ||
+        !designation.trim()
+      ) {
+        showToast('Please fill all required fields and upload header, signature, and seal images (footer optional).', 'error');
         return;
       }
     } else {
@@ -160,6 +197,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         stampData,
         signerName,
         signerRole,
+        signatoryName,
+        designation,
         headerWidth,
         headerHeight,
         footerWidth,
@@ -168,6 +207,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         signatureHeight,
         stampWidth,
         stampHeight,
+        sealWidth,
+        sealHeight,
+        sealData,
         personTitle,
         documentTypeName: selectedDocType?.name,
       });
@@ -225,7 +267,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
 
         {documentTypeId && (
           (() => {
-            const isIntern = selectedDocType && selectedDocType.name && selectedDocType.name.toLowerCase().includes('intern');
+            const docName = selectedDocType?.name?.toLowerCase() || '';
+            const isIntern = docName.includes('intern');
+            const isExperience = docName.includes('experience');
             return (
               <div className={styles.dualLayout}>
                 {isIntern ? (
@@ -283,6 +327,74 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   footerWidth={footerWidth}
                   footerHeight={footerHeight}
                   personTitle={personTitle}
+                />
+              </>
+                ) : isExperience ? (
+              <>
+                <ExperienceForm1
+                  username={username}
+                  onUsernameChange={setUsername}
+                  companyName={companyName}
+                  onCompanyNameChange={setCompanyName}
+                  position={position}
+                  onPositionChange={setPosition}
+                  startDate={startDate}
+                  onStartDateChange={setStartDate}
+                  endDate={endDate}
+                  onEndDateChange={setEndDate}
+                  offerDate={offerDate}
+                  onOfferDateChange={setOfferDate}
+                  personTitle={personTitle}
+                  onPersonTitleChange={setPersonTitle}
+                  signatoryName={signatoryName}
+                  onSignatoryNameChange={setSignatoryName}
+                  designation={designation}
+                  onDesignationChange={setDesignation}
+                  headerWidth={headerWidth}
+                  onHeaderWidthChange={setHeaderWidth}
+                  headerHeight={headerHeight}
+                  onHeaderHeightChange={setHeaderHeight}
+                  footerWidth={footerWidth}
+                  onFooterWidthChange={setFooterWidth}
+                  footerHeight={footerHeight}
+                  onFooterHeightChange={setFooterHeight}
+                  signatureWidth={signatureWidth}
+                  onSignatureWidthChange={setSignatureWidth}
+                  signatureHeight={signatureHeight}
+                  onSignatureHeightChange={setSignatureHeight}
+                  sealWidth={sealWidth}
+                  onSealWidthChange={setSealWidth}
+                  sealHeight={sealHeight}
+                  onSealHeightChange={setSealHeight}
+                  onHeaderImageChange={handleHeaderUpload}
+                  onSignatureImageChange={handleSignatureUpload}
+                  onSealImageChange={handleSealUpload}
+                  onFooterImageChange={handleFooterUpload}
+                  generating={generating}
+                  onGenerate={handleGeneratePdf}
+                />
+                <ExperiencePreview1
+                  username={username}
+                  companyName={companyName}
+                  position={position}
+                  startDate={startDate}
+                  endDate={endDate}
+                  offerDate={offerDate}
+                  personTitle={personTitle}
+                  headerImg={headerImg}
+                  footerImg={footerImg}
+                  signatureImg={signatureImg}
+                  sealImg={sealImg}
+                  signatoryName={signatoryName}
+                  designation={designation}
+                  headerWidth={headerWidth}
+                  headerHeight={headerHeight}
+                  footerWidth={footerWidth}
+                  footerHeight={footerHeight}
+                  signatureWidth={signatureWidth}
+                  signatureHeight={signatureHeight}
+                  sealWidth={sealWidth}
+                  sealHeight={sealHeight}
                 />
               </>
                 ) : (
