@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { useCalendarContext } from '../hooks/calendarContext';
+import { useCompanyContext } from '../../../contexts/CompanyContext';
 
 const generateCalendarDays = (year, month) => {
     // JS getDay() returns 0 for Sunday, 6 for Saturday. This matches our headers.
@@ -17,7 +17,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 const CalendarView = () => {
-    const { selectedCompanyId } = useCalendarContext();
+    const { selectedCompanyId } = useCompanyContext();
     const { workingDays, holidays, overrides, loading } = useCalendarData();
     
     const [currentDate, setCurrentDate] = useState(new Date());

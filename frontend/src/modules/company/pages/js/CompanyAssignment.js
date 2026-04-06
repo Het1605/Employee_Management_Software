@@ -3,17 +3,16 @@ import styles from '../styles/CompanyAssignment.module.css';
 import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
 import { useToast } from '../../../../contexts/ToastContext';
 import { handleApiError } from '../../../../utils/errorHandler';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import {
     assignUsersToCompany,
     fetchAssignedUsers,
     fetchAvailableUsers,
-    fetchCompanies as fetchCompaniesRequest,
     unassignUsersFromCompany,
 } from '../../services/companyService';
 
 const CompanyAssignment = () => {
-    const [companies, setCompanies] = useState([]);
-    const [selectedCompanyId, setSelectedCompanyId] = useState("");
+    const { selectedCompanyId } = useCompanyContext();
     const [assignedUsers, setAssignedUsers] = useState([]);
     const [availableUsers, setAvailableUsers] = useState([]);
     const [selectedAssigned, setSelectedAssigned] = useState([]);
@@ -35,18 +34,6 @@ const CompanyAssignment = () => {
     const isTablet = windowWidth <= 1024 && windowWidth > 768;
     const isMobile = windowWidth <= 768;
 
-    const fetchCompanies = useCallback(async () => {
-        try {
-            const response = await fetchCompaniesRequest();
-            setCompanies(response.data);
-            if (response.data.length > 0 && !selectedCompanyId) {
-                setSelectedCompanyId(response.data[0].id);
-            }
-        } catch (err) {
-            showToast("Failed to load companies. " + handleApiError(err), 'error');
-        }
-    }, [selectedCompanyId, showToast]);
-
     const fetchUserLists = useCallback(async (id) => {
         setLoading(true);
         try {
@@ -64,10 +51,6 @@ const CompanyAssignment = () => {
             setLoading(false);
         }
     }, [showToast]);
-
-    useEffect(() => {
-        fetchCompanies();
-    }, [fetchCompanies]);
 
     useEffect(() => {
         if (selectedCompanyId) {
@@ -149,20 +132,6 @@ const CompanyAssignment = () => {
                 <div className={styles.assignmentLayout}>
                     <div className={styles.topControls}>
                         <div className={styles.controlGroup}>
-                            <label>Select Company</label>
-                            <select 
-                                value={selectedCompanyId} 
-                                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                                className={styles.select}
-                                disabled={loading}
-                            >
-                                <option value="">-- Choose a company --</option>
-                                {companies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={styles.controlGroup}>
                             <label>&nbsp;</label>
                             <div className={styles.searchWrapper}>
                                 <span className={styles.searchIcon}>🔍</span>
@@ -177,6 +146,12 @@ const CompanyAssignment = () => {
                         </div>
                     </div>
 
+                    {!selectedCompanyId ? (
+                        <div className={styles.emptyState}>
+                            <p>Please select a company from the header to manage assignments.</p>
+                        </div>
+                    ) : (
+                    <>
                     {isMobile && (
                         <div className={styles.mobileTabs}>
                             <button 
@@ -346,6 +321,8 @@ const CompanyAssignment = () => {
                             </div>
                         )}
                     </div>
+                    </>
+                    )}
                 </div>
             </div>
         </MainLayout>

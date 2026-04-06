@@ -3,13 +3,13 @@ import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
 import API from '../../../../core/api/apiClient';
 import { useToast } from '../../../../contexts/ToastContext';
 import { handleApiError } from '../../../../utils/errorHandler';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import '../../../../modules/calendar/pages/styles/CalendarModule.css';
 import styles from '../styles/SalaryStructureManagement.module.css';
 
 const SalaryStructureManagement = () => {
   const { showToast } = useToast();
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const { selectedCompanyId } = useCompanyContext();
   const [activeTab, setActiveTab] = useState('structures');
   const [componentsList, setComponentsList] = useState([]);
   const [loadingComponents, setLoadingComponents] = useState(false);
@@ -25,18 +25,6 @@ const SalaryStructureManagement = () => {
   const [editingStructure, setEditingStructure] = useState(null);
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
-
-  useEffect(() => {
-    const loadCompanies = async () => {
-      try {
-        const res = await API.get('/companies/');
-        setCompanies(res.data || []);
-      } catch (err) {
-        showToast('Failed to load companies: ' + handleApiError(err), 'error');
-      }
-    };
-    loadCompanies();
-  }, [showToast]);
 
   useEffect(() => {
     const fetchComponents = async () => {
@@ -140,25 +128,10 @@ const SalaryStructureManagement = () => {
   return (
     <MainLayout title="Salary Structure Management">
       <div className={styles.container}>
-        <div className={`calendar-header-card ${styles.selectorCard}`}>
-          <div className="header-left">
-            <span className="icon-building">🏢</span>
-            <div className={`calendar-company-select-wrapper ${selectedCompanyId ? 'has-value' : 'is-placeholder'}`}>
-              <select
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                className="company-select-modern calendar-company-select"
-              >
-                <option value="" disabled>Select Company</option>
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <span className="calendar-company-select-arrow">▼</span>
-            </div>
-          </div>
-        </div>
-
+        {!selectedCompanyId ? (
+          <div className={styles.placeholderCard}>Please select a company from the header to manage salary structures.</div>
+        ) : (
+        <>
         <div className={`modern-tabs-container ${styles.tabsWrap}`}>
           {[
             { id: 'components', label: 'Components' },
@@ -254,6 +227,8 @@ const SalaryStructureManagement = () => {
           <div className={styles.placeholderCard}>
             <p>Select a company and a tab to continue. Functionality coming soon.</p>
           </div>
+        )}
+        </>
         )}
 
         {(assignmentModalOpen || editingAssignment) && (

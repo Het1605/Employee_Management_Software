@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCalendarContext } from './calendarContext';
+import { useCompanyContext } from '../../../contexts/CompanyContext';
 import {
     createHoliday as createHolidayRequest,
     createOverride as createOverrideRequest,
@@ -12,7 +12,7 @@ import {
 } from '../services/calendarService';
 
 export const useCalendarMutations = (refreshData) => {
-    const { selectedCompanyId } = useCalendarContext();
+    const { selectedCompanyId } = useCompanyContext();
     const [saving, setSaving] = useState(false);
 
     const withLoading = async (operation) => {

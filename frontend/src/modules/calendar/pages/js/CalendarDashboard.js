@@ -1,61 +1,22 @@
-import React, { useMemo, useState } from 'react';
-import { useCalendarContext } from '../../hooks/calendarContext';
+import React, { useState } from 'react';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import WorkingDaysConfig from '../../components/WorkingDaysConfig';
 import HolidayManagement from './HolidayManagement';
 import OverrideManagement from './OverrideManagement';
 import CalendarView from '../../components/CalendarView';
 import '../styles/CalendarModule.css';
 
-const CalendarDashboard = ({ companies = [] }) => {
-    const { selectedCompany, selectedCompanyId, setSelectedCompanyId } = useCalendarContext();
+const CalendarDashboard = () => {
+    const { selectedCompanyId } = useCompanyContext();
     const [activeTab, setActiveTab] = useState('calendar');
-
-    const companyOptions = useMemo(() => {
-        const hasSelectedCompany = selectedCompanyId && companies.some((company) => String(company.id) === String(selectedCompanyId));
-
-        if (hasSelectedCompany || !selectedCompany?.id) {
-            return companies;
-        }
-
-        return [
-            { id: selectedCompany.id, name: selectedCompany.name || 'Selected Company' },
-            ...companies,
-        ];
-    }, [companies, selectedCompany, selectedCompanyId]);
-
-    const handleCompanyChange = (e) => {
-        const companyId = e.target.value;
-        const selectedOption = companies.find((company) => String(company.id) === String(companyId));
-        setSelectedCompanyId(selectedOption || companyId);
-    };
 
     return (
         <div className="calendar-dashboard-wrapper">
-            {/* Unified Action Bar Header */}
-            <div className="calendar-header-card">
-                <div className="header-left">
-                    <span className="icon-building">🏢</span>
-                    <div className={`calendar-company-select-wrapper ${selectedCompanyId ? 'has-value' : 'is-placeholder'}`}>
-                        <select 
-                            value={selectedCompanyId || ''} 
-                            onChange={handleCompanyChange}
-                            className="company-select-modern calendar-company-select"
-                        >
-                            <option value="" disabled>Select Company</option>
-                            {companyOptions.map((company) => (
-                                <option key={company.id} value={company.id}>{company.name}</option>
-                            ))}
-                        </select>
-                        <span className="calendar-company-select-arrow" aria-hidden="true">▼</span>
-                    </div>
-                </div>
-            </div>
-
             {!selectedCompanyId ? (
                 <div className="empty-state-card">
                     <div className="empty-icon">📅</div>
                     <h3>No Company Selected</h3>
-                    <p>Please select a company from the dropdown menu to view or manage its calendar.</p>
+                    <p>Please select a company from the header to view or manage its calendar.</p>
                 </div>
             ) : (
                 <div className="calendar-content">

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useCalendarMutations } from '../../hooks/useCalendarMutations';
 import { useToast } from '../../../../contexts/ToastContext';
-import { useCalendarContext } from '../../hooks/calendarContext';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 
 const AddHolidayModal = ({ onClose, editData = null }) => {
     const { createHoliday, updateHoliday, saving } = useCalendarMutations();
     const { showToast } = useToast();
-    const { selectedCompanyId } = useCalendarContext();
+    const { selectedCompanyId } = useCompanyContext();
 
     const [conflict, setConflict] = useState(null);
     const [formData, setFormData] = useState({

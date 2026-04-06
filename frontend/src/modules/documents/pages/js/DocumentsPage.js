@@ -4,6 +4,7 @@ import '../../../../modules/calendar/pages/styles/CalendarModule.css';
 import styles from '../styles/DocumentsPage.module.css';
 import CreateLetterTab from './CreateLetterTab';
 import SendLetterTab from './SendLetterTab';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 
 const tabs = [
   { id: 'create', label: 'Create Letter' },
@@ -13,6 +14,7 @@ const tabs = [
 const DocumentsPage = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [activeView, setActiveView] = useState('list');
+  const { selectedCompanyId } = useCompanyContext();
 
   return (
     <MainLayout title="Document Management">
@@ -21,6 +23,10 @@ const DocumentsPage = () => {
           <p className={styles.subtitle}>Create and send official documents</p>
         </div>
 
+        {!selectedCompanyId ? (
+          <div className={styles.placeholderArea}>Please select a company from the header to manage documents.</div>
+        ) : (
+        <>
         <div className={`modern-tabs-container ${styles.tabsWrap}`}>
           {tabs.map((tab) => (
             <button
@@ -43,6 +49,8 @@ const DocumentsPage = () => {
             <SendLetterTab />
           )}
         </div>
+        </>
+        )}
       </div>
     </MainLayout>
   );

@@ -54,6 +54,27 @@
   flex-shrink: 0;
 }
 
+.companySelectWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.companySelect {
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 180px;
+}
+
+.companySelect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .userInfo {
   display: flex;
   align-items: center;

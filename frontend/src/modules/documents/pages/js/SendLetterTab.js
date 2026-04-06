@@ -2,14 +2,14 @@ import React, { useEffect, useState, useMemo } from 'react';
 import API from '../../../../core/api/apiClient';
 import { useToast } from '../../../../contexts/ToastContext';
 import { handleApiError } from '../../../../utils/errorHandler';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import styles from '../styles/DocumentsPage.module.css';
 
 const SendLetterTab = () => {
   const { showToast } = useToast();
+  const { selectedCompanyId } = useCompanyContext();
   const [users, setUsers] = useState([]);
   const [documents, setDocuments] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedDocumentId, setSelectedDocumentId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,22 +17,6 @@ const SendLetterTab = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   const canSend = useMemo(() => !!selectedUserId && !!selectedDocumentId && !loading, [selectedUserId, selectedDocumentId, loading]);
-
-  useEffect(() => {
-    const loadCompanies = async () => {
-      try {
-        const res = await API.get('/companies/');
-        const list = res.data || [];
-        setCompanies(list);
-        if (list.length > 0) {
-          setSelectedCompanyId(String(list[0].id));
-        }
-      } catch (err) {
-        showToast('Failed to load companies: ' + handleApiError(err), 'error');
-      }
-    };
-    loadCompanies();
-  }, [showToast]);
 
   useEffect(() => {
     const loadDocs = async () => {
@@ -102,20 +86,10 @@ const SendLetterTab = () => {
         </div>
       </div>
 
+      {!selectedCompanyId ? (
+        <div className={styles.placeholderArea}>Please select a company from the header to send letters.</div>
+      ) : (
       <div className={styles.formGrid}>
-        <div className={styles.formField}>
-          <label>Company</label>
-          <select
-            value={selectedCompanyId}
-            onChange={(e) => setSelectedCompanyId(e.target.value)}
-            disabled={loading || companies.length === 0}
-          >
-            {companies.length === 0 && <option value="">No companies</option>}
-            {companies.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
         <div className={styles.formField}>
           <label>User</label>
           <select
@@ -148,12 +122,13 @@ const SendLetterTab = () => {
           </select>
         </div>
       </div>
+      )}
 
       <div className={styles.actionsRow}>
         <button
           className="btn-primary-action"
           onClick={handleSend}
-          disabled={!canSend}
+          disabled={!canSend || !selectedCompanyId}
         >
           {loading ? 'Sending...' : 'Send Email'}
         </button>

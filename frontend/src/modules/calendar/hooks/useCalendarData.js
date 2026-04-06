@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useCalendarContext } from './calendarContext';
+import { useCompanyContext } from '../../../contexts/CompanyContext';
 import { fetchHolidays, fetchOverrides, fetchWorkingDays } from '../services/calendarService';
 
 export const useCalendarData = () => {
-    const { selectedCompanyId } = useCalendarContext();
+    const { selectedCompanyId } = useCompanyContext();
     const [workingDays, setWorkingDays] = useState([]);
     const [holidays, setHolidays] = useState([]);
     const [overrides, setOverrides] = useState([]);

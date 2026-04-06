@@ -3,11 +3,14 @@ import AppRouter from './core/routing/AppRouter';
 import './styles/Global.css';
 
 import { ToastProvider } from './contexts/ToastContext';
+import { CompanyProvider } from './contexts/CompanyContext';
 
 function App() {
   return (
     <ToastProvider>
-      <AppRouter />
+      <CompanyProvider>
+        <AppRouter />
+      </CompanyProvider>
     </ToastProvider>
   );
 }

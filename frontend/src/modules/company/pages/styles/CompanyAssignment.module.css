@@ -78,6 +78,16 @@
     gap: 0.4rem;
 }
 
+.emptyState {
+    padding: 2rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+    color: #64748b;
+    font-weight: 600;
+}
+
 .detailItem {
     display: flex;
     align-items: center;
