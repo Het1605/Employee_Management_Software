@@ -54,6 +54,10 @@ class CompanyBase(TaxIdMixin):
     address_line_3: Optional[str] = None
     postal_code: Optional[str] = None
     logo_url: Optional[str] = None
+    header_image: Optional[str] = None
+    footer_image: Optional[str] = None
+    signature_image: Optional[str] = None
+    company_stamp: Optional[str] = None
 
 class CompanyCreate(CompanyBase):
     pass
@@ -65,6 +69,10 @@ class CompanyUpdate(TaxIdMixin):
     address_line_3: Optional[str] = None
     postal_code: Optional[str] = None
     logo_url: Optional[str] = None
+    header_image: Optional[str] = None
+    footer_image: Optional[str] = None
+    signature_image: Optional[str] = None
+    company_stamp: Optional[str] = None
 
 class CompanyResponse(CompanyBase):
     id: int

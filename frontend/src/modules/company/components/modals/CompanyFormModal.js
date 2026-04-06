@@ -10,7 +10,11 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         postal_code: '',
         gst_number: '',
         pan_number: '',
-        logo_url: ''
+        logo_url: '',
+        header_image: '',
+        footer_image: '',
+        signature_image: '',
+        company_stamp: ''
     });
 
     useEffect(() => {
@@ -23,7 +27,11 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 postal_code: company.postal_code || '',
                 gst_number: company.gst_number || '',
                 pan_number: company.pan_number || '',
-                logo_url: company.logo_url || ''
+                logo_url: company.logo_url || '',
+                header_image: company.header_image || '',
+                footer_image: company.footer_image || '',
+                signature_image: company.signature_image || '',
+                company_stamp: company.company_stamp || ''
             });
         } else {
             setFormData({
@@ -34,7 +42,11 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 postal_code: '',
                 gst_number: '',
                 pan_number: '',
-                logo_url: ''
+                logo_url: '',
+                header_image: '',
+                footer_image: '',
+                signature_image: '',
+                company_stamp: ''
             });
         }
     }, [company, isOpen]);
@@ -63,22 +75,22 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         }
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = (e, fieldName) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFormData(prev => ({
                     ...prev,
-                    logo_url: reader.result // Base64 string
+                    [fieldName]: reader.result // Base64 string
                 }));
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const removeLogo = () => {
-        setFormData(prev => ({ ...prev, logo_url: '' }));
+    const removeImage = (fieldName) => {
+        setFormData(prev => ({ ...prev, [fieldName]: '' }));
     };
 
     const handleSubmit = (e) => {
@@ -192,7 +204,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                                             <input
                                                 type="file"
                                                 accept="image/*"
-                                                onChange={handleFileChange}
+                                                onChange={(e) => handleFileChange(e, 'logo_url')}
                                                 style={{ display: 'none' }}
                                             />
                                             <span className={styles.uploadIcon}>📁</span>
@@ -214,7 +226,143 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                                         <img src={formData.logo_url} alt="Logo Preview" className={styles.logoPreview} />
                                         <div className={styles.previewInfo}>
                                             <span>Logo Ready</span>
-                                            <span className={styles.removeLogo} onClick={removeLogo}>Remove & change</span>
+                                            <span className={styles.removeLogo} onClick={() => removeImage('logo_url')}>Remove & change</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Header Image</label>
+                                {!formData.header_image ? (
+                                    <>
+                                        <label className={styles.uploadArea}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleFileChange(e, 'header_image')}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <span className={styles.uploadIcon}>📁</span>
+                                            <span className={styles.uploadLabel}>Click to upload header image</span>
+                                        </label>
+                                        <div className={styles.divider}>OR</div>
+                                        <input
+                                            type="text"
+                                            name="header_image"
+                                            value={formData.header_image}
+                                            onChange={handleChange}
+                                            placeholder="Paste URL (https://...)"
+                                        />
+                                    </>
+                                ) : (
+                                    <div className={styles.previewContainer}>
+                                        <img src={formData.header_image} alt="Header Preview" className={styles.logoPreview} />
+                                        <div className={styles.previewInfo}>
+                                            <span>Header Ready</span>
+                                            <span className={styles.removeLogo} onClick={() => removeImage('header_image')}>Remove & change</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Footer Image</label>
+                                {!formData.footer_image ? (
+                                    <>
+                                        <label className={styles.uploadArea}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleFileChange(e, 'footer_image')}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <span className={styles.uploadIcon}>📁</span>
+                                            <span className={styles.uploadLabel}>Click to upload footer image</span>
+                                        </label>
+                                        <div className={styles.divider}>OR</div>
+                                        <input
+                                            type="text"
+                                            name="footer_image"
+                                            value={formData.footer_image}
+                                            onChange={handleChange}
+                                            placeholder="Paste URL (https://...)"
+                                        />
+                                    </>
+                                ) : (
+                                    <div className={styles.previewContainer}>
+                                        <img src={formData.footer_image} alt="Footer Preview" className={styles.logoPreview} />
+                                        <div className={styles.previewInfo}>
+                                            <span>Footer Ready</span>
+                                            <span className={styles.removeLogo} onClick={() => removeImage('footer_image')}>Remove & change</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Signature</label>
+                                {!formData.signature_image ? (
+                                    <>
+                                        <label className={styles.uploadArea}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleFileChange(e, 'signature_image')}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <span className={styles.uploadIcon}>📁</span>
+                                            <span className={styles.uploadLabel}>Click to upload signature</span>
+                                        </label>
+                                        <div className={styles.divider}>OR</div>
+                                        <input
+                                            type="text"
+                                            name="signature_image"
+                                            value={formData.signature_image}
+                                            onChange={handleChange}
+                                            placeholder="Paste URL (https://...)"
+                                        />
+                                    </>
+                                ) : (
+                                    <div className={styles.previewContainer}>
+                                        <img src={formData.signature_image} alt="Signature Preview" className={styles.logoPreview} />
+                                        <div className={styles.previewInfo}>
+                                            <span>Signature Ready</span>
+                                            <span className={styles.removeLogo} onClick={() => removeImage('signature_image')}>Remove & change</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Company Stamp</label>
+                                {!formData.company_stamp ? (
+                                    <>
+                                        <label className={styles.uploadArea}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleFileChange(e, 'company_stamp')}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <span className={styles.uploadIcon}>📁</span>
+                                            <span className={styles.uploadLabel}>Click to upload stamp</span>
+                                        </label>
+                                        <div className={styles.divider}>OR</div>
+                                        <input
+                                            type="text"
+                                            name="company_stamp"
+                                            value={formData.company_stamp}
+                                            onChange={handleChange}
+                                            placeholder="Paste URL (https://...)"
+                                        />
+                                    </>
+                                ) : (
+                                    <div className={styles.previewContainer}>
+                                        <img src={formData.company_stamp} alt="Stamp Preview" className={styles.logoPreview} />
+                                        <div className={styles.previewInfo}>
+                                            <span>Stamp Ready</span>
+                                            <span className={styles.removeLogo} onClick={() => removeImage('company_stamp')}>Remove & change</span>
                                         </div>
                                     </div>
                                 )}
