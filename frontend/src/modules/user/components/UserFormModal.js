@@ -7,6 +7,9 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
     last_name: user?.last_name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    position: user?.position || '',
+    start_date: user?.start_date || '',
+    end_date: user?.end_date || '',
     password: '',
     confirm_password: '',
     role: user?.role || 'EMPLOYEE',
@@ -39,8 +42,10 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
       }
     }
 
-    // Prepare payload
+    // Prepare payload (avoid empty strings for optional dates)
     const payload = { ...formData };
+    if (!payload.start_date) delete payload.start_date;
+    if (!payload.end_date) delete payload.end_date;
     
     // Cleanup for submission
     if (user) {
@@ -100,6 +105,33 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
               value={formData.phone} 
               onChange={handleChange} 
               placeholder="+1 234 567 890"
+            />
+          </div>
+          <div className={styles.inputGroup}>
+            <label>Position</label>
+            <input
+              name="position"
+              value={formData.position}
+              onChange={handleChange}
+              placeholder="e.g. Software Engineer"
+            />
+          </div>
+          <div className={styles.inputGroup}>
+            <label>Start Date</label>
+            <input
+              name="start_date"
+              type="date"
+              value={formData.start_date}
+              onChange={handleChange}
+            />
+          </div>
+          <div className={styles.inputGroup}>
+            <label>End Date</label>
+            <input
+              name="end_date"
+              type="date"
+              value={formData.end_date}
+              onChange={handleChange}
             />
           </div>
           

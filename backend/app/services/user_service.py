@@ -34,6 +34,9 @@ class UserService:
             last_name=user_data.last_name,
             email=user_data.email,
             phone=user_data.phone,
+            position=user_data.position,
+            start_date=user_data.start_date,
+            end_date=user_data.end_date,
             password=hashed_pwd,
             role=user_data.role.value
         )

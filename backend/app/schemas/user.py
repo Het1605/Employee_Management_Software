@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, validator, computed_field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 class UserRole(str, Enum):
@@ -15,6 +15,9 @@ class UserBase(BaseModel):
     last_name: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
     phone: Optional[str] = None
+    position: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     role: UserRole = UserRole.EMPLOYEE
     is_active: bool = True
 
@@ -33,6 +36,9 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = Field(None, min_length=2, max_length=50)
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    position: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     role: Optional[UserRole] = None
 
 class UserResponse(UserBase):
