@@ -5,6 +5,8 @@ import { handleApiError } from '../../../../utils/errorHandler';
 import { generateTemplateContent } from '../../templates';
 import { OfferLetterForm1 } from '../../templates/offerLetter/OfferLetterForm/OfferLetterForm1';
 import { OfferLetterPreview1 } from '../../templates/offerLetter/OfferLetterPreview/OfferLetterPreview1';
+import { InternshipForm1 } from '../../templates/internshipLetter/InternshipForm/InternshipForm1';
+import { InternshipPreview1 } from '../../templates/internshipLetter/InternshipPreview/InternshipPreview1';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -35,10 +37,18 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [signatureHeight, setSignatureHeight] = useState('');
   const [signerName, setSignerName] = useState('');
   const [signerRole, setSignerRole] = useState('');
+  const [personTitle, setPersonTitle] = useState('Mr');
+  const [enrollmentNumber, setEnrollmentNumber] = useState('');
+  const [department, setDepartment] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [stampImg, setStampImg] = useState(null);
+  const [stampData, setStampData] = useState('');
+  const [stampWidth, setStampWidth] = useState('');
+  const [stampHeight, setStampHeight] = useState('');
 
-  const canSave = useMemo(
-    () => title.trim().length >= 2 && documentTypeId,
-    [title, documentTypeId]
+  const selectedDocType = useMemo(
+    () => documentTypes.find((t) => String(t.id) === String(documentTypeId)),
+    [documentTypes, documentTypeId]
   );
 
   useEffect(() => {
@@ -93,6 +103,14 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setSignatureHeight('');
     setSignerName('');
     setSignerRole('');
+    setPersonTitle('Mr');
+    setEnrollmentNumber('');
+    setDepartment('');
+    setEndDate('');
+    setStampImg(null);
+    setStampData('');
+    setStampWidth('');
+    setStampHeight('');
   };
 
   const toDataUrl = (file, setPreview, setData) => {
@@ -107,11 +125,21 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const handleHeaderUpload = (files) => toDataUrl(files?.[0], setHeaderImg, setHeaderData);
   const handleSignatureUpload = (files) => toDataUrl(files?.[0], setSignatureImg, setSignatureData);
   const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
+  const handleStampUpload = (files) => toDataUrl(files?.[0], setStampImg, setStampData);
 
   const handleGeneratePdf = async () => {
-    if (!title.trim() || !documentTypeId || !username.trim() || !position.trim() || !companyName.trim() || !startDate || !headerData || !signatureData || !signerName.trim() || !signerRole.trim()) {
-      showToast('Please fill all required fields and upload header & signature images (footer optional).', 'error');
-      return;
+    const isInternship = selectedDocType && selectedDocType.name && selectedDocType.name.toLowerCase().includes('intern');
+
+    if (isInternship) {
+      if (!title.trim() || !documentTypeId || !personTitle || !username.trim() || !enrollmentNumber.trim() || !companyName.trim() || !department.trim() || !startDate || !endDate || !offerDate || !headerData || !stampData) {
+        showToast('Please fill all required fields and upload header & stamp images (footer optional).', 'error');
+        return;
+      }
+    } else {
+      if (!title.trim() || !documentTypeId || !username.trim() || !position.trim() || !companyName.trim() || !startDate || !headerData || !signatureData || !signerName.trim() || !signerRole.trim()) {
+        showToast('Please fill all required fields and upload header & signature images (footer optional).', 'error');
+        return;
+      }
     }
     setGenerating(true);
     try {
@@ -123,9 +151,13 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         companyName,
         startDate,
         offerDate,
+        enrollmentNumber,
+        department,
+        endDate,
         headerData,
         footerData,
         signatureData,
+        stampData,
         signerName,
         signerRole,
         headerWidth,
@@ -134,6 +166,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         footerHeight,
         signatureWidth,
         signatureHeight,
+        stampWidth,
+        stampHeight,
+        personTitle,
+        documentTypeName: selectedDocType?.name,
       });
       await API.post('/documents/generate', {
         title: title.trim(),
@@ -188,59 +224,125 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         </div>
 
         {documentTypeId && (
-          <div className={styles.dualLayout}>
-            <OfferLetterForm1
-              username={username}
-              onUsernameChange={setUsername}
-              offerDate={offerDate}
-              onOfferDateChange={setOfferDate}
-              position={position}
-              onPositionChange={setPosition}
-              companyName={companyName}
-              onCompanyNameChange={setCompanyName}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              headerWidth={headerWidth}
-              onHeaderWidthChange={setHeaderWidth}
-              headerHeight={headerHeight}
-              onHeaderHeightChange={setHeaderHeight}
-              footerWidth={footerWidth}
-              onFooterWidthChange={setFooterWidth}
-              footerHeight={footerHeight}
-              onFooterHeightChange={setFooterHeight}
-              signatureWidth={signatureWidth}
-              onSignatureWidthChange={setSignatureWidth}
-              signatureHeight={signatureHeight}
-              onSignatureHeightChange={setSignatureHeight}
-              signerName={signerName}
-              onSignerNameChange={setSignerName}
-              signerRole={signerRole}
-              onSignerRoleChange={setSignerRole}
-              onHeaderImageChange={handleHeaderUpload}
-              onSignatureImageChange={handleSignatureUpload}
-              onFooterImageChange={handleFooterUpload}
-              generating={generating}
-              onGenerate={handleGeneratePdf}
-            />
-            <OfferLetterPreview1
-              username={username}
-              offerDate={offerDate}
-              position={position}
-              companyName={companyName}
-              startDate={startDate}
-              headerImg={headerImg}
-              footerImg={footerImg}
-              signatureImg={signatureImg}
-              signatureWidth={signatureWidth}
-              signatureHeight={signatureHeight}
-              signerName={signerName}
-              signerRole={signerRole}
-              headerWidth={headerWidth}
-              headerHeight={headerHeight}
-              footerWidth={footerWidth}
-              footerHeight={footerHeight}
-            />
-          </div>
+          (() => {
+            const isIntern = selectedDocType && selectedDocType.name && selectedDocType.name.toLowerCase().includes('intern');
+            return (
+              <div className={styles.dualLayout}>
+                {isIntern ? (
+              <>
+                <InternshipForm1
+                  username={username}
+                  onUsernameChange={setUsername}
+                  enrollmentNumber={enrollmentNumber}
+                  onEnrollmentChange={setEnrollmentNumber}
+                  offerDate={offerDate}
+                  onOfferDateChange={setOfferDate}
+                  companyName={companyName}
+                  onCompanyNameChange={setCompanyName}
+                  department={department}
+                  onDepartmentChange={setDepartment}
+                  startDate={startDate}
+                  onStartDateChange={setStartDate}
+                  endDate={endDate}
+                  onEndDateChange={setEndDate}
+                  personTitle={personTitle}
+                  onPersonTitleChange={setPersonTitle}
+                  headerWidth={headerWidth}
+                  onHeaderWidthChange={setHeaderWidth}
+                  headerHeight={headerHeight}
+                  onHeaderHeightChange={setHeaderHeight}
+                  footerWidth={footerWidth}
+                  onFooterWidthChange={setFooterWidth}
+                  footerHeight={footerHeight}
+                  onFooterHeightChange={setFooterHeight}
+                  stampWidth={stampWidth}
+                  onStampWidthChange={setStampWidth}
+                  stampHeight={stampHeight}
+                  onStampHeightChange={setStampHeight}
+                  onHeaderImageChange={handleHeaderUpload}
+                  onStampImageChange={handleStampUpload}
+                  onFooterImageChange={handleFooterUpload}
+                  generating={generating}
+                  onGenerate={handleGeneratePdf}
+                />
+                <InternshipPreview1
+                  username={username}
+                  enrollmentNumber={enrollmentNumber}
+                  offerDate={offerDate}
+                  companyName={companyName}
+                  department={department}
+                  startDate={startDate}
+                  endDate={endDate}
+                  headerImg={headerImg}
+                  footerImg={footerImg}
+                  stampImg={stampImg}
+                  stampWidth={stampWidth}
+                  stampHeight={stampHeight}
+                  headerWidth={headerWidth}
+                  headerHeight={headerHeight}
+                  footerWidth={footerWidth}
+                  footerHeight={footerHeight}
+                  personTitle={personTitle}
+                />
+              </>
+                ) : (
+              <>
+                <OfferLetterForm1
+                  username={username}
+                  onUsernameChange={setUsername}
+                  offerDate={offerDate}
+                  onOfferDateChange={setOfferDate}
+                  position={position}
+                  onPositionChange={setPosition}
+                  companyName={companyName}
+                  onCompanyNameChange={setCompanyName}
+                  startDate={startDate}
+                  onStartDateChange={setStartDate}
+                  headerWidth={headerWidth}
+                  onHeaderWidthChange={setHeaderWidth}
+                  headerHeight={headerHeight}
+                  onHeaderHeightChange={setHeaderHeight}
+                  footerWidth={footerWidth}
+                  onFooterWidthChange={setFooterWidth}
+                  footerHeight={footerHeight}
+                  onFooterHeightChange={setFooterHeight}
+                  signatureWidth={signatureWidth}
+                  onSignatureWidthChange={setSignatureWidth}
+                  signatureHeight={signatureHeight}
+                  onSignatureHeightChange={setSignatureHeight}
+                  signerName={signerName}
+                  onSignerNameChange={setSignerName}
+                  signerRole={signerRole}
+                  onSignerRoleChange={setSignerRole}
+                  onHeaderImageChange={handleHeaderUpload}
+                  onSignatureImageChange={handleSignatureUpload}
+                  onFooterImageChange={handleFooterUpload}
+                  generating={generating}
+                  onGenerate={handleGeneratePdf}
+                />
+                <OfferLetterPreview1
+                  username={username}
+                  offerDate={offerDate}
+                  position={position}
+                  companyName={companyName}
+                  startDate={startDate}
+                  headerImg={headerImg}
+                  footerImg={footerImg}
+                  signatureImg={signatureImg}
+                  signatureWidth={signatureWidth}
+                  signatureHeight={signatureHeight}
+                  signerName={signerName}
+                  signerRole={signerRole}
+                  headerWidth={headerWidth}
+                  headerHeight={headerHeight}
+                  footerWidth={footerWidth}
+                  footerHeight={footerHeight}
+                />
+              </>
+                )}
+              </div>
+            );
+          })()
         )}
       </div>
     );
