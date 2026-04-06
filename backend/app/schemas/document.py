@@ -25,14 +25,17 @@ class GeneratedDocumentCreate(BaseModel):
     document_type_id: int
     title: str = Field(..., min_length=2, max_length=200)
     content: str = Field(..., min_length=1)
+    form_data: dict = Field(default_factory=dict)
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     status: DocumentStatus = DocumentStatus.DRAFT
 
 
 class GeneratedDocumentUpdate(BaseModel):
+    document_type_id: Optional[int] = None
     title: Optional[str] = Field(None, min_length=2, max_length=200)
     content: Optional[str] = Field(None, min_length=1)
+    form_data: Optional[dict] = None
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     status: Optional[DocumentStatus] = None
@@ -48,6 +51,7 @@ class GeneratedDocumentResponse(BaseModel):
     document_type_id: int
     title: str
     content: str
+    form_data: dict = Field(default_factory=dict)
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     status: DocumentStatus

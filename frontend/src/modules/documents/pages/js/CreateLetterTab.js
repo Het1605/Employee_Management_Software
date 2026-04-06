@@ -20,6 +20,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [loadingList, setLoadingList] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [editingDocId, setEditingDocId] = useState(null);
   const [username, setUsername] = useState('');
   const [offerDate, setOfferDate] = useState('');
   const [position, setPosition] = useState('');
@@ -92,6 +93,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const resetForm = () => {
     setTitle('');
     setDocumentTypeId('');
+    setEditingDocId(null);
     setUsername('');
     setOfferDate('');
     setPosition('');
@@ -142,6 +144,77 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const handleStampUpload = (files) => toDataUrl(files?.[0], setStampImg, setStampData);
   const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
 
+  const hydrateFromDocument = (doc) => {
+    if (!doc) return;
+    const normalizeDateInput = (val) => {
+      if (!val) return '';
+      const d = new Date(val);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toISOString().slice(0, 10);
+    };
+    const docName = (doc.document_type_name || doc.document_type?.name || '').toLowerCase();
+    setEditingDocId(doc.id);
+    setActiveView('create');
+    setTitle(doc.title || '');
+    const docTypeIdStr = doc.document_type_id ? String(doc.document_type_id) : '';
+    setDocumentTypeId(docTypeIdStr);
+
+    if (doc.form_data) {
+      const { template_type, data = {}, images = {}, styles = {} } = doc.form_data;
+      setPersonTitle(data.title || (template_type === 'offer_letter' ? 'Mr' : personTitle));
+      setUsername(data.username || '');
+      setCompanyName(data.company_name || '');
+      setPosition(data.position || '');
+      setDepartment(data.department || '');
+      setEnrollmentNumber(data.enrollment_number || '');
+      setSignatoryName(data.authorized_signatory_name || '');
+      setDesignation(data.designation || '');
+      setSignerName(data.signer_name || '');
+      setSignerRole(data.signer_role || '');
+      setOfferDate(normalizeDateInput(data.date || data.offer_date));
+      setStartDate(normalizeDateInput(data.start_date));
+      setEndDate(normalizeDateInput(data.end_date));
+
+      const headerSrc = images.header || '';
+      const footerSrc = images.footer || '';
+      const signatureSrc = images.signature || '';
+      const stampSrc = images.signature && template_type === 'internship_letter' ? images.signature : images.stamp || '';
+      const sealSrc = images.seal || '';
+      setHeaderData(headerSrc); setHeaderImg(headerSrc);
+      setFooterData(footerSrc); setFooterImg(footerSrc);
+      setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
+      setStampData(stampSrc); setStampImg(stampSrc);
+      setSealData(sealSrc); setSealImg(sealSrc);
+
+      setHeaderWidth(styles.headerWidth || '');
+      setHeaderHeight(styles.headerHeight || '');
+      setFooterWidth(styles.footerWidth || '');
+      setFooterHeight(styles.footerHeight || '');
+      setSignatureWidth(styles.signatureWidth || '');
+      setSignatureHeight(styles.signatureHeight || '');
+      setStampWidth(styles.signatureWidth || '');
+      setStampHeight(styles.signatureHeight || '');
+      setSealWidth(styles.sealWidth || '');
+      setSealHeight(styles.sealHeight || '');
+      return;
+    }
+
+    // Fallback: basic parsing if form_data missing
+    const parser = new DOMParser();
+    const dom = parser.parseFromString(doc.content || '', 'text/html');
+    const getImg = (alt) => dom.querySelector(`img[alt="${alt}"]`)?.getAttribute('src') || '';
+    const headerSrc = doc.header_data || getImg('Header');
+    const footerSrc = doc.footer_data || getImg('Footer');
+    const signatureSrc = doc.signature_data || getImg('Signature');
+    const stampSrc = doc.stamp_data || getImg('Stamp');
+    const sealSrc = doc.seal_data || getImg('Seal');
+    setHeaderData(headerSrc); setHeaderImg(headerSrc);
+    setFooterData(footerSrc); setFooterImg(footerSrc);
+    setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
+    setStampData(stampSrc); setStampImg(stampSrc);
+    setSealData(sealSrc); setSealImg(sealSrc);
+  };
+
   const handleGeneratePdf = async () => {
     const docName = selectedDocType?.name?.toLowerCase() || '';
     const isInternship = docName.includes('intern');
@@ -180,6 +253,92 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     }
     setGenerating(true);
     try {
+      const templateType = isExperience ? 'experience_letter' : isInternship ? 'internship_letter' : 'offer_letter';
+      const formDataPayload = {
+        template_type: templateType,
+        template_id: 'template1',
+        data: {},
+        images: {},
+        styles: {},
+      };
+
+      if (templateType === 'offer_letter') {
+        formDataPayload.data = {
+          username,
+          offer_date: offerDate,
+          position,
+          company_name: companyName,
+          start_date: startDate,
+          signer_name: signerName,
+          signer_role: signerRole,
+        };
+        formDataPayload.images = {
+          header: headerData,
+          signature: signatureData,
+          footer: footerData,
+        };
+        formDataPayload.styles = {
+          headerWidth,
+          headerHeight,
+          signatureWidth,
+          signatureHeight,
+          footerWidth,
+          footerHeight,
+        };
+      } else if (templateType === 'internship_letter') {
+        formDataPayload.data = {
+          title: personTitle,
+          username,
+          enrollment_number: enrollmentNumber,
+          company_name: companyName,
+          department,
+          start_date: startDate,
+          end_date: endDate,
+          date: offerDate,
+        };
+        formDataPayload.images = {
+          header: headerData,
+          signature: stampData,
+          footer: footerData,
+        };
+        formDataPayload.styles = {
+          headerWidth,
+          headerHeight,
+          signatureWidth: stampWidth,
+          signatureHeight: stampHeight,
+          footerWidth,
+          footerHeight,
+        };
+      } else if (templateType === 'experience_letter') {
+        formDataPayload.data = {
+          title: personTitle,
+          username,
+          company_name: companyName,
+          position,
+          start_date: startDate,
+          end_date: endDate,
+          date: offerDate,
+          authorized_signatory_name: signatoryName,
+          designation,
+        };
+        formDataPayload.images = {
+          header: headerData,
+          signature: signatureData,
+          seal: sealData,
+          footer: footerData,
+        };
+        formDataPayload.styles = {
+          headerWidth,
+          headerHeight,
+          signatureWidth,
+          signatureHeight,
+          sealWidth,
+          sealHeight,
+          footerWidth,
+          footerHeight,
+        };
+      }
+
       const content = generateTemplateContent({
         title,
         documentTypeId,
@@ -213,13 +372,23 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         personTitle,
         documentTypeName: selectedDocType?.name,
       });
-      await API.post('/documents/generate', {
-        title: title.trim(),
-        document_type_id: Number(documentTypeId),
-        content,
-      });
+      if (editingDocId) {
+        await API.put(`/documents/${editingDocId}`, {
+          title: title.trim(),
+          document_type_id: Number(documentTypeId),
+          content,
+          form_data: formDataPayload,
+        });
+      } else {
+        await API.post('/documents/generate', {
+          title: title.trim(),
+          document_type_id: Number(documentTypeId),
+          content,
+          form_data: formDataPayload,
+        });
+      }
       await fetchDocuments();
-      showToast('Document generated successfully', 'success');
+      showToast(editingDocId ? 'Document updated successfully' : 'Document generated successfully', 'success');
       resetForm();
       setActiveView('list');
     } catch (err) {
@@ -233,10 +402,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     return (
       <div className="management-card">
         <div className="management-header">
-          <div className="titles">
-            <h3>Create Letter</h3>
-            <p className="subtitle">Write and create official letter</p>
-          </div>
+        <div className="titles">
+          <h3>Create Letter {editingDocId ? '(Editing Mode)' : ''}</h3>
+          <p className="subtitle">{editingDocId ? 'Update existing document' : 'Write and create official letter'}</p>
+        </div>
           <div className="action-buttons" style={{ gap: '0.5rem' }}>
             <button className="btn-secondary" onClick={() => setActiveView('list')}>
               Cancel
@@ -308,6 +477,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onFooterImageChange={handleFooterUpload}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <InternshipPreview1
                   username={username}
@@ -372,6 +542,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onFooterImageChange={handleFooterUpload}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <ExperiencePreview1
                   username={username}
@@ -431,6 +602,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onFooterImageChange={handleFooterUpload}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <OfferLetterPreview1
                   username={username}
@@ -495,7 +667,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                     <button className={styles.iconBtn} onClick={() => setPreviewDoc(doc)} title="View">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
-                    <button className={styles.iconBtn} title="Edit" disabled>
+                    <button className={styles.iconBtn} title="Edit" onClick={() => hydrateFromDocument(doc)}>
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
                     <button

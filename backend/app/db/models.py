@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, CheckConstraint, Boolean, Enum, Numeric, UniqueConstraint, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -144,6 +145,7 @@ class GeneratedDocument(Base):
     document_type_id = Column(Integer, ForeignKey("document_types.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
+    form_data = Column(JSONB, nullable=True)
     file_url = Column(String, nullable=True)
     file_name = Column(String, nullable=True)
     status = Column(String, nullable=False, default="draft")

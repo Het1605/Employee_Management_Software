@@ -29,6 +29,11 @@ DOCUMENT_TYPE_SEEDS = [
 
 class DocumentService:
     @staticmethod
+    def _ensure_form_data(document):
+        if document.form_data is None:
+            document.form_data = {}
+        return document
+    @staticmethod
     def seed_document_types(db: Session):
         existing_codes = {
             code for (code,) in db.query(DocumentType.code).all()
@@ -78,7 +83,7 @@ class DocumentService:
         db.add(document)
         db.commit()
         db.refresh(document)
-        return document
+        return DocumentService._ensure_form_data(document)
 
     @staticmethod
     def _slugify(value: str) -> str:
@@ -184,7 +189,7 @@ class DocumentService:
         db.add(document)
         db.commit()
         db.refresh(document)
-        return document
+        return DocumentService._ensure_form_data(document)
 
     @staticmethod
     def update_document(db: Session, document_id: int, data: GeneratedDocumentUpdate):
@@ -195,15 +200,19 @@ class DocumentService:
 
         db.commit()
         db.refresh(document)
-        return document
+        return DocumentService._ensure_form_data(document)
 
     @staticmethod
     def list_documents(db: Session):
-        return db.query(GeneratedDocument).order_by(GeneratedDocument.created_at.desc()).all()
+        documents = db.query(GeneratedDocument).order_by(GeneratedDocument.created_at.desc()).all()
+        for document in documents:
+            DocumentService._ensure_form_data(document)
+        return documents
 
     @staticmethod
     def get_document(db: Session, document_id: int):
-        return DocumentService._get_generated_document(db, document_id)
+        document = DocumentService._get_generated_document(db, document_id)
+        return DocumentService._ensure_form_data(document)
 
     @staticmethod
     def delete_document(db: Session, document_id: int):

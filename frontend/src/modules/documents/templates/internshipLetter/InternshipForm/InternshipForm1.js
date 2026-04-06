@@ -35,6 +35,7 @@ export const InternshipForm1 = ({
   onFooterImageChange,
   generating,
   onGenerate,
+  submitLabel = 'Generate PDF',
 }) => (
   <div className={styles.formColumn}>
     <div className={styles.formGrid}>
@@ -123,7 +124,7 @@ export const InternshipForm1 = ({
     </div>
     <div className={styles.actionsRow}>
       <button className="btn-primary-action" onClick={onGenerate} disabled={generating}>
-        {generating ? 'Generating...' : 'Generate PDF'}
+        {generating ? 'Generating...' : submitLabel}
       </button>
     </div>
   </div>
