@@ -29,3 +29,4 @@ class UserAttendanceRecord(BaseModel):
 
 class AttendanceToday(BaseModel):
     status: str # 'present', 'half_day', 'absent'
+    day_type: str # 'working', 'half', 'off'

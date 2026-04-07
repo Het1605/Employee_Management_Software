@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, CheckConstraint, Boolean, Enum, Numeric, UniqueConstraint, Text, Date
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, CheckConstraint, Boolean, Enum, Numeric, UniqueConstraint, Text, Date, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -179,7 +179,7 @@ class Attendance(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
-    status = Column(String, nullable=False) # 'present', 'half_day'
+    status = Column(Enum("present", "half_day", "absent", name="attendance_status"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")
@@ -187,4 +187,6 @@ class Attendance(Base):
 
     __table_args__ = (
         UniqueConstraint('user_id', 'date', name='uq_user_attendance_per_day'),
+        Index('idx_company_attendance_date', 'company_id', 'date'),
+        Index('idx_user_attendance_date', 'user_id', 'date')
     )
