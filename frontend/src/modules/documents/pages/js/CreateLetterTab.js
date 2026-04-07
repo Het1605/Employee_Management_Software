@@ -28,12 +28,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [position, setPosition] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [headerData, setHeaderData] = useState('');
-  const [footerData, setFooterData] = useState('');
-  const [headerWidth, setHeaderWidth] = useState('');
-  const [headerHeight, setHeaderHeight] = useState('');
-  const [footerWidth, setFooterWidth] = useState('');
-  const [footerHeight, setFooterHeight] = useState('');
   const [personTitle, setPersonTitle] = useState('Mr');
   const [offerUserId, setOfferUserId] = useState('');
   const [offerUsers, setOfferUsers] = useState([]);
@@ -42,10 +36,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [experienceUserId, setExperienceUserId] = useState('');
   const [experienceUsers, setExperienceUsers] = useState([]);
   const [includeFooter, setIncludeFooter] = useState(true);
-  const [sealImg, setSealImg] = useState(null);
-  const [sealData, setSealData] = useState('');
-  const [sealWidth, setSealWidth] = useState('');
-  const [sealHeight, setSealHeight] = useState('');
   const [department, setDepartment] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -69,9 +59,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       }
     };
     fetchTypes();
-  }, [showToast]);
+  }, [showToast, setDocumentTypes]);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = React.useCallback(async () => {
     try {
       if (!selectedCompanyId) {
         setDocuments([]);
@@ -85,15 +75,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     } finally {
       setLoadingList(false);
     }
-  };
+  }, [selectedCompanyId, showToast]);
 
   useEffect(() => {
     if (activeView === 'list') {
       fetchDocuments();
     }
-  }, [activeView, selectedCompanyId]);
+  }, [activeView, fetchDocuments]);
 
-  const resetForm = () => {
+  const resetForm = React.useCallback(() => {
     setTitle('');
     setDocumentTypeId('');
     setEditingDocId(null);
@@ -102,13 +92,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setPosition('');
     setCompanyName('');
     setStartDate('');
-    setHeaderImg(null);
-    setFooterImg(null);
-    setHeaderData('');
-    setFooterData('');
-    setHeaderWidth('');
-    setHeaderHeight('');
-    setFooterWidth('');
     setPersonTitle('Mr');
     setOfferUserId('');
     setOfferUsers([]);
@@ -117,26 +100,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setExperienceUserId('');
     setExperienceUsers([]);
     setIncludeFooter(true);
-    setSealImg(null);
-    setSealData('');
-    setSealWidth('');
-    setSealHeight('');
     setDepartment('');
     setEndDate('');
-  };
-
-  const toDataUrl = (file, setPreview, setData) => {
-    if (!file) return;
-    const preview = URL.createObjectURL(file);
-    setPreview(preview);
-    const reader = new FileReader();
-    reader.onload = () => setData(reader.result || '');
-    reader.readAsDataURL(file);
-  };
-
-  const handleHeaderUpload = (files) => toDataUrl(files?.[0], setHeaderImg, setHeaderData);
-  const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
-  const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
+  }, []);
 
   useEffect(() => {
     const isOffer = selectedDocType?.name?.toLowerCase().includes('offer');
@@ -148,7 +114,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     API.get(`/companies/${selectedCompanyId}/users`)
       .then((res) => setOfferUsers(res.data || []))
       .catch(() => setOfferUsers([]));
-  }, [selectedCompanyId, activeView, selectedDocType]);
+  }, [selectedCompanyId, activeView, selectedDocType, setOfferUsers]);
 
   useEffect(() => {
     if (!offerUserId) {
@@ -163,7 +129,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setUsername(fullName);
     if (!position && found.position) setPosition(found.position);
     if (!startDate && found.start_date) setStartDate(found.start_date);
-  }, [offerUserId, offerUsers]);
+  }, [offerUserId, offerUsers, position, startDate, setUsername, setPosition, setStartDate]);
 
   useEffect(() => {
     const isIntern = selectedDocType?.name?.toLowerCase().includes('intern');
@@ -175,7 +141,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     API.get(`/companies/${selectedCompanyId}/users`)
       .then((res) => setInternUsers(res.data || []))
       .catch(() => setInternUsers([]));
-  }, [selectedCompanyId, activeView, selectedDocType]);
+  }, [selectedCompanyId, activeView, selectedDocType, setInternUsers]);
 
   useEffect(() => {
     if (!internUserId) {
@@ -192,7 +158,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setDepartment(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
-  }, [internUserId, internUsers]);
+  }, [internUserId, internUsers, setUsername, setDepartment, setStartDate, setEndDate]);
 
   useEffect(() => {
     const isExperience = selectedDocType?.name?.toLowerCase().includes('experience');
@@ -204,7 +170,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     API.get(`/companies/${selectedCompanyId}/users`)
       .then((res) => setExperienceUsers(res.data || []))
       .catch(() => setExperienceUsers([]));
-  }, [selectedCompanyId, activeView, selectedDocType]);
+  }, [selectedCompanyId, activeView, selectedDocType, setExperienceUsers]);
 
   useEffect(() => {
     if (!experienceUserId) {
@@ -221,7 +187,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setPosition(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
-  }, [experienceUserId, experienceUsers]);
+  }, [experienceUserId, experienceUsers, setUsername, setPosition, setStartDate, setEndDate]);
 
   const hydrateFromDocument = (doc) => {
     if (!doc) return;
@@ -231,7 +197,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       if (Number.isNaN(d.getTime())) return '';
       return d.toISOString().slice(0, 10);
     };
-    const docName = (doc.document_type_name || doc.document_type?.name || '').toLowerCase();
     setEditingDocId(doc.id);
     setActiveView('create');
     setTitle(doc.title || '');
@@ -239,7 +204,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setDocumentTypeId(docTypeIdStr);
 
     if (doc.form_data) {
-      const { template_type, data = {}, images = {}, styles = {} } = doc.form_data;
+      const { template_type, data = {} } = doc.form_data;
       setPersonTitle(data.title || (template_type === 'offer_letter' ? 'Mr' : personTitle));
       if (template_type === 'offer_letter') {
         setOfferUserId(data.user_id ? String(data.user_id) : '');
@@ -259,36 +224,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setOfferDate(normalizeDateInput(data.date || data.offer_date));
       setStartDate(normalizeDateInput(data.start_date));
       setEndDate(normalizeDateInput(data.end_date));
-
-      const headerSrc = images.header || '';
-      const footerSrc = images.footer || '';
-      const signatureSrc = images.signature || '';
-      const sealSrc = images.seal || '';
-      setHeaderData(headerSrc); setHeaderImg(headerSrc);
-      setFooterData(footerSrc); setFooterImg(footerSrc);
-      setSealData(sealSrc); setSealImg(sealSrc);
-
-      setHeaderWidth(styles.headerWidth || '');
-      setHeaderHeight(styles.headerHeight || '');
-      setFooterWidth(styles.footerWidth || '');
-      setFooterHeight(styles.footerHeight || '');
-      // legacy internships stored stamp size under signature styles
-      setSealWidth(styles.sealWidth || '');
-      setSealHeight(styles.sealHeight || '');
       return;
     }
-
-    // Fallback: basic parsing if form_data missing
-    const parser = new DOMParser();
-    const dom = parser.parseFromString(doc.content || '', 'text/html');
-    const getImg = (alt) => dom.querySelector(`img[alt="${alt}"]`)?.getAttribute('src') || '';
-    const headerSrc = doc.header_data || getImg('Header');
-    const footerSrc = doc.footer_data || getImg('Footer');
-    const signatureSrc = doc.signature_data || getImg('Signature');
-    const sealSrc = doc.seal_data || getImg('Seal');
-    setHeaderData(headerSrc); setHeaderImg(headerSrc);
-    setFooterData(footerSrc); setFooterImg(footerSrc);
-    setSealData(sealSrc); setSealImg(sealSrc);
   };
 
   const handleGeneratePdf = async () => {
@@ -379,21 +316,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeId,
         username,
         position,
-        companyName: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.name || '') : companyName,
+        companyName: selectedCompany?.name || '',
         startDate,
         offerDate,
         department,
         endDate,
-        headerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.header_image || '') : headerData,
-        footerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.footer_image || '') : footerData,
-        stampData: (selectedCompany?.company_stamp || ''),
-        headerWidth,
-        headerHeight,
-        footerWidth,
-        footerHeight,
-        sealWidth,
-        sealHeight,
-        sealData: docName.includes('experience') ? (selectedCompany?.company_stamp || '') : sealData,
+        headerData: selectedCompany?.header_image || '',
+        footerData: selectedCompany?.footer_image || '',
+        stampData: selectedCompany?.company_stamp || '',
+        sealData: selectedCompany?.company_stamp || '',
         includeFooter,
         personTitle,
         documentTypeName: selectedDocType?.name,

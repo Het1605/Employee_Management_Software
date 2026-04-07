@@ -46,7 +46,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 company_stamp: ''
             });
         }
-    }, [company, isOpen]);
+    }, [company, isOpen, setFormData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

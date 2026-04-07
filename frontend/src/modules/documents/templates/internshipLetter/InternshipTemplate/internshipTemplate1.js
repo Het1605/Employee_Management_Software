@@ -43,8 +43,6 @@ export function generateInternshipTemplate1(payload) {
   const hH = 'auto';
   const fW = '100%';
   const fH = 'auto';
-  const stW = '120px';
-  const stH = 'auto';
   const displayOfferDate = formatDateShort(offerDate);
   const displayStart = formatDateLong(startDate);
   const displayEnd = formatDateLong(endDate);
