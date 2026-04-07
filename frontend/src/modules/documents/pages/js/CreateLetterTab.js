@@ -45,6 +45,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [personTitle, setPersonTitle] = useState('Mr');
   const [offerUserId, setOfferUserId] = useState('');
   const [offerUsers, setOfferUsers] = useState([]);
+  const [internUserId, setInternUserId] = useState('');
+  const [internUsers, setInternUsers] = useState([]);
   const [includeFooter, setIncludeFooter] = useState(true);
   const [signatoryName, setSignatoryName] = useState('');
   const [designation, setDesignation] = useState('');
@@ -52,13 +54,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [sealData, setSealData] = useState('');
   const [sealWidth, setSealWidth] = useState('');
   const [sealHeight, setSealHeight] = useState('');
-  const [enrollmentNumber, setEnrollmentNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [stampImg, setStampImg] = useState(null);
-  const [stampData, setStampData] = useState('');
-  const [stampWidth, setStampWidth] = useState('');
-  const [stampHeight, setStampHeight] = useState('');
 
   const selectedDocType = useMemo(
     () => documentTypes.find((t) => String(t.id) === String(documentTypeId)),
@@ -130,6 +127,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setPersonTitle('Mr');
     setOfferUserId('');
     setOfferUsers([]);
+    setInternUserId('');
+    setInternUsers([]);
     setIncludeFooter(true);
     setSignatoryName('');
     setDesignation('');
@@ -137,13 +136,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setSealData('');
     setSealWidth('');
     setSealHeight('');
-    setEnrollmentNumber('');
     setDepartment('');
     setEndDate('');
-    setStampImg(null);
-    setStampData('');
-    setStampWidth('');
-    setStampHeight('');
   };
 
   const toDataUrl = (file, setPreview, setData) => {
@@ -158,7 +152,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const handleHeaderUpload = (files) => toDataUrl(files?.[0], setHeaderImg, setHeaderData);
   const handleSignatureUpload = (files) => toDataUrl(files?.[0], setSignatureImg, setSignatureData);
   const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
-  const handleStampUpload = (files) => toDataUrl(files?.[0], setStampImg, setStampData);
   const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
 
   useEffect(() => {
@@ -188,6 +181,35 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     if (!startDate && found.start_date) setStartDate(found.start_date);
   }, [offerUserId, offerUsers]);
 
+  useEffect(() => {
+    const isIntern = selectedDocType?.name?.toLowerCase().includes('intern');
+    if (activeView !== 'create' || !isIntern) return;
+    if (!selectedCompanyId) {
+      setInternUsers([]);
+      return;
+    }
+    API.get(`/companies/${selectedCompanyId}/users`)
+      .then((res) => setInternUsers(res.data || []))
+      .catch(() => setInternUsers([]));
+  }, [selectedCompanyId, activeView, selectedDocType]);
+
+  useEffect(() => {
+    if (!internUserId) {
+      setUsername('');
+      setDepartment('');
+      setStartDate('');
+      setEndDate('');
+      return;
+    }
+    const found = internUsers.find((u) => String(u.id) === String(internUserId));
+    if (!found) return;
+    const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
+    setDepartment(found.position || '');
+    setStartDate(found.start_date || '');
+    setEndDate(found.end_date || '');
+  }, [internUserId, internUsers]);
+
   const hydrateFromDocument = (doc) => {
     if (!doc) return;
     const normalizeDateInput = (val) => {
@@ -209,13 +231,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       if (template_type === 'offer_letter') {
         setOfferUserId(data.user_id ? String(data.user_id) : '');
         setIncludeFooter(data.include_footer !== false);
+      } else if (template_type === 'internship_letter') {
+        setInternUserId(data.user_id ? String(data.user_id) : '');
+        setIncludeFooter(data.include_footer !== false);
       } else {
         setUsername(data.username || '');
       }
       setCompanyName(data.company_name || '');
       setPosition(data.position || '');
       setDepartment(data.department || '');
-      setEnrollmentNumber(data.enrollment_number || '');
       setSignatoryName(data.authorized_signatory_name || '');
       setDesignation(data.designation || '');
       setSignerName(data.signer_name || '');
@@ -227,12 +251,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       const headerSrc = images.header || '';
       const footerSrc = images.footer || '';
       const signatureSrc = images.signature || '';
-      const stampSrc = images.signature && template_type === 'internship_letter' ? images.signature : images.stamp || '';
       const sealSrc = images.seal || '';
       setHeaderData(headerSrc); setHeaderImg(headerSrc);
       setFooterData(footerSrc); setFooterImg(footerSrc);
       setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
-      setStampData(stampSrc); setStampImg(stampSrc);
       setSealData(sealSrc); setSealImg(sealSrc);
 
       setHeaderWidth(styles.headerWidth || '');
@@ -241,8 +263,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setFooterHeight(styles.footerHeight || '');
       setSignatureWidth(styles.signatureWidth || '');
       setSignatureHeight(styles.signatureHeight || '');
-      setStampWidth(styles.signatureWidth || '');
-      setStampHeight(styles.signatureHeight || '');
+      // legacy internships stored stamp size under signature styles
       setSealWidth(styles.sealWidth || '');
       setSealHeight(styles.sealHeight || '');
       return;
@@ -255,12 +276,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const headerSrc = doc.header_data || getImg('Header');
     const footerSrc = doc.footer_data || getImg('Footer');
     const signatureSrc = doc.signature_data || getImg('Signature');
-    const stampSrc = doc.stamp_data || getImg('Stamp');
     const sealSrc = doc.seal_data || getImg('Seal');
     setHeaderData(headerSrc); setHeaderImg(headerSrc);
     setFooterData(footerSrc); setFooterImg(footerSrc);
     setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
-    setStampData(stampSrc); setStampImg(stampSrc);
     setSealData(sealSrc); setSealImg(sealSrc);
   };
 
@@ -274,8 +293,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const isExperience = docName.includes('experience');
 
     if (isInternship) {
-      if (!title.trim() || !documentTypeId || !personTitle || !username.trim() || !enrollmentNumber.trim() || !companyName.trim() || !department.trim() || !startDate || !endDate || !offerDate || !headerData || !stampData) {
-        showToast('Please fill all required fields and upload header & stamp images (footer optional).', 'error');
+      if (!title.trim() || !documentTypeId || !internUserId || !personTitle || !department.trim() || !startDate || !endDate || !offerDate) {
+        showToast('Please select a user and fill all required fields.', 'error');
         return;
       }
     } else if (isExperience) {
@@ -333,28 +352,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         formDataPayload.styles = {};
       } else if (templateType === 'internship_letter') {
         formDataPayload.data = {
-          title: personTitle,
-          username,
-          enrollment_number: enrollmentNumber,
-          company_name: companyName,
+          user_id: Number(internUserId),
           department,
           start_date: startDate,
           end_date: endDate,
           date: offerDate,
+          include_footer: includeFooter,
         };
-        formDataPayload.images = {
-          header: headerData,
-          signature: stampData,
-          footer: footerData,
-        };
-        formDataPayload.styles = {
-          headerWidth,
-          headerHeight,
-          signatureWidth: stampWidth,
-          signatureHeight: stampHeight,
-          footerWidth,
-          footerHeight,
-        };
+        formDataPayload.images = {};
+        formDataPayload.styles = {};
       } else if (templateType === 'experience_letter') {
         formDataPayload.data = {
           title: personTitle,
@@ -390,16 +396,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeId,
         username,
         position,
-        companyName: docName.includes('offer') ? (selectedCompany?.name || '') : companyName,
+        companyName: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.name || '') : companyName,
         startDate,
         offerDate,
-        enrollmentNumber,
         department,
         endDate,
-        headerData: docName.includes('offer') ? (selectedCompany?.header_image || '') : headerData,
-        footerData: docName.includes('offer') && includeFooter ? (selectedCompany?.footer_image || '') : footerData,
+        headerData: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.header_image || '') : headerData,
+        footerData: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.footer_image || '') : footerData,
         signatureData: docName.includes('offer') ? (selectedCompany?.signature_image || '') : signatureData,
-        stampData,
+        stampData: docName.includes('intern') ? (selectedCompany?.company_stamp || '') : '',
         signerName,
         signerRole,
         signatoryName,
@@ -410,8 +415,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         footerHeight,
         signatureWidth,
         signatureHeight,
-        stampWidth,
-        stampHeight,
         sealWidth,
         sealHeight,
         sealData,
@@ -492,14 +495,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 {isIntern ? (
               <>
                 <InternshipForm1
-                  username={username}
-                  onUsernameChange={setUsername}
-                  enrollmentNumber={enrollmentNumber}
-                  onEnrollmentChange={setEnrollmentNumber}
+                  users={internUsers}
+                  selectedUserId={internUserId}
+                  onUserChange={setInternUserId}
                   offerDate={offerDate}
                   onOfferDateChange={setOfferDate}
-                  companyName={companyName}
-                  onCompanyNameChange={setCompanyName}
                   department={department}
                   onDepartmentChange={setDepartment}
                   startDate={startDate}
@@ -508,42 +508,23 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onEndDateChange={setEndDate}
                   personTitle={personTitle}
                   onPersonTitleChange={setPersonTitle}
-                  headerWidth={headerWidth}
-                  onHeaderWidthChange={setHeaderWidth}
-                  headerHeight={headerHeight}
-                  onHeaderHeightChange={setHeaderHeight}
-                  footerWidth={footerWidth}
-                  onFooterWidthChange={setFooterWidth}
-                  footerHeight={footerHeight}
-                  onFooterHeightChange={setFooterHeight}
-                  stampWidth={stampWidth}
-                  onStampWidthChange={setStampWidth}
-                  stampHeight={stampHeight}
-                  onStampHeightChange={setStampHeight}
-                  onHeaderImageChange={handleHeaderUpload}
-                  onStampImageChange={handleStampUpload}
-                  onFooterImageChange={handleFooterUpload}
+                  includeFooter={includeFooter}
+                  onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <InternshipPreview1
                   username={username}
-                  enrollmentNumber={enrollmentNumber}
                   offerDate={offerDate}
-                  companyName={companyName}
+                  companyName={selectedCompany?.name || ''}
                   department={department}
                   startDate={startDate}
                   endDate={endDate}
-                  headerImg={headerImg}
-                  footerImg={footerImg}
-                  stampImg={stampImg}
-                  stampWidth={stampWidth}
-                  stampHeight={stampHeight}
-                  headerWidth={headerWidth}
-                  headerHeight={headerHeight}
-                  footerWidth={footerWidth}
-                  footerHeight={footerHeight}
+                  headerImg={selectedCompany?.header_image || ''}
+                  footerImg={selectedCompany?.footer_image || ''}
+                  stampImg={selectedCompany?.company_stamp || ''}
+                  includeFooter={includeFooter}
                   personTitle={personTitle}
                 />
               </>

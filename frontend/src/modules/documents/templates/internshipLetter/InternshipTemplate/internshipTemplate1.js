@@ -23,7 +23,6 @@ export function generateInternshipTemplate1(payload) {
   const {
     personTitle,
     username,
-    enrollmentNumber,
     companyName,
     department,
     startDate,
@@ -32,12 +31,7 @@ export function generateInternshipTemplate1(payload) {
     headerData,
     footerData,
     stampData,
-    headerWidth,
-    headerHeight,
-    footerWidth,
-    footerHeight,
-    stampWidth,
-    stampHeight,
+    includeFooter,
   } = payload;
 
   const titlePrefix = personTitle || 'Mr';
@@ -45,12 +39,12 @@ export function generateInternshipTemplate1(payload) {
     ? { he_she_cap: 'She', he_she: 'she', his_her: 'her', his_her_cap: 'Her', him_her: 'her' }
     : { he_she_cap: 'He', he_she: 'he', his_her: 'his', his_her_cap: 'His', him_her: 'him' };
 
-  const hW = headerWidth || '100%';
-  const hH = headerHeight || 'auto';
-  const fW = footerWidth || '100%';
-  const fH = footerHeight || 'auto';
-  const stW = stampWidth || '120px';
-  const stH = stampHeight || 'auto';
+  const hW = '100%';
+  const hH = 'auto';
+  const fW = '100%';
+  const fH = 'auto';
+  const stW = '120px';
+  const stH = 'auto';
   const displayOfferDate = formatDateShort(offerDate);
   const displayStart = formatDateLong(startDate);
   const displayEnd = formatDateLong(endDate);
@@ -87,7 +81,7 @@ export function generateInternshipTemplate1(payload) {
             <div class="title">INTERNSHIP COMPLETION LETTER</div>
             <div class="date-row"><strong>Date:</strong> <strong>${displayOfferDate}</strong></div>
             <div class="content">
-              <p>This is to certify that <strong>${titlePrefix} ${safe(username)}</strong> (Enrollment No: <strong>${safe(enrollmentNumber)}</strong>) has successfully completed ${pronounSet.his_her} internship with <strong>${safe(companyName)}</strong>.</p>
+              <p>This is to certify that <strong>${titlePrefix} ${safe(username)}</strong> has successfully completed ${pronounSet.his_her} internship with <strong>${safe(companyName)}</strong>.</p>
               <p>${pronounSet.he_she_cap} worked with us in the <strong>${safe(department)}</strong> for the period from <strong>${displayStart}</strong> to <strong>${displayEnd}</strong>.</p>
               <p>During the internship tenure, ${pronounSet.he_she} was involved in various development activities and gained practical exposure to software development processes, technical implementation, and professional work culture. ${pronounSet.his_her_cap} conduct and performance during the internship period were found to be satisfactory.</p>
               <p>We appreciate ${pronounSet.his_her} efforts and wish ${pronounSet.him_her} success in future academic and professional endeavors.</p>
@@ -99,9 +93,7 @@ export function generateInternshipTemplate1(payload) {
               ${stampData ? `<img src="${stampData}" alt="Stamp" style="width:${stW}; height:${stH};" />` : ''}
             </div>
           </div>
-          <div class="footer">
-            ${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}
-          </div>
+          ${includeFooter ? `<div class="footer">${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}</div>` : ''}
         </div>
       </body>
     </html>

@@ -3,7 +3,6 @@ import styles from '../../../pages/styles/DocumentsPage.module.css';
 
 export const InternshipPreview1 = ({
   username,
-  enrollmentNumber,
   offerDate,
   companyName,
   department,
@@ -12,12 +11,7 @@ export const InternshipPreview1 = ({
   headerImg,
   footerImg,
   stampImg,
-  stampWidth,
-  stampHeight,
-  headerWidth,
-  headerHeight,
-  footerWidth,
-  footerHeight,
+  includeFooter,
   personTitle,
 }) => {
   const formatDateShort = (dateStr) => {
@@ -56,7 +50,7 @@ export const InternshipPreview1 = ({
           src={headerImg}
           alt="Header"
           className={styles.previewImage}
-          style={{ width: headerWidth || '100%', height: headerHeight || 'auto' }}
+          style={{ width: '100%', height: 'auto' }}
         />
       )}
       <div className={styles.previewTitle}>INTERNSHIP COMPLETION LETTER</div>
@@ -64,7 +58,7 @@ export const InternshipPreview1 = ({
         <span><strong>Date:</strong> {displayOfferDate}</span>
       </div>
       <div className={styles.previewContent}>
-        <p>This is to certify that <strong>{titlePrefix} {username || '________'}</strong> (Enrollment No: <strong>{enrollmentNumber || '________'}</strong>) has successfully completed {pronounSet.his_her} internship with <strong>{companyName || '________'}</strong>.</p>
+        <p>This is to certify that <strong>{titlePrefix} {username || '________'}</strong> has successfully completed {pronounSet.his_her} internship with <strong>{companyName || '________'}</strong>.</p>
 
         <p>{pronounSet.he_she_cap} worked with us in the <strong>{department || '________'}</strong> for the period from <strong>{displayStart}</strong> to <strong>{displayEnd}</strong>.</p>
 
@@ -83,16 +77,16 @@ export const InternshipPreview1 = ({
             src={stampImg}
             alt="Stamp"
             className={styles.previewSignatureImage}
-            style={{ width: stampWidth || '120px', height: stampHeight || 'auto' }}
+            style={{ width: '120px', height: 'auto' }}
           />
         )}
       </div>
-      {footerImg && (
+      {includeFooter && footerImg && (
         <img
           src={footerImg}
           alt="Footer"
           className={styles.previewImage}
-          style={{ width: footerWidth || '100%', height: footerHeight || 'auto' }}
+          style={{ width: '100%', height: 'auto' }}
         />
       )}
     </div>
