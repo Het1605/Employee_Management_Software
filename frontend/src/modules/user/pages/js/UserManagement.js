@@ -68,11 +68,15 @@ const UserManagement = () => {
   };
 
   return (
-    <MainLayout 
-      title="User Management" 
-      actionLabel="Add New" 
-      onActionClick={() => { setSelectedUser(null); setIsModalOpen(true); }}
-    >
+    <MainLayout>
+      <div className={styles.actionRow}>
+        <button
+          className="btn-primary-action"
+          onClick={() => { setSelectedUser(null); setIsModalOpen(true); }}
+        >
+          Add New
+        </button>
+      </div>
       <div className={styles.userGrid}>
         {users.map(user => (
           <UserCard 

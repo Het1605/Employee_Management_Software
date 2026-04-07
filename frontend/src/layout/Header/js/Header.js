@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCompanyContext } from '../../../contexts/CompanyContext';
 import styles from '../style/Header.module.css';
 
-const Header = ({ title, onToggleSidebar }) => {
+const Header = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
   const username = localStorage.getItem('username');
   const role = localStorage.getItem('role');
@@ -22,7 +22,6 @@ const Header = ({ title, onToggleSidebar }) => {
           <span></span>
           <span></span>
         </button>
-        <div className={styles.headerTitle}>{title || "HR Portal"}</div>
       </div>
 
       <div className={styles.rightSection}>

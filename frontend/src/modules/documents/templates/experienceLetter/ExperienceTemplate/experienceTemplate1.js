@@ -31,7 +31,6 @@ export function generateExperienceTemplate1(payload) {
     offerDate,
     headerData,
     footerData,
-    signatureData,
     sealData,
     includeFooter,
   } = payload;
@@ -45,10 +44,6 @@ export function generateExperienceTemplate1(payload) {
   const hH = 'auto';
   const fW = '100%';
   const fH = 'auto';
-  const sigW = '150px';
-  const sigH = 'auto';
-  const sealW = '150px';
-  const sealH = 'auto';
   const displayOfferDate = formatDateShort(offerDate);
   const displayStart = formatDateLong(startDate);
   const displayEnd = formatDateLong(endDate);
@@ -63,7 +58,7 @@ export function generateExperienceTemplate1(payload) {
           .page { width: 794px; height: 1123px; margin: 0 auto; display: flex; flex-direction: column; box-sizing: border-box; }
           .header { width: 100%; flex: 0 0 auto; margin: 0; padding: 0; }
           .header img { width: 100%; display: block; margin: 0; padding: 0; }
-          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 180px; overflow: hidden; }
+          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 50px; }
           .content { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
           .content p { margin: 10px 0; line-height: 1.6; }
           .title { text-align: center; font-weight: 700; margin: 16px 0; }
@@ -71,7 +66,8 @@ export function generateExperienceTemplate1(payload) {
           .footer { width: 100%; flex: 0 0 auto; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
-          .spacer-xl { height: 20px; }
+          .signature { margin-top: 48px; }
+          .signature img { max-width: 140px; margin: 8px 0; }
         </style>
       </head>
       <body>
@@ -94,11 +90,12 @@ export function generateExperienceTemplate1(payload) {
 
               <p>We sincerely appreciate ${pronounSet.his_her} contributions and wish ${pronounSet.him_her} continued success in ${pronounSet.his_her} future professional endeavors.</p>
 
-              <div class="spacer-xl"></div>
-              <p>Sincerely,</p>
-              ${signatureData ? `<img src="${signatureData}" alt="Signature" style="width:${sigW}; height:${sigH};" />` : ''}
-              <p>Authorized Signatory</p>
-              ${sealData ? `<img src="${sealData}" alt="Seal" style="width:${sealW}; height:${sealH};" />` : ''}
+              <div class="signature">
+                <p>For</p>
+                <p><strong>${safe(companyName)}</strong></p>
+                ${sealData ? `<img src="${sealData}" alt="Company Stamp" />` : ''}
+                <p>Authorized Signatory</p>
+              </div>
             </div>
           </div>
           ${includeFooter ? `<div class="footer">${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}</div>` : ''}

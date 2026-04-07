@@ -5,6 +5,12 @@
   width: 100%;
 }
 
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
 .userCard {
   background: #fff;
   border-radius: 12px;

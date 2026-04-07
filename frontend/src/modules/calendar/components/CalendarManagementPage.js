@@ -2,9 +2,9 @@ import React from 'react';
 import MainLayout from '../../../layout/MainLayout/js/MainLayout';
 import CalendarDashboard from '../pages/js/CalendarDashboard';
 
-const CalendarManagementPage = ({ title }) => {
+const CalendarManagementPage = () => {
   return (
-    <MainLayout title={title}>
+    <MainLayout>
       <CalendarDashboard />
     </MainLayout>
   );

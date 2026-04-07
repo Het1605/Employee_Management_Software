@@ -106,12 +106,13 @@ const CompanyManagement = () => {
     );
 
     return (
-        <MainLayout 
-            title="Company Registry" 
-            actionLabel="+ Register New Company"
-            onActionClick={handleAdd}
-        >
+        <MainLayout>
             <div className={styles.container}>
+                <div className={styles.actionRow}>
+                    <button className="btn-primary-action" onClick={handleAdd}>
+                        + Register New Company
+                    </button>
+                </div>
                 <div className={styles.companyGrid}>
                     {companies.map(company => (
                         <div key={company.id} className={styles.companyCard}>

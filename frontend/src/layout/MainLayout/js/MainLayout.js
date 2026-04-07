@@ -3,7 +3,7 @@ import Header from '../../Header/js/Header';
 import Sidebar from '../../Sidebar/js/Sidebar';
 import styles from '../style/Layout.module.css';
 
-const MainLayout = ({ children, title, actionLabel, onActionClick }) => {
+const MainLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -19,20 +19,9 @@ const MainLayout = ({ children, title, actionLabel, onActionClick }) => {
 
       <div className={styles.contentArea}>
         {/* Header with toggle solely */}
-        <Header 
-          title={title} 
-          onToggleSidebar={toggleSidebar}
-        />
+        <Header onToggleSidebar={toggleSidebar} />
         
         <main className={styles.mainContent}>
-          <div className={styles.pageHeader}>
-            {title && <h1 className={styles.pageTitle}>{title}</h1>}
-            {actionLabel && (
-              <button className={styles.actionBtn} onClick={onActionClick}>
-                {actionLabel}
-              </button>
-            )}
-          </div>
           {children}
         </main>
       </div>

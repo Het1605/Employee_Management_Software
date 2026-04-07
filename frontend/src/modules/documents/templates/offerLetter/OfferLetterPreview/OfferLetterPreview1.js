@@ -9,9 +9,7 @@ export const OfferLetterPreview1 = ({
   startDate,
   headerImg,
   footerImg,
-  signatureImg,
-  signerName,
-  signerRole,
+  stampImg,
   includeFooter,
 }) => (
   <div className={styles.previewColumn}>
@@ -29,30 +27,29 @@ export const OfferLetterPreview1 = ({
         <span><strong>Date:</strong> {offerDate || '____________'}</span>
       </div>
       <div className={styles.previewContent}>
-        <p><strong>Dear {username || '________'},</strong></p>
+        <p>Dear <strong>{username || '________'}</strong>,</p>
 
-        <p>We are pleased to offer you the position of <strong>{position || '________'}</strong> at <strong>{companyName || '________'}</strong>. Based on your skills, experience, and interview performance, we are confident that you will be a valuable addition to our organization.</p>
+        <p>We are pleased to offer you the position of <strong>{position || '________'}</strong> at <strong>{companyName || '________'}</strong>. Based on your qualifications, skills, and performance during the selection process, we are confident that you will be a valuable addition to our organization.</p>
 
-        <p>Your employment with us will commence from <strong>{startDate || '________'}</strong>. You will be expected to carry out your responsibilities diligently and contribute effectively to the growth and success of the team and the company.</p>
+        <p>Your employment with us will commence from <strong>{startDate || '________'}</strong>. You will be expected to perform your duties with dedication, professionalism, and integrity, and contribute effectively towards the growth and success of the organization.</p>
 
-        <p>During your tenure, you will be involved in various projects and assignments aligned with your role. You are expected to maintain professionalism, follow company policies, and demonstrate a strong commitment to quality and timely delivery of work.</p>
+        <p>During your tenure, you will be assigned responsibilities aligned with your role. You are expected to adhere to company policies, maintain confidentiality, and demonstrate commitment to quality and timely delivery of your work.</p>
 
-        <p>This offer is subject to the terms and conditions of employment, including company policies, code of conduct, and performance expectations. Further details regarding your role, responsibilities, and compensation structure will be shared with you separately.</p>
+        <p>This offer is subject to the terms and conditions of employment, including company policies and code of conduct. Detailed information regarding your compensation, benefits, and responsibilities will be shared with you separately.</p>
 
-        <p>We are excited to have you join our team and look forward to a successful and mutually beneficial association. We wish you a rewarding career with <strong>{companyName || '________'}</strong>.</p>
+        <p>We look forward to welcoming you to our team and wish you a successful and rewarding career with <strong>{companyName || '________'}</strong>.</p>
 
-        <div className={styles.spacerXL}></div>
-        <div style={{ textAlign: 'right' }}>
-          <p><strong>Sincerely,</strong></p>
-          {signatureImg && (
+        <div className={styles.signaturePreview}>
+          <p>For</p>
+          <p><strong>{companyName || '________'}</strong></p>
+          {stampImg && (
             <img
-              src={signatureImg}
-              alt="Signature"
+              src={stampImg}
+              alt="Company Stamp"
               className={styles.previewSignatureImage}
             />
           )}
-          <p>{signerName || '________'}</p>
-          <p>{signerRole || '________'}</p>
+          <p>Authorized Signatory</p>
         </div>
       </div>
       {includeFooter && footerImg && (

@@ -67,8 +67,8 @@ export function generateInternshipTemplate1(payload) {
           .footer { width: 100%; flex: 0 0 auto; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
-          .spacer-xl { height: 16px; }
-          .spacer-md { height: 12px; }
+          .signature { margin-top: 48px; }
+          .signature img { max-width: 140px; margin: 8px 0; }
         </style>
       </head>
       <body>
@@ -85,12 +85,12 @@ export function generateInternshipTemplate1(payload) {
               <p>${pronounSet.he_she_cap} worked with us in the <strong>${safe(department)}</strong> for the period from <strong>${displayStart}</strong> to <strong>${displayEnd}</strong>.</p>
               <p>During the internship tenure, ${pronounSet.he_she} was involved in various development activities and gained practical exposure to software development processes, technical implementation, and professional work culture. ${pronounSet.his_her_cap} conduct and performance during the internship period were found to be satisfactory.</p>
               <p>We appreciate ${pronounSet.his_her} efforts and wish ${pronounSet.him_her} success in future academic and professional endeavors.</p>
-              <div class="spacer-xl"></div>
-              <p>For<br/><strong>${safe(companyName)}</strong></p>
-              <div class="spacer-md"></div>
-              <p>Authorized Signatory</p>
-              <div class="spacer-xl"></div>
-              ${stampData ? `<img src="${stampData}" alt="Stamp" style="width:${stW}; height:${stH};" />` : ''}
+              <div class="signature">
+                <p>For</p>
+                <p><strong>${safe(companyName)}</strong></p>
+                ${stampData ? `<img src="${stampData}" alt="Company Stamp" />` : ''}
+                <p>Authorized Signatory</p>
+              </div>
             </div>
           </div>
           ${includeFooter ? `<div class="footer">${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}</div>` : ''}

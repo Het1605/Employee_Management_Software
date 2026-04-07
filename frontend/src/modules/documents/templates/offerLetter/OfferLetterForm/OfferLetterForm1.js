@@ -11,10 +11,6 @@ export const OfferLetterForm1 = ({
   onPositionChange,
   startDate,
   onStartDateChange,
-  signerName,
-  onSignerNameChange,
-  signerRole,
-  onSignerRoleChange,
   includeFooter,
   onIncludeFooterChange,
   generating,
@@ -51,14 +47,6 @@ export const OfferLetterForm1 = ({
       <div className={styles.formField}>
         <label>Start Date</label>
         <input type="date" value={startDate} onChange={(e) => onStartDateChange(e.target.value)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Signer Name</label>
-        <input type="text" value={signerName} onChange={(e) => onSignerNameChange(e.target.value)} placeholder="Required" />
-      </div>
-      <div className={styles.formField}>
-        <label>Signer Role/Designation</label>
-        <input type="text" value={signerRole} onChange={(e) => onSignerRoleChange(e.target.value)} placeholder="Required" />
       </div>
       <div className={styles.formField}>
         <label>Include Footer</label>

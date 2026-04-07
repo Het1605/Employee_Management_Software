@@ -11,7 +11,6 @@ export const ExperiencePreview1 = ({
   personTitle,
   headerImg,
   footerImg,
-  signatureImg,
   sealImg,
   includeFooter,
 }) => {
@@ -72,25 +71,18 @@ export const ExperiencePreview1 = ({
 
           <p>We sincerely appreciate {pronounSet.his_her} contributions and wish {pronounSet.him_her} continued success in {pronounSet.his_her} future professional endeavors.</p>
 
-          <div className={styles.spacerXL}></div>
-          <p>Sincerely,</p>
-          {signatureImg && (
-            <img
-              src={signatureImg}
-              alt="Signature"
-              className={styles.previewSignatureImage}
-              style={{ width: '150px', height: 'auto' }}
-            />
-          )}
-          <p>Authorized Signatory</p>
+        <div className={styles.signaturePreview}>
+          <p>For</p>
+          <p><strong>{companyName || '________'}</strong></p>
           {sealImg && (
             <img
               src={sealImg}
-              alt="Seal"
+              alt="Company Stamp"
               className={styles.previewSignatureImage}
-              style={{ width: '150px', height: 'auto' }}
             />
           )}
+          <p>Authorized Signatory</p>
+        </div>
         </div>
 
         {includeFooter && footerImg && (

@@ -4,18 +4,11 @@
     margin: 0 auto;
 }
 
-/* Page Header */
-.pageHeader {
+/* Action Row */
+.actionRow {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.pageHeader h2 {
-    font-size: 1.8rem;
-    color: var(--text-color);
-    margin: 0;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
 }
 
 /* Company Grid */

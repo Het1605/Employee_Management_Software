@@ -126,7 +126,7 @@ const SalaryStructureManagement = () => {
   };
 
   return (
-    <MainLayout title="Salary Structure Management">
+    <MainLayout>
       <div className={styles.container}>
         {!selectedCompanyId ? (
           <div className={styles.placeholderCard}>Please select a company from the header to manage salary structures.</div>

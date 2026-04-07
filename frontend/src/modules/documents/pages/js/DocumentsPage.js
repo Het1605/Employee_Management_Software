@@ -17,11 +17,8 @@ const DocumentsPage = () => {
   const { selectedCompanyId } = useCompanyContext();
 
   return (
-    <MainLayout title="Document Management">
+    <MainLayout>
       <div className={styles.container}>
-        <div className={styles.pageIntro}>
-          <p className={styles.subtitle}>Create and send official documents</p>
-        </div>
 
         {!selectedCompanyId ? (
           <div className={styles.placeholderArea}>Please select a company from the header to manage documents.</div>

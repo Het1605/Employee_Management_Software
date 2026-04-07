@@ -40,8 +40,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [footerHeight, setFooterHeight] = useState('');
   const [signatureWidth, setSignatureWidth] = useState('');
   const [signatureHeight, setSignatureHeight] = useState('');
-  const [signerName, setSignerName] = useState('');
-  const [signerRole, setSignerRole] = useState('');
   const [personTitle, setPersonTitle] = useState('Mr');
   const [offerUserId, setOfferUserId] = useState('');
   const [offerUsers, setOfferUsers] = useState([]);
@@ -122,8 +120,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setFooterHeight('');
     setSignatureWidth('');
     setSignatureHeight('');
-    setSignerName('');
-    setSignerRole('');
     setPersonTitle('Mr');
     setOfferUserId('');
     setOfferUsers([]);
@@ -272,8 +268,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setCompanyName(data.company_name || '');
       setPosition(data.position || '');
       setDepartment(data.department || '');
-      setSignerName(data.signer_name || '');
-      setSignerRole(data.signer_role || '');
       setOfferDate(normalizeDateInput(data.date || data.offer_date));
       setStartDate(normalizeDateInput(data.start_date));
       setEndDate(normalizeDateInput(data.end_date));
@@ -346,7 +340,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         showToast('Select a company from the header first.', 'error');
         return;
       }
-      if (!title.trim() || !documentTypeId || !offerUserId || !position.trim() || !startDate || !offerDate || !signerName.trim() || !signerRole.trim()) {
+      if (!title.trim() || !documentTypeId || !offerUserId || !position.trim() || !startDate || !offerDate) {
         showToast('Please select a user and fill all required fields.', 'error');
         return;
       }
@@ -368,8 +362,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
           offer_date: offerDate,
           position,
           start_date: startDate,
-          signer_name: signerName,
-          signer_role: signerRole,
           include_footer: includeFooter,
         };
         formDataPayload.images = {};
@@ -410,10 +402,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         endDate,
         headerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.header_image || '') : headerData,
         footerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.footer_image || '') : footerData,
-        signatureData: docName.includes('offer') || docName.includes('experience') ? (selectedCompany?.signature_image || '') : signatureData,
-        stampData: docName.includes('intern') ? (selectedCompany?.company_stamp || '') : '',
-        signerName,
-        signerRole,
+        stampData: (selectedCompany?.company_stamp || ''),
         headerWidth,
         headerHeight,
         footerWidth,
@@ -565,7 +554,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   personTitle={personTitle}
                   headerImg={selectedCompany?.header_image || ''}
                   footerImg={selectedCompany?.footer_image || ''}
-                  signatureImg={selectedCompany?.signature_image || ''}
                   sealImg={selectedCompany?.company_stamp || ''}
                   includeFooter={includeFooter}
                 />
@@ -582,10 +570,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onPositionChange={setPosition}
                   startDate={startDate}
                   onStartDateChange={setStartDate}
-                  signerName={signerName}
-                  onSignerNameChange={setSignerName}
-                  signerRole={signerRole}
-                  onSignerRoleChange={setSignerRole}
                   includeFooter={includeFooter}
                   onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
@@ -600,9 +584,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   startDate={startDate}
                   headerImg={selectedCompany?.header_image || ''}
                   footerImg={selectedCompany?.footer_image || ''}
-                  signatureImg={selectedCompany?.signature_image || ''}
-                  signerName={signerName}
-                  signerRole={signerRole}
+                  stampImg={selectedCompany?.company_stamp || ''}
                   includeFooter={includeFooter}
                 />
               </>

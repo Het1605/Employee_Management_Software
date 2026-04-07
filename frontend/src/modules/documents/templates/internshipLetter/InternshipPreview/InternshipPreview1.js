@@ -66,20 +66,18 @@ export const InternshipPreview1 = ({
 
         <p>We appreciate {pronounSet.his_her} efforts and wish {pronounSet.him_her} success in future academic and professional endeavors.</p>
 
-        <div className={styles.spacerXL}></div>
-        <p>For<br/><strong>{companyName ? `${companyName},` : '________'}</strong></p>
-        <div className={styles.spacerMd || styles.spacerXL}></div>
-        <p>Authorized Signatory</p>
-
-        <div className={styles.spacerXL}></div>
-        {stampImg && (
-          <img
-            src={stampImg}
-            alt="Stamp"
-            className={styles.previewSignatureImage}
-            style={{ width: '120px', height: 'auto' }}
-          />
-        )}
+        <div className={styles.signaturePreview}>
+          <p>For</p>
+          <p><strong>{companyName || '________'}</strong></p>
+          {stampImg && (
+            <img
+              src={stampImg}
+              alt="Company Stamp"
+              className={styles.previewSignatureImage}
+            />
+          )}
+          <p>Authorized Signatory</p>
+        </div>
       </div>
       {includeFooter && footerImg && (
         <img

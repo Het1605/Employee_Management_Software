@@ -127,7 +127,7 @@ const CompanyAssignment = () => {
     );
 
     return (
-        <MainLayout title="User-Company Assignment">
+        <MainLayout>
             <div className={styles.container}>
                 <div className={styles.assignmentLayout}>
                     <div className={styles.topControls}>
