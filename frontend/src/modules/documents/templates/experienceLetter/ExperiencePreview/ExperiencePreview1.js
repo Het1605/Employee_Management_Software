@@ -13,16 +13,7 @@ export const ExperiencePreview1 = ({
   footerImg,
   signatureImg,
   sealImg,
-  signatoryName,
-  designation,
-  headerWidth,
-  headerHeight,
-  footerWidth,
-  footerHeight,
-  signatureWidth,
-  signatureHeight,
-  sealWidth,
-  sealHeight,
+  includeFooter,
 }) => {
   const formatDateShort = (dateStr) => {
     if (!dateStr) return '____________';
@@ -62,10 +53,9 @@ export const ExperiencePreview1 = ({
             src={headerImg}
             alt="Header"
             className={styles.previewImage}
-            style={{ width: headerWidth || '100%', height: headerHeight || 'auto' }}
+            style={{ width: '100%', height: 'auto' }}
           />
         )}
-
         <div className={styles.previewTitle}>EXPERIENCE LETTER</div>
         <div className={styles.previewRow}>
           <span><strong>Date:</strong> {displayOfferDate}</span>
@@ -89,27 +79,26 @@ export const ExperiencePreview1 = ({
               src={signatureImg}
               alt="Signature"
               className={styles.previewSignatureImage}
-              style={{ width: signatureWidth || '150px', height: signatureHeight || 'auto' }}
+              style={{ width: '150px', height: 'auto' }}
             />
           )}
-          <p>{signatoryName || '________'}</p>
-          <p>{designation || '________'}</p>
+          <p>Authorized Signatory</p>
           {sealImg && (
             <img
               src={sealImg}
               alt="Seal"
               className={styles.previewSignatureImage}
-              style={{ width: sealWidth || '150px', height: sealHeight || 'auto' }}
+              style={{ width: '150px', height: 'auto' }}
             />
           )}
         </div>
 
-        {footerImg && (
+        {includeFooter && footerImg && (
           <img
             src={footerImg}
             alt="Footer"
             className={styles.previewImage}
-            style={{ width: footerWidth || '100%', height: footerHeight || 'auto' }}
+            style={{ width: '100%', height: 'auto' }}
           />
         )}
       </div>

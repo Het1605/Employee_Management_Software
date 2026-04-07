@@ -47,9 +47,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [offerUsers, setOfferUsers] = useState([]);
   const [internUserId, setInternUserId] = useState('');
   const [internUsers, setInternUsers] = useState([]);
+  const [experienceUserId, setExperienceUserId] = useState('');
+  const [experienceUsers, setExperienceUsers] = useState([]);
   const [includeFooter, setIncludeFooter] = useState(true);
-  const [signatoryName, setSignatoryName] = useState('');
-  const [designation, setDesignation] = useState('');
   const [sealImg, setSealImg] = useState(null);
   const [sealData, setSealData] = useState('');
   const [sealWidth, setSealWidth] = useState('');
@@ -129,9 +129,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setOfferUsers([]);
     setInternUserId('');
     setInternUsers([]);
+    setExperienceUserId('');
+    setExperienceUsers([]);
     setIncludeFooter(true);
-    setSignatoryName('');
-    setDesignation('');
     setSealImg(null);
     setSealData('');
     setSealWidth('');
@@ -210,6 +210,35 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setEndDate(found.end_date || '');
   }, [internUserId, internUsers]);
 
+  useEffect(() => {
+    const isExperience = selectedDocType?.name?.toLowerCase().includes('experience');
+    if (activeView !== 'create' || !isExperience) return;
+    if (!selectedCompanyId) {
+      setExperienceUsers([]);
+      return;
+    }
+    API.get(`/companies/${selectedCompanyId}/users`)
+      .then((res) => setExperienceUsers(res.data || []))
+      .catch(() => setExperienceUsers([]));
+  }, [selectedCompanyId, activeView, selectedDocType]);
+
+  useEffect(() => {
+    if (!experienceUserId) {
+      setUsername('');
+      setPosition('');
+      setStartDate('');
+      setEndDate('');
+      return;
+    }
+    const found = experienceUsers.find((u) => String(u.id) === String(experienceUserId));
+    if (!found) return;
+    const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
+    setPosition(found.position || '');
+    setStartDate(found.start_date || '');
+    setEndDate(found.end_date || '');
+  }, [experienceUserId, experienceUsers]);
+
   const hydrateFromDocument = (doc) => {
     if (!doc) return;
     const normalizeDateInput = (val) => {
@@ -234,14 +263,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       } else if (template_type === 'internship_letter') {
         setInternUserId(data.user_id ? String(data.user_id) : '');
         setIncludeFooter(data.include_footer !== false);
+      } else if (template_type === 'experience_letter') {
+        setExperienceUserId(data.user_id ? String(data.user_id) : '');
+        setIncludeFooter(data.include_footer !== false);
       } else {
         setUsername(data.username || '');
       }
       setCompanyName(data.company_name || '');
       setPosition(data.position || '');
       setDepartment(data.department || '');
-      setSignatoryName(data.authorized_signatory_name || '');
-      setDesignation(data.designation || '');
       setSignerName(data.signer_name || '');
       setSignerRole(data.signer_role || '');
       setOfferDate(normalizeDateInput(data.date || data.offer_date));
@@ -302,19 +332,13 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         !title.trim() ||
         !documentTypeId ||
         !personTitle ||
-        !username.trim() ||
-        !companyName.trim() ||
+        !experienceUserId ||
         !position.trim() ||
         !startDate ||
         !endDate ||
-        !offerDate ||
-        !headerData ||
-        !signatureData ||
-        !sealData ||
-        !signatoryName.trim() ||
-        !designation.trim()
+        !offerDate
       ) {
-        showToast('Please fill all required fields and upload header, signature, and seal images (footer optional).', 'error');
+        showToast('Please select a user and fill all required fields.', 'error');
         return;
       }
     } else {
@@ -363,32 +387,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         formDataPayload.styles = {};
       } else if (templateType === 'experience_letter') {
         formDataPayload.data = {
-          title: personTitle,
-          username,
-          company_name: companyName,
+          user_id: Number(experienceUserId),
           position,
           start_date: startDate,
           end_date: endDate,
           date: offerDate,
-          authorized_signatory_name: signatoryName,
-          designation,
+          include_footer: includeFooter,
         };
-        formDataPayload.images = {
-          header: headerData,
-          signature: signatureData,
-          seal: sealData,
-          footer: footerData,
-        };
-        formDataPayload.styles = {
-          headerWidth,
-          headerHeight,
-          signatureWidth,
-          signatureHeight,
-          sealWidth,
-          sealHeight,
-          footerWidth,
-          footerHeight,
-        };
+        formDataPayload.images = {};
+        formDataPayload.styles = {};
       }
 
       const content = generateTemplateContent({
@@ -396,19 +403,17 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeId,
         username,
         position,
-        companyName: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.name || '') : companyName,
+        companyName: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.name || '') : companyName,
         startDate,
         offerDate,
         department,
         endDate,
-        headerData: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.header_image || '') : headerData,
-        footerData: docName.includes('offer') || docName.includes('intern') ? (selectedCompany?.footer_image || '') : footerData,
-        signatureData: docName.includes('offer') ? (selectedCompany?.signature_image || '') : signatureData,
+        headerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.header_image || '') : headerData,
+        footerData: docName.includes('offer') || docName.includes('intern') || docName.includes('experience') ? (selectedCompany?.footer_image || '') : footerData,
+        signatureData: docName.includes('offer') || docName.includes('experience') ? (selectedCompany?.signature_image || '') : signatureData,
         stampData: docName.includes('intern') ? (selectedCompany?.company_stamp || '') : '',
         signerName,
         signerRole,
-        signatoryName,
-        designation,
         headerWidth,
         headerHeight,
         footerWidth,
@@ -417,7 +422,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         signatureHeight,
         sealWidth,
         sealHeight,
-        sealData,
+        sealData: docName.includes('experience') ? (selectedCompany?.company_stamp || '') : sealData,
         includeFooter,
         personTitle,
         documentTypeName: selectedDocType?.name,
@@ -531,10 +536,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 ) : isExperience ? (
               <>
                 <ExperienceForm1
-                  username={username}
-                  onUsernameChange={setUsername}
-                  companyName={companyName}
-                  onCompanyNameChange={setCompanyName}
+                  users={experienceUsers}
+                  selectedUserId={experienceUserId}
+                  onUserChange={setExperienceUserId}
                   position={position}
                   onPositionChange={setPosition}
                   startDate={startDate}
@@ -545,56 +549,25 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   onOfferDateChange={setOfferDate}
                   personTitle={personTitle}
                   onPersonTitleChange={setPersonTitle}
-                  signatoryName={signatoryName}
-                  onSignatoryNameChange={setSignatoryName}
-                  designation={designation}
-                  onDesignationChange={setDesignation}
-                  headerWidth={headerWidth}
-                  onHeaderWidthChange={setHeaderWidth}
-                  headerHeight={headerHeight}
-                  onHeaderHeightChange={setHeaderHeight}
-                  footerWidth={footerWidth}
-                  onFooterWidthChange={setFooterWidth}
-                  footerHeight={footerHeight}
-                  onFooterHeightChange={setFooterHeight}
-                  signatureWidth={signatureWidth}
-                  onSignatureWidthChange={setSignatureWidth}
-                  signatureHeight={signatureHeight}
-                  onSignatureHeightChange={setSignatureHeight}
-                  sealWidth={sealWidth}
-                  onSealWidthChange={setSealWidth}
-                  sealHeight={sealHeight}
-                  onSealHeightChange={setSealHeight}
-                  onHeaderImageChange={handleHeaderUpload}
-                  onSignatureImageChange={handleSignatureUpload}
-                  onSealImageChange={handleSealUpload}
-                  onFooterImageChange={handleFooterUpload}
+                  includeFooter={includeFooter}
+                  onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <ExperiencePreview1
                   username={username}
-                  companyName={companyName}
+                  companyName={selectedCompany?.name || ''}
                   position={position}
                   startDate={startDate}
                   endDate={endDate}
                   offerDate={offerDate}
                   personTitle={personTitle}
-                  headerImg={headerImg}
-                  footerImg={footerImg}
-                  signatureImg={signatureImg}
-                  sealImg={sealImg}
-                  signatoryName={signatoryName}
-                  designation={designation}
-                  headerWidth={headerWidth}
-                  headerHeight={headerHeight}
-                  footerWidth={footerWidth}
-                  footerHeight={footerHeight}
-                  signatureWidth={signatureWidth}
-                  signatureHeight={signatureHeight}
-                  sealWidth={sealWidth}
-                  sealHeight={sealHeight}
+                  headerImg={selectedCompany?.header_image || ''}
+                  footerImg={selectedCompany?.footer_image || ''}
+                  signatureImg={selectedCompany?.signature_image || ''}
+                  sealImg={selectedCompany?.company_stamp || ''}
+                  includeFooter={includeFooter}
                 />
               </>
                 ) : (

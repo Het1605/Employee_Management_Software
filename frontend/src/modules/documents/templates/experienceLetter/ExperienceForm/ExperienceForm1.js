@@ -2,10 +2,9 @@ import React from 'react';
 import styles from '../../../pages/styles/DocumentsPage.module.css';
 
 export const ExperienceForm1 = ({
-  username,
-  onUsernameChange,
-  companyName,
-  onCompanyNameChange,
+  users,
+  selectedUserId,
+  onUserChange,
   position,
   onPositionChange,
   startDate,
@@ -16,50 +15,14 @@ export const ExperienceForm1 = ({
   onOfferDateChange,
   personTitle,
   onPersonTitleChange,
-  signatoryName,
-  onSignatoryNameChange,
-  designation,
-  onDesignationChange,
-  headerWidth,
-  onHeaderWidthChange,
-  headerHeight,
-  onHeaderHeightChange,
-  footerWidth,
-  onFooterWidthChange,
-  footerHeight,
-  onFooterHeightChange,
-  signatureWidth,
-  onSignatureWidthChange,
-  signatureHeight,
-  onSignatureHeightChange,
-  sealWidth,
-  onSealWidthChange,
-  sealHeight,
-  onSealHeightChange,
-  onHeaderImageChange,
-  onSignatureImageChange,
-  onSealImageChange,
-  onFooterImageChange,
+  includeFooter,
+  onIncludeFooterChange,
   generating,
   onGenerate,
   submitLabel = 'Generate PDF',
 }) => (
   <div className={styles.formColumn}>
     <div className={styles.formGrid}>
-      {/* 1. Header image and sizing */}
-      <div className={styles.formField}>
-        <label>Header Image</label>
-        <input type="file" accept="image/*" onChange={(e) => onHeaderImageChange(e.target.files)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Header Width (e.g., 100% or 700px)</label>
-        <input type="text" value={headerWidth} onChange={(e) => onHeaderWidthChange(e.target.value)} placeholder="Default 100%" />
-      </div>
-      <div className={styles.formField}>
-        <label>Header Height (px)</label>
-        <input type="text" value={headerHeight} onChange={(e) => onHeaderHeightChange(e.target.value)} placeholder="Default auto" />
-      </div>
-
       {/* 2. Date */}
       <div className={styles.formField}>
         <label>Date (DD Mon, YYYY)</label>
@@ -78,13 +41,14 @@ export const ExperienceForm1 = ({
       {/* 4. Name */}
       <div className={styles.formField}>
         <label>Employee Name</label>
-        <input type="text" value={username} onChange={(e) => onUsernameChange(e.target.value)} placeholder="Enter employee name" />
-      </div>
-
-      {/* 5. Company */}
-      <div className={styles.formField}>
-        <label>Company Name</label>
-        <input type="text" value={companyName} onChange={(e) => onCompanyNameChange(e.target.value)} placeholder="Enter company name" />
+        <select value={selectedUserId} onChange={(e) => onUserChange(e.target.value)}>
+          <option value="">Select employee</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim()}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* 6. Position */}
@@ -105,58 +69,16 @@ export const ExperienceForm1 = ({
         <input type="date" value={endDate} onChange={(e) => onEndDateChange(e.target.value)} />
       </div>
 
-      {/* 9. Signature image */}
+      {/* 9. Footer */}
       <div className={styles.formField}>
-        <label>Signature Image</label>
-        <input type="file" accept="image/*" onChange={(e) => onSignatureImageChange(e.target.files)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Signature Width (px)</label>
-        <input type="text" value={signatureWidth} onChange={(e) => onSignatureWidthChange(e.target.value)} placeholder="Optional" />
-      </div>
-      <div className={styles.formField}>
-        <label>Signature Height (px)</label>
-        <input type="text" value={signatureHeight} onChange={(e) => onSignatureHeightChange(e.target.value)} placeholder="Default auto" />
-      </div>
-
-      {/* 10. Authorized signatory name */}
-      <div className={styles.formField}>
-        <label>Authorized Signatory Name</label>
-        <input type="text" value={signatoryName} onChange={(e) => onSignatoryNameChange(e.target.value)} placeholder="Enter signatory name" />
-      </div>
-
-      {/* 11. Designation */}
-      <div className={styles.formField}>
-        <label>Designation</label>
-        <input type="text" value={designation} onChange={(e) => onDesignationChange(e.target.value)} placeholder="Enter designation" />
-      </div>
-
-      {/* 12. Organization seal image */}
-      <div className={styles.formField}>
-        <label>Organization Seal Image</label>
-        <input type="file" accept="image/*" onChange={(e) => onSealImageChange(e.target.files)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Seal Width (px)</label>
-        <input type="text" value={sealWidth} onChange={(e) => onSealWidthChange(e.target.value)} placeholder="Optional" />
-      </div>
-      <div className={styles.formField}>
-        <label>Seal Height (px)</label>
-        <input type="text" value={sealHeight} onChange={(e) => onSealHeightChange(e.target.value)} placeholder="Default auto" />
-      </div>
-
-      {/* 13. Footer */}
-      <div className={styles.formField}>
-        <label>Footer Image (optional)</label>
-        <input type="file" accept="image/*" onChange={(e) => onFooterImageChange(e.target.files)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Footer Width (e.g., 100% or 700px)</label>
-        <input type="text" value={footerWidth} onChange={(e) => onFooterWidthChange(e.target.value)} placeholder="Default 100%" />
-      </div>
-      <div className={styles.formField}>
-        <label>Footer Height (px)</label>
-        <input type="text" value={footerHeight} onChange={(e) => onFooterHeightChange(e.target.value)} placeholder="Default auto" />
+        <label className={styles.checkboxRow}>
+          <input
+            type="checkbox"
+            checked={includeFooter}
+            onChange={(e) => onIncludeFooterChange(e.target.checked)}
+          />
+          Include Footer
+        </label>
       </div>
     </div>
     <div className={styles.actionsRow}>

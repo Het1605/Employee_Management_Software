@@ -33,16 +33,7 @@ export function generateExperienceTemplate1(payload) {
     footerData,
     signatureData,
     sealData,
-    signatoryName,
-    designation,
-    headerWidth,
-    headerHeight,
-    footerWidth,
-    footerHeight,
-    signatureWidth,
-    signatureHeight,
-    sealWidth,
-    sealHeight,
+    includeFooter,
   } = payload;
 
   const titlePrefix = personTitle || 'Mr';
@@ -50,14 +41,14 @@ export function generateExperienceTemplate1(payload) {
     ? { he_she_cap: 'She', he_she: 'she', his_her: 'her', his_her_cap: 'Her', him_her: 'her' }
     : { he_she_cap: 'He', he_she: 'he', his_her: 'his', his_her_cap: 'His', him_her: 'him' };
 
-  const hW = headerWidth || '100%';
-  const hH = headerHeight || 'auto';
-  const fW = footerWidth || '100%';
-  const fH = footerHeight || 'auto';
-  const sigW = signatureWidth || '150px';
-  const sigH = signatureHeight || 'auto';
-  const sealW = sealWidth || '150px';
-  const sealH = sealHeight || 'auto';
+  const hW = '100%';
+  const hH = 'auto';
+  const fW = '100%';
+  const fH = 'auto';
+  const sigW = '150px';
+  const sigH = 'auto';
+  const sealW = '150px';
+  const sealH = 'auto';
   const displayOfferDate = formatDateShort(offerDate);
   const displayStart = formatDateLong(startDate);
   const displayEnd = formatDateLong(endDate);
@@ -106,14 +97,11 @@ export function generateExperienceTemplate1(payload) {
               <div class="spacer-xl"></div>
               <p>Sincerely,</p>
               ${signatureData ? `<img src="${signatureData}" alt="Signature" style="width:${sigW}; height:${sigH};" />` : ''}
-              <p>${safe(signatoryName)}</p>
-              <p>${safe(designation)}</p>
+              <p>Authorized Signatory</p>
               ${sealData ? `<img src="${sealData}" alt="Seal" style="width:${sealW}; height:${sealH};" />` : ''}
             </div>
           </div>
-          <div class="footer">
-            ${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}
-          </div>
+          ${includeFooter ? `<div class="footer">${footerData ? `<img class="footer-img" src="${footerData}" alt="Footer" style="width:${fW}; height:${fH};" />` : ''}</div>` : ''}
         </div>
       </body>
     </html>
