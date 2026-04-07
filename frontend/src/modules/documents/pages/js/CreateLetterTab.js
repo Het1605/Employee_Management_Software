@@ -28,18 +28,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [position, setPosition] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [headerImg, setHeaderImg] = useState(null);
-  const [signatureImg, setSignatureImg] = useState(null);
-  const [footerImg, setFooterImg] = useState(null);
   const [headerData, setHeaderData] = useState('');
-  const [signatureData, setSignatureData] = useState('');
   const [footerData, setFooterData] = useState('');
   const [headerWidth, setHeaderWidth] = useState('');
   const [headerHeight, setHeaderHeight] = useState('');
   const [footerWidth, setFooterWidth] = useState('');
   const [footerHeight, setFooterHeight] = useState('');
-  const [signatureWidth, setSignatureWidth] = useState('');
-  const [signatureHeight, setSignatureHeight] = useState('');
   const [personTitle, setPersonTitle] = useState('Mr');
   const [offerUserId, setOfferUserId] = useState('');
   const [offerUsers, setOfferUsers] = useState([]);
@@ -109,17 +103,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setCompanyName('');
     setStartDate('');
     setHeaderImg(null);
-    setSignatureImg(null);
     setFooterImg(null);
     setHeaderData('');
-    setSignatureData('');
     setFooterData('');
     setHeaderWidth('');
     setHeaderHeight('');
     setFooterWidth('');
-    setFooterHeight('');
-    setSignatureWidth('');
-    setSignatureHeight('');
     setPersonTitle('Mr');
     setOfferUserId('');
     setOfferUsers([]);
@@ -146,7 +135,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   };
 
   const handleHeaderUpload = (files) => toDataUrl(files?.[0], setHeaderImg, setHeaderData);
-  const handleSignatureUpload = (files) => toDataUrl(files?.[0], setSignatureImg, setSignatureData);
   const handleFooterUpload = (files) => toDataUrl(files?.[0], setFooterImg, setFooterData);
   const handleSealUpload = (files) => toDataUrl(files?.[0], setSealImg, setSealData);
 
@@ -278,15 +266,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       const sealSrc = images.seal || '';
       setHeaderData(headerSrc); setHeaderImg(headerSrc);
       setFooterData(footerSrc); setFooterImg(footerSrc);
-      setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
       setSealData(sealSrc); setSealImg(sealSrc);
 
       setHeaderWidth(styles.headerWidth || '');
       setHeaderHeight(styles.headerHeight || '');
       setFooterWidth(styles.footerWidth || '');
       setFooterHeight(styles.footerHeight || '');
-      setSignatureWidth(styles.signatureWidth || '');
-      setSignatureHeight(styles.signatureHeight || '');
       // legacy internships stored stamp size under signature styles
       setSealWidth(styles.sealWidth || '');
       setSealHeight(styles.sealHeight || '');
@@ -303,7 +288,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const sealSrc = doc.seal_data || getImg('Seal');
     setHeaderData(headerSrc); setHeaderImg(headerSrc);
     setFooterData(footerSrc); setFooterImg(footerSrc);
-    setSignatureData(signatureSrc); setSignatureImg(signatureSrc);
     setSealData(sealSrc); setSealImg(sealSrc);
   };
 
@@ -407,8 +391,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         headerHeight,
         footerWidth,
         footerHeight,
-        signatureWidth,
-        signatureHeight,
         sealWidth,
         sealHeight,
         sealData: docName.includes('experience') ? (selectedCompany?.company_stamp || '') : sealData,

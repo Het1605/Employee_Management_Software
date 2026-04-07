@@ -13,7 +13,6 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
         logo_url: '',
         header_image: '',
         footer_image: '',
-        signature_image: '',
         company_stamp: ''
     });
 
@@ -30,7 +29,6 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 logo_url: company.logo_url || '',
                 header_image: company.header_image || '',
                 footer_image: company.footer_image || '',
-                signature_image: company.signature_image || '',
                 company_stamp: company.company_stamp || ''
             });
         } else {
@@ -45,7 +43,6 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                 logo_url: '',
                 header_image: '',
                 footer_image: '',
-                signature_image: '',
                 company_stamp: ''
             });
         }
@@ -300,39 +297,7 @@ const CompanyFormModal = ({ isOpen, onClose, onSubmit, company = null }) => {
                                 )}
                             </div>
 
-                            <div className={styles.inputGroup}>
-                                <label>Signature</label>
-                                {!formData.signature_image ? (
-                                    <>
-                                        <label className={styles.uploadArea}>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'signature_image')}
-                                                style={{ display: 'none' }}
-                                            />
-                                            <span className={styles.uploadIcon}>📁</span>
-                                            <span className={styles.uploadLabel}>Click to upload signature</span>
-                                        </label>
-                                        <div className={styles.divider}>OR</div>
-                                        <input
-                                            type="text"
-                                            name="signature_image"
-                                            value={formData.signature_image}
-                                            onChange={handleChange}
-                                            placeholder="Paste URL (https://...)"
-                                        />
-                                    </>
-                                ) : (
-                                    <div className={styles.previewContainer}>
-                                        <img src={formData.signature_image} alt="Signature Preview" className={styles.logoPreview} />
-                                        <div className={styles.previewInfo}>
-                                            <span>Signature Ready</span>
-                                            <span className={styles.removeLogo} onClick={() => removeImage('signature_image')}>Remove & change</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+
 
                             <div className={styles.inputGroup}>
                                 <label>Company Stamp</label>

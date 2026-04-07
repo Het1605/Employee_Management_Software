@@ -56,7 +56,6 @@ class CompanyBase(TaxIdMixin):
     logo_url: Optional[str] = None
     header_image: Optional[str] = None
     footer_image: Optional[str] = None
-    signature_image: Optional[str] = None
     company_stamp: Optional[str] = None
 
 class CompanyCreate(CompanyBase):
@@ -71,7 +70,6 @@ class CompanyUpdate(TaxIdMixin):
     logo_url: Optional[str] = None
     header_image: Optional[str] = None
     footer_image: Optional[str] = None
-    signature_image: Optional[str] = None
     company_stamp: Optional[str] = None
 
 class CompanyResponse(CompanyBase):
