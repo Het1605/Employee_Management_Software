@@ -172,3 +172,19 @@ class SentDocument(Base):
     status = Column(String, nullable=False)
     error_message = Column(Text, nullable=True)
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
+class Attendance(Base):
+    __tablename__ = "attendance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    status = Column(String, nullable=False) # 'present', 'half_day'
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+    company = relationship("Company")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'date', name='uq_user_attendance_per_day'),
+    )
