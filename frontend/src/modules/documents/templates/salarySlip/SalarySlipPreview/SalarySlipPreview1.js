@@ -55,32 +55,30 @@ export const SalarySlipPreview1 = ({
     <div className={styles.previewColumn}>
       <div className={styles.a4Preview}>
         {headerData && (
-          <img
-            src={headerData}
-            alt="Header"
-            className={styles.previewImage}
-          />
+          <div className={styles.header}>
+            <img src={headerData} alt="Header" className={styles.previewImage} />
+          </div>
         )}
         
         <div className={styles.salaryPreviewBody}>
-          <div className={styles.previewTitle} style={{ marginTop: '0' }}>SALARY SLIP</div>
+          <div className={styles.salaryTitle}><h2>SALARY SLIP</h2></div>
 
           <div className={styles.salaryInfoSection}>
               <table className={styles.salaryInfoTable}>
-                  <tbody>
-                      <tr>
-                          <td className={styles.salaryInfoCell}><strong>Employee Name:</strong> {name}</td>
-                          <td className={styles.salaryInfoCell}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
-                      </tr>
-                      <tr>
-                          <td className={styles.salaryInfoCell}><strong>Designation:</strong> {designation}</td>
-                          <td className={styles.salaryInfoCell}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
-                      </tr>
-                      <tr>
-                          <td className={styles.salaryInfoCell}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
-                          <td className={styles.salaryInfoCell}><strong>Total Leaves:</strong> {fDays(totalLeaves)}</td>
-                      </tr>
-                  </tbody>
+                <tbody>
+                    <tr>
+                        <td className={styles.salaryInfoCell}><strong>Employee Name:</strong> {name}</td>
+                        <td className={styles.salaryInfoCell}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
+                    </tr>
+                    <tr>
+                        <td className={styles.salaryInfoCell}><strong>Designation:</strong> {designation}</td>
+                        <td className={styles.salaryInfoCell}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
+                    </tr>
+                    <tr>
+                        <td className={styles.salaryInfoCell}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
+                        <td className={styles.salaryInfoCell}><strong>Total Leaves:</strong> {fDays(totalLeaves)}</td>
+                    </tr>
+                </tbody>
               </table>
           </div>
 
@@ -135,11 +133,10 @@ export const SalarySlipPreview1 = ({
         </div>
 
         {includeFooter && footerData && (
-          <div className={styles.salaryFooter}>
-            <img src={footerData} alt="Footer" />
+          <div className={styles.footer}>
+            <img src={footerData} alt="Footer" className={styles.previewImage} />
           </div>
         )}
-
       </div>
     </div>
   );

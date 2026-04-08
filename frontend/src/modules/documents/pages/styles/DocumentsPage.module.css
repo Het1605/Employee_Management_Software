@@ -135,7 +135,7 @@
 
 .a4Preview {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   background: #fff;
   padding: 40px;
   margin: auto;
@@ -308,6 +308,8 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 40px;
 }
 
 .salaryInfoSection {

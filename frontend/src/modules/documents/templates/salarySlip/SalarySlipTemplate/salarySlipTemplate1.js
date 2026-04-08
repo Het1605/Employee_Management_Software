@@ -41,20 +41,19 @@ export function generateSalarySlipTemplate1(payload) {
         <style>
           @page { size: A4; margin: 0; }
           * { box-sizing: border-box; }
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; }
-          .page { width: 794px; height: 1123px; margin: 0 auto; position: relative; box-sizing: border-box; display: flex; flex-direction: column; }
-          .header { width: 100%; flex: 0 0 auto; }
-          .header img { width: 100%; display: block; }
-          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 150px; overflow: hidden; }
-
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; line-height: 1.5; }
+          .page { width: 794px; height: 1123px; margin: 0 auto; display: flex; flex-direction: column; box-sizing: border-box; }
+          .header { width: 100%; flex: 0 0 auto; margin: 0; padding: 0; }
+          .header img { width: 100%; display: block; margin: 0; padding: 0; }
+          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 180px; overflow: hidden; }
           .footer { width: 100%; flex: 0 0 auto; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
           
-          .salary-title { text-align: center; }
+          .salary-title { text-align: center; margin-bottom: 24px; }
           .salary-title h2 { margin: 0; }
           
-          .info-section { margin: 20px 0; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .info-section { margin: 10px 0; border-bottom: 2px solid #333; padding-bottom: 10px; }
           .info-table { width: 100%; font-size: 14px; border-collapse: collapse; }
           .info-table td { padding: 4px 0; }
           
@@ -142,7 +141,7 @@ export function generateSalarySlipTemplate1(payload) {
               </div>
           </div>
           <div class="footer">
-            ${includeFooter && footerData ? `<img src="${footerData}" class="footer-img"/>` : ''}
+            ${includeFooter && footerData ? `<img src="${footerData}" class="footer-img" alt="Footer" />` : ''}
           </div>
         </div>
       </body>
