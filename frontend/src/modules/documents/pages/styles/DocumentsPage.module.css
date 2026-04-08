@@ -39,7 +39,7 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 4px 12px -6px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.08);
 }
 
 .table th,
@@ -139,7 +139,7 @@
   background: #fff;
   padding: 40px;
   margin: auto;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -201,7 +201,7 @@
 .editorWrapper {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 4px 12px -6px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
@@ -360,6 +360,12 @@
   padding: 8px;
   border: 1px solid #ddd;
   text-align: right;
+}
+
+.salaryLedgerCellCenter {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
 }
 
 .salaryTotalRow {

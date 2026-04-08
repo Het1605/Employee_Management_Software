@@ -1,41 +1,41 @@
 export function generateSalarySlipTemplate1(payload) {
-  const safe = (v) => v || '';
-  const {
-    form_data = {},
-    headerData,
-    footerData,
-    stampData,
-    includeFooter
-  } = payload || {};
+    const safe = (v) => v || '';
+    const {
+        form_data = {},
+        headerData,
+        footerData,
+        stampData,
+        includeFooter
+    } = payload || {};
 
-  const name = safe(form_data.employee_name);
-  const designation = safe(form_data.designation);
-  const displayMonth = safe(form_data.display_month);
-  const year = safe(form_data.year);
-  const totalWorkingDays = safe(form_data.total_working_days);
-  const effectiveDays = safe(form_data.effective_days);
-  const leaves = safe(form_data.total_leaves);
-  const companyName = safe(form_data.company_name);
-  
-  const earnings = form_data.earnings || [];
-  const deductions = form_data.deductions || [];
-  const totalEarnings = safe(form_data.total_earnings);
-  const totalDeductions = safe(form_data.total_deductions);
-  const netSalary = safe(form_data.net_salary);
+    const name = safe(form_data.employee_name);
+    const designation = safe(form_data.designation);
+    const displayMonth = safe(form_data.display_month);
+    const year = safe(form_data.year);
+    const totalWorkingDays = safe(form_data.total_working_days);
+    const effectiveDays = safe(form_data.effective_days);
+    const leaves = safe(form_data.total_leaves);
+    const companyName = safe(form_data.company_name);
 
-  // Formatting helpers to match backend EXACTLY
-  const fAmt = (val) => {
-    const num = Number(val);
-    if (Math.abs(num) < 0.005) return "0.00";
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
+    const earnings = form_data.earnings || [];
+    const deductions = form_data.deductions || [];
+    const totalEarnings = safe(form_data.total_earnings);
+    const totalDeductions = safe(form_data.total_deductions);
+    const netSalary = safe(form_data.net_salary);
 
-  const fDays = (val) => {
-    const num = Number(val);
-    return Number.isInteger(num) ? num : num;
-  };
+    // Formatting helpers to match backend EXACTLY
+    const fAmt = (val) => {
+        const num = Number(val);
+        if (Math.abs(num) < 0.005) return "0.00";
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
 
-  return `
+    const fDays = (val) => {
+        const num = Number(val);
+        return Number.isInteger(num) ? num : num;
+    };
+
+    return `
     <html>
       <head>
         <style>
@@ -64,6 +64,7 @@ export function generateSalarySlipTemplate1(payload) {
           
           .ledger-cell { padding: 10px; border: 1px solid #ddd; }
           .ledger-cell.right { text-align: right; }
+          .ledger-cell.center { text-align: center; }
           
           .total-row { background-color: #f9f9f9; font-weight: bold; }
           .net-row { background-color: #eeefff; font-weight: bold; font-size: 15px; }
@@ -127,8 +128,7 @@ export function generateSalarySlipTemplate1(payload) {
                       </tr>
                       <tr class="net-row">
                           <td>NET PAY</td>
-                          <td class="right">₹${fAmt(netSalary)}</td>
-                          <td></td>
+                          <td class="ledger-cell center" colspan="2">₹${fAmt(netSalary)}</td>
                       </tr>
                   </tbody>
               </table>
