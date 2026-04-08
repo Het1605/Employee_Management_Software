@@ -24,6 +24,17 @@ def list_document_types(db: Session = Depends(get_db)):
 def create_document(data: GeneratedDocumentCreate, db: Session = Depends(get_db)):
     return DocumentService.create_document(db, data)
 
+@router.post("/documents/salary/calculate")
+def calculate_salary_preview(
+    user_id: int,
+    ctc: float,
+    month: int,
+    year: int,
+    company_id: int,
+    db: Session = Depends(get_db)
+):
+    return DocumentService.calculate_salary_metrics(db, user_id, ctc, month, year, company_id)
+
 @router.post("/documents/send")
 def send_document(data: SendDocumentRequest, db: Session = Depends(get_db)):
     return DocumentService.send_document_email(db, data)

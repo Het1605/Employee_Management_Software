@@ -9,14 +9,16 @@ import re
 from weasyprint import HTML
 from email.mime.base import MIMEBase
 from email import encoders
-
+from typing import List, Optional
 from app.core.config import settings
-from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company
+from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company, UserSalaryStructure, ComponentType
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
     SendDocumentRequest,
 )
+from app.services.attendance_service import get_my_attendance
+from decimal import Decimal
 
 
 DOCUMENT_TYPE_SEEDS = [
@@ -98,9 +100,170 @@ class DocumentService:
         return value.lower() or 'document'
 
     @staticmethod
+    def calculate_salary_metrics(db: Session, user_id: int, ctc: float, month: int, year: int, company_id: int):
+        user = DocumentService._get_user(db, user_id)
+        company = DocumentService._get_company(db, company_id)
+        
+        # 1. Monthly Base
+        monthly_base = Decimal(str(ctc)) / Decimal('12')
+        
+        # 2. Structure
+        assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.user_id == user.id).first()
+        if not assignment:
+            raise HTTPException(status_code=400, detail="User has no salary structure assigned")
+        structure = assignment.structure
+
+        # 3. Attendance
+        att_summary = get_my_attendance(db, user.id, int(month), int(year))
+        total_working_days = sum(1 for d in att_summary['attendance'] if d['day_type'] in ['working', 'half'])
+        if total_working_days == 0:
+            import calendar as pycal
+            total_working_days = pycal.monthrange(int(year), int(month))[1]
+        
+        effective_days = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
+        
+        # 4. Calculation
+        per_day_salary = monthly_base / Decimal(str(total_working_days))
+        earned_gross = per_day_salary * effective_days
+        leave_deduction = monthly_base - earned_gross
+
+        # 5. Breakdown
+        earnings_list = []
+        deductions_list = []
+        for detail in structure.details:
+            amount = (detail.percentage / Decimal('100')) * earned_gross
+            comp = {"name": detail.component.name, "amount": round(float(amount), 2)}
+            if detail.component.type == ComponentType.EARNING:
+                earnings_list.append(comp)
+            else:
+                deductions_list.append(comp)
+
+        deductions_list.append({"name": "Leave Deduction", "amount": round(float(leave_deduction), 2)})
+        
+        total_earnings = sum(e['amount'] for e in earnings_list)
+        total_deductions = sum(d['amount'] for d in deductions_list)
+        net_salary = total_earnings - total_deductions
+        total_leaves = total_working_days - float(effective_days)
+
+        month_names = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        display_month = month_names[int(month)]
+
+        return {
+            "employee_name": f"{user.first_name} {user.last_name}",
+            "designation": user.position or 'Employee',
+            "month": month,
+            "year": year,
+            "display_month": display_month,
+            "total_working_days": total_working_days,
+            "present_days": att_summary['present_days'],
+            "half_days": att_summary['half_days'],
+            "absent_days": att_summary['absent_days'],
+            "effective_days": float(effective_days),
+            "total_leaves": total_leaves,
+            "earnings": earnings_list,
+            "deductions": deductions_list,
+            "total_earnings": round(float(total_earnings), 2),
+            "total_deductions": round(float(total_deductions), 2),
+            "net_salary": round(float(net_salary), 2),
+            "header_image": company.header_image,
+            "footer_image": company.footer_image,
+            "company_stamp": company.company_stamp,
+            "company_name": company.name
+        }
+
+    @staticmethod
     def generate_document_pdf(db: Session, data: GeneratedDocumentCreate):
-        DocumentService._get_document_type(db, data.document_type_id)
-        DocumentService._get_company(db, data.company_id)
+        doc_type = DocumentService._get_document_type(db, data.document_type_id)
+        company = DocumentService._get_company(db, data.company_id)
+
+        # SALARY SLIP AUTOMATION LOGIC
+        if doc_type.code == "salary_slip":
+            form = data.form_data or {}
+            payload_data = form.get("data", {})
+            user_id = payload_data.get("user_id")
+            ctc = payload_data.get("ctc")
+            month = payload_data.get("month")
+            year = payload_data.get("year")
+
+            if not all([user_id, ctc, month, year]):
+                 raise HTTPException(status_code=400, detail="Missing salary slip basic data (user, ctc, month, year)")
+
+            metrics = DocumentService.calculate_salary_metrics(db, user_id, ctc, month, year, data.company_id)
+            form.update(metrics)
+            data.form_data = form
+
+            # Extract variables for HTML template
+            display_month = metrics['display_month']
+            earnings_list = metrics['earnings']
+            deductions_list = metrics['deductions']
+            total_earnings = metrics['total_earnings']
+            total_deductions = metrics['total_deductions']
+            total_working_days = metrics['total_working_days']
+            effective_days = metrics['effective_days']
+            total_leaves = metrics['total_leaves']
+            user_name = metrics['employee_name']
+            designation = metrics['designation']
+            net_salary = metrics['net_salary']
+            year = metrics['year']
+
+            # Generate internal HTML for Salary Slip using calculated data
+            earnings_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{e['name']}</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{e['amount']:,.2f}</td><td style='padding: 10px; border: 1px solid #ddd;'></td></tr>" for e in earnings_list])
+            deductions_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{d['name']}</td><td style='padding: 10px; border: 1px solid #ddd;'></td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{d['amount']:,.2f}</td></tr>" for d in deductions_list])
+
+            salary_slip_html = f"""
+            <div class="page">
+              <img src="{company.header_image or ''}" class="header-img" style="width: 100%;" />
+              <div class="content-area" style="padding: 40px;">
+                  <center><h2>SALARY SLIP</h2></center>
+                  <div style="margin: 20px 0; border-bottom: 2px solid #333; padding-bottom: 10px;">
+                      <table style="width: 100%; font-size: 14px;">
+                          <tr>
+                              <td><strong>Employee Name:</strong> {user_name}</td>
+                              <td><strong>Pay Period:</strong> {display_month} {year}</td>
+                          </tr>
+                          <tr>
+                              <td><strong>Designation:</strong> {designation}</td>
+                              <td><strong>Total Working Days:</strong> {total_working_days}</td>
+                          </tr>
+                          <tr>
+                              <td><strong>Effective Days:</strong> {float(effective_days)}</td>
+                              <td><strong>Total Leaves:</strong> {total_leaves}</td>
+                          </tr>
+                      </table>
+                  </div>
+                  <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+                      <thead>
+                          <tr style="background-color: #f2f2f2; border: 1px solid #ddd;">
+                              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Description</th>
+                              <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Earnings (₹)</th>
+                              <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Deductions (₹)</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {earnings_rows}
+                          {deductions_rows}
+                          <tr style="background-color: #f9f9f9; font-weight: bold;">
+                              <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
+                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{total_earnings:,.2f}</td>
+                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{total_deductions:,.2f}</td>
+                          </tr>
+                      </tbody>
+                  </table>
+                  <div style="margin-top: 30px; padding: 15px; background-color: #eeefff; border: 1px solid #ccc; text-align: right;">
+                      <h3 style="margin: 0;">Net Pay: ₹{net_salary:,.2f}</h3>
+                  </div>
+                  <div style="margin-top: 60px;">
+                      <div style="text-align: center; width: 200px; float: right;">
+                          <img src="{company.company_stamp or ''}" style="max-height: 80px; margin: 0 auto;" />
+                          <p style="margin-top: 5px; border-top: 1px solid #000;">Authorized Signatory</p>
+                      </div>
+                      <div style="clear: both;"></div>
+                  </div>
+              </div>
+              {f'<img src="{company.footer_image}" class="footer-img" style="width: 100%; position: absolute; bottom: 0; left: 0;" />' if form.get("include_footer") and company.footer_image else ''}
+            </div>
+            """
+            data.content = salary_slip_html
 
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         upload_dir = os.path.join(base_dir, 'uploads', 'documents')

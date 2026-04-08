@@ -23,30 +23,30 @@ const DocumentsPage = () => {
         {!selectedCompanyId ? (
           <div className={styles.placeholderArea}>Please select a company from the header to manage documents.</div>
         ) : (
-        <>
-        <div className={`modern-tabs-container ${styles.tabsWrap}`}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`modern-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id !== 'create') setActiveView('list');
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          <>
+            <div className={`modern-tabs-container ${styles.tabsWrap}`}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`modern-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id !== 'create') setActiveView('list');
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="fade-in">
-          {activeTab === 'create' ? (
-            <CreateLetterTab activeView={activeView} setActiveView={setActiveView} />
-          ) : (
-            <SendLetterTab />
-          )}
-        </div>
-        </>
+            <div className="fade-in">
+              {activeTab === 'create' ? (
+                <CreateLetterTab activeView={activeView} setActiveView={setActiveView} />
+              ) : (
+                <SendLetterTab />
+              )}
+            </div>
+          </>
         )}
       </div>
     </MainLayout>

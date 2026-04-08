@@ -10,6 +10,8 @@ import { InternshipForm1 } from '../../templates/internshipLetter/InternshipForm
 import { InternshipPreview1 } from '../../templates/internshipLetter/InternshipPreview/InternshipPreview1';
 import { ExperienceForm1 } from '../../templates/experienceLetter/ExperienceForm/ExperienceForm1';
 import { ExperiencePreview1 } from '../../templates/experienceLetter/ExperiencePreview/ExperiencePreview1';
+import { SalarySlipForm1 } from '../../templates/salarySlip/SalarySlipForm/SalarySlipForm1';
+import { SalarySlipPreview1 } from '../../templates/salarySlip/SalarySlipPreview/SalarySlipPreview1';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -35,6 +37,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [internUsers, setInternUsers] = useState([]);
   const [experienceUserId, setExperienceUserId] = useState('');
   const [experienceUsers, setExperienceUsers] = useState([]);
+  
+  // Salary Slip State
+  const [salarySlipUserId, setSalarySlipUserId] = useState('');
+  const [salarySlipUsers, setSalarySlipUsers] = useState([]);
+  const [ctc, setCtc] = useState('');
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [salaryDetails, setSalaryDetails] = useState(null);
+
   const [includeFooter, setIncludeFooter] = useState(true);
   const [department, setDepartment] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -48,6 +59,31 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     () => companies.find((c) => String(c.id) === String(selectedCompanyId)),
     [companies, selectedCompanyId]
   );
+
+  // Live calculation for Salary Slip
+  useEffect(() => {
+    const isSalarySlip = selectedDocType?.name?.toLowerCase().includes('salary slip');
+    if (!isSalarySlip || !salarySlipUserId || !ctc || !month || !year || !selectedCompanyId) {
+       setSalaryDetails(null);
+       return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      API.post('/documents/salary/calculate', null, {
+        params: {
+          user_id: salarySlipUserId,
+          ctc: ctc,
+          month: month,
+          year: year,
+          company_id: selectedCompanyId
+        }
+      })
+      .then(res => setSalaryDetails(res.data))
+      .catch(() => setSalaryDetails(null));
+    }, 500); // debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [salarySlipUserId, ctc, month, year, selectedCompanyId, selectedDocType]);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -102,6 +138,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setIncludeFooter(true);
     setDepartment('');
     setEndDate('');
+    setSalarySlipUserId('');
+    setCtc('');
+    setMonth(new Date().getMonth() + 1);
+    setYear(new Date().getFullYear());
   }, []);
 
   useEffect(() => {
@@ -189,6 +229,29 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setEndDate(found.end_date || '');
   }, [experienceUserId, experienceUsers, setUsername, setPosition, setStartDate, setEndDate]);
 
+  useEffect(() => {
+    const isSalarySlip = selectedDocType?.name?.toLowerCase().includes('salary slip');
+    if (activeView !== 'create' || !isSalarySlip) return;
+    if (!selectedCompanyId) {
+      setSalarySlipUsers([]);
+      return;
+    }
+    API.get(`/companies/${selectedCompanyId}/users`)
+      .then((res) => setSalarySlipUsers(res.data || []))
+      .catch(() => setSalarySlipUsers([]));
+  }, [selectedCompanyId, activeView, selectedDocType]);
+
+  useEffect(() => {
+    if (!salarySlipUserId) {
+      setUsername('');
+      return;
+    }
+    const found = salarySlipUsers.find((u) => String(u.id) === String(salarySlipUserId));
+    if (!found) return;
+    const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
+  }, [salarySlipUserId, salarySlipUsers]);
+
   const hydrateFromDocument = (doc) => {
     if (!doc) return;
     const normalizeDateInput = (val) => {
@@ -215,6 +278,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       } else if (template_type === 'experience_letter') {
         setExperienceUserId(data.user_id ? String(data.user_id) : '');
         setIncludeFooter(data.include_footer !== false);
+      } else if (template_type === 'salary_slip') {
+        setSalarySlipUserId(data.user_id ? String(data.user_id) : '');
+        setCtc(data.ctc || '');
+        setMonth(data.month || new Date().getMonth() + 1);
+        setYear(data.year || new Date().getFullYear());
+        setIncludeFooter(data.include_footer !== false);
       } else {
         setUsername(data.username || '');
       }
@@ -236,8 +305,14 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const docName = selectedDocType?.name?.toLowerCase() || '';
     const isInternship = docName.includes('intern');
     const isExperience = docName.includes('experience');
+    const isSalarySlip = docName.includes('salary slip');
 
-    if (isInternship) {
+    if (isSalarySlip) {
+        if (!title.trim() || !documentTypeId || !salarySlipUserId || !ctc || !month || !year) {
+            showToast('Please fill all required fields for Salary Slip.', 'error');
+            return;
+        }
+    } else if (isInternship) {
       if (!title.trim() || !documentTypeId || !internUserId || !personTitle || !department.trim() || !startDate || !endDate || !offerDate) {
         showToast('Please select a user and fill all required fields.', 'error');
         return;
@@ -268,7 +343,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     }
     setGenerating(true);
     try {
-      const templateType = isExperience ? 'experience_letter' : isInternship ? 'internship_letter' : 'offer_letter';
+      const templateType = isSalarySlip ? 'salary_slip' : isExperience ? 'experience_letter' : isInternship ? 'internship_letter' : 'offer_letter';
       const formDataPayload = {
         template_type: templateType,
         template_id: 'template1',
@@ -277,7 +352,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         styles: {},
       };
 
-      if (templateType === 'offer_letter') {
+      if (templateType === 'salary_slip') {
+        formDataPayload.data = {
+          user_id: Number(salarySlipUserId),
+          ctc: Number(ctc),
+          month: Number(month),
+          year: Number(year),
+          include_footer: includeFooter,
+        };
+      } else if (templateType === 'offer_letter') {
         formDataPayload.data = {
           user_id: Number(offerUserId),
           offer_date: offerDate,
@@ -328,6 +411,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         includeFooter,
         personTitle,
         documentTypeName: selectedDocType?.name,
+        month,
+        year,
+        form_data: templateType === 'salary_slip' ? salaryDetails || {} : {}
       });
       if (editingDocId) {
         await API.put(`/documents/${editingDocId}?company_id=${selectedCompanyId}`, {
@@ -397,6 +483,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
             const docName = selectedDocType?.name?.toLowerCase() || '';
             const isIntern = docName.includes('intern');
             const isExperience = docName.includes('experience');
+            const isSalarySlip = docName.includes('salary slip');
             return (
               <div className={styles.dualLayout}>
                 {isIntern ? (
@@ -469,6 +556,35 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   footerImg={selectedCompany?.footer_image || ''}
                   sealImg={selectedCompany?.company_stamp || ''}
                   includeFooter={includeFooter}
+                />
+              </>
+                ) : isSalarySlip ? (
+              <>
+                <SalarySlipForm1
+                  users={salarySlipUsers}
+                  selectedUserId={salarySlipUserId}
+                  onUserChange={setSalarySlipUserId}
+                  ctc={ctc}
+                  onCtcChange={setCtc}
+                  month={month}
+                  onMonthChange={setMonth}
+                  year={year}
+                  onYearChange={setYear}
+                  includeFooter={includeFooter}
+                  onIncludeFooterChange={setIncludeFooter}
+                  generating={generating}
+                  onGenerate={handleGeneratePdf}
+                  submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
+                />
+                <SalarySlipPreview1
+                  username={username}
+                  month={month}
+                  year={year}
+                  headerData={selectedCompany?.header_image || ''}
+                  footerData={selectedCompany?.footer_image || ''}
+                  stampData={selectedCompany?.company_stamp || ''}
+                  includeFooter={includeFooter}
+                  form_data={salaryDetails || {}}
                 />
               </>
                 ) : (
