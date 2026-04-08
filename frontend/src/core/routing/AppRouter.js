@@ -22,6 +22,7 @@ import HRCalendarManagement from '../../modules/calendar/pages/js/HRCalendarMana
 import SalaryStructureManagement from '../../modules/payroll/pages/js/SalaryStructureManagement';
 import DocumentsPage from '../../modules/documents/pages/js/DocumentsPage';
 import AttendancePage from '../../modules/attendance/pages/js/AttendancePage';
+import AttendanceManagement from '../../modules/attendance/pages/js/AttendanceManagement';
 
 const AppRouter = () => {
   return (
@@ -84,6 +85,15 @@ const AppRouter = () => {
           } 
         />
 
+        <Route 
+          path="/admin/attendance" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <AttendanceManagement />
+            </ProtectedRoute>
+          } 
+        />
+
         {/* HR Routes */}
         <Route 
           path="/hr" 
@@ -114,6 +124,15 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
               <SalaryStructureManagement />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/hr/attendance" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <AttendanceManagement />
             </ProtectedRoute>
           } 
         />
@@ -166,7 +185,7 @@ const AppRouter = () => {
         <Route 
           path="/employee/attendance" 
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+            <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER']}>
               <AttendancePage />
             </ProtectedRoute>
           } 

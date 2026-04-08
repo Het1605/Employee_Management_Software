@@ -5,12 +5,14 @@ from typing import List, Optional
 class AttendanceMark(BaseModel):
     company_id: Optional[int] = None
     user_id: Optional[int] = None
+    actor_id: Optional[int] = None
     date: Optional[datetime.date] = None
     status: str # 'present', 'half_day', 'absent'
 
 class AttendanceResponse(BaseModel):
     date: datetime.date
     status: str
+    day_type: str
 
 class MyAttendanceStats(BaseModel):
     total_days: int

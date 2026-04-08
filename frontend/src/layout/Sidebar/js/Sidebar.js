@@ -113,14 +113,28 @@ const Sidebar = ({ isOpen, onClose }) => {
         
         <div className={styles.navGroup}>
           <div className={styles.groupTitle}>Attendance</div>
-          <NavLink 
-            to="/employee/attendance" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-            onClick={handleLinkClick}
-          >
-            <span className={styles.icon}>📝</span>
-            <span className={styles.linkText}>Mark Attendance</span>
-          </NavLink>
+          
+          {['EMPLOYEE', 'INTERN', 'MANAGER'].includes(role) && (
+            <NavLink 
+              to="/employee/attendance" 
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+              onClick={handleLinkClick}
+            >
+              <span className={styles.icon}>📝</span>
+              <span className={styles.linkText}>Mark Attendance</span>
+            </NavLink>
+          )}
+          
+          {['ADMIN', 'HR'].includes(role) && (
+            <NavLink 
+              to={`/${role.toLowerCase()}/attendance`} 
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+              onClick={handleLinkClick}
+            >
+              <span className={styles.icon}>📋</span>
+              <span className={styles.linkText}>Manage Attendance</span>
+            </NavLink>
+          )}
         </div>
 
         <div className={styles.navGroup}>

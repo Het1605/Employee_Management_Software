@@ -50,7 +50,7 @@ const AttendancePage = () => {
         try {
             const userId = localStorage.getItem('userId') || 1; // Fallback for dev mode
             await axios.post(`${API_BASE_URL}/attendance/mark`, 
-                { status: status, user_id: userId }
+                { status: status, user_id: userId, actor_id: userId }
             );
             setMessage({ text: 'Attendance marked successfully', type: 'success' });
             setTodayStatus(status);

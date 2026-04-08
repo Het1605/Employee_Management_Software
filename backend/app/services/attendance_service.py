@@ -200,6 +200,7 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
     response = []
     for u in users:
         user_records = company_record_map.get(u.id, {})
+        attendance_list = []
         present_count = 0
         half_count = 0
         absent_count = 0
@@ -208,6 +209,12 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
             db_status = user_records.get(curr_date)
             final_status = db_status if db_status else "absent"
             
+            attendance_list.append({
+                "date": curr_date,
+                "status": final_status,
+                "day_type": day_type
+            })
+
             if final_status == "present":
                 present_count += 1
             elif final_status == "half_day":
@@ -221,7 +228,8 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
             "name": f"{u.first_name} {u.last_name}",
             "present_days": present_count,
             "half_days": half_count,
-            "absent_days": absent_count
+            "absent_days": absent_count,
+            "attendance": attendance_list
         })
 
     return response
