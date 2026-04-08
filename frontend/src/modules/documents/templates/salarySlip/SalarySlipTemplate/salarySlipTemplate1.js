@@ -42,21 +42,48 @@ export function generateSalarySlipTemplate1(payload) {
           @page { size: A4; margin: 0; }
           * { box-sizing: border-box; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; }
-          .page { width: 794px; min-height: 1123px; margin: 0 auto; position: relative; box-sizing: border-box; }
-          .content-area { padding: 40px; }
-          .header-img { width: 100%; display: block; margin: 0; padding: 0; }
+          .page { width: 794px; height: 1123px; margin: 0 auto; position: relative; box-sizing: border-box; display: flex; flex-direction: column; }
+          .header { width: 100%; flex: 0 0 auto; }
+          .header img { width: 100%; display: block; }
+          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 150px; overflow: hidden; }
+
           .footer { width: 100%; flex: 0 0 auto; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
+          
+          .salary-title { text-align: center; }
+          .salary-title h2 { margin: 0; }
+          
+          .info-section { margin: 20px 0; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .info-table { width: 100%; font-size: 14px; border-collapse: collapse; }
+          .info-table td { padding: 4px 0; }
+          
+          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          .ledger-header { background-color: #f2f2f2; }
+          .ledger-header th { padding: 10px; text-align: left; border: 1px solid #ddd; }
+          .ledger-header th.right { text-align: right; }
+          
+          .ledger-cell { padding: 10px; border: 1px solid #ddd; }
+          .ledger-cell.right { text-align: right; }
+          
+          .total-row { background-color: #f9f9f9; font-weight: bold; }
+          .net-row { background-color: #eeefff; font-weight: bold; font-size: 15px; }
+          .net-row td { padding: 12px; border: 1px solid #ddd; }
+          
+          .signature-section { margin-top: 40px; text-align: left; }
+          .signature-section p { margin: 0; }
+          .signature-section .company { margin: 5px 0; font-weight: bold; }
+          .stamp-img { max-height: 120px; max-width: 200px; margin: 5px 0; }
+          .authorized { margin: 5px 0 0 0; }
         </style>
       </head>
       <body>
         <div class="page">
-          <img src="${safe(headerData)}" class="header-img" style="width: 100%;" />
-          <div class="content-area" style="padding: 40px;">
-              <center><h2>SALARY SLIP</h2></center>
-              <div style="margin: 20px 0; border-bottom: 2px solid #333; padding-bottom: 10px;">
-                  <table style="width: 100%; font-size: 14px;">
+          ${headerData ? `<div class="header"><img src="${headerData}" alt="Header" /></div>` : ''}
+          <div class="content-area">
+              <div class="salary-title"><h2>SALARY SLIP</h2></div>
+              <div class="info-section">
+                  <table class="info-table">
                       <tr>
                           <td><strong>Employee Name:</strong> ${name}</td>
                           <td><strong>Pay Period:</strong> ${displayMonth} ${year}</td>
@@ -71,51 +98,51 @@ export function generateSalarySlipTemplate1(payload) {
                       </tr>
                   </table>
               </div>
-              <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+              <table class="ledger-table">
                   <thead>
-                      <tr style="background-color: #f2f2f2; border: 1px solid #ddd;">
-                          <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Description</th>
-                          <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Earnings (₹)</th>
-                          <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Deductions (₹)</th>
+                      <tr class="ledger-header">
+                          <th>Description</th>
+                          <th class="right">Earnings (₹)</th>
+                          <th class="right">Deductions (₹)</th>
                       </tr>
                   </thead>
                   <tbody>
                       ${earnings.map(e => `
                         <tr>
-                          <td style="padding: 10px; border: 1px solid #ddd;">${e.name}</td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${fAmt(e.amount)}</td>
-                          <td style="padding: 10px; border: 1px solid #ddd;"></td>
+                          <td class="ledger-cell">${e.name}</td>
+                          <td class="ledger-cell right">${fAmt(e.amount)}</td>
+                          <td class="ledger-cell"></td>
                         </tr>
                       `).join('')}
                       ${deductions.map(d => `
                         <tr>
-                          <td style="padding: 10px; border: 1px solid #ddd;">${d.name}</td>
-                          <td style="padding: 10px; border: 1px solid #ddd;"></td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${fAmt(d.amount)}</td>
+                          <td class="ledger-cell">${d.name}</td>
+                          <td class="ledger-cell"></td>
+                          <td class="ledger-cell right">${fAmt(d.amount)}</td>
                         </tr>
                       `).join('')}
-                      <tr style="background-color: #f9f9f9; font-weight: bold;">
-                          <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${fAmt(totalEarnings)}</td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${fAmt(totalDeductions)}</td>
+                      <tr class="total-row">
+                          <td class="ledger-cell">TOTAL</td>
+                          <td class="ledger-cell right">${fAmt(totalEarnings)}</td>
+                          <td class="ledger-cell right">${fAmt(totalDeductions)}</td>
                       </tr>
-                      <tr style="background-color: #eeefff; font-weight: bold; font-size: 15px;">
-                          <td style="padding: 12px; border: 1px solid #ddd;">NET PAY</td>
-                          <td style="padding: 12px; text-align: right; border: 1px solid #ddd;">₹${fAmt(netSalary)}</td>
-                          <td style="padding: 12px; border: 1px solid #ddd;"></td>
+                      <tr class="net-row">
+                          <td>NET PAY</td>
+                          <td class="right">₹${fAmt(netSalary)}</td>
+                          <td></td>
                       </tr>
                   </tbody>
               </table>
 
-              <div style="margin-top: 40px; text-align: left;">
-                  <p style="margin: 0;">For</p>
-                  <p style="margin: 5px 0;"><strong>${companyName}</strong></p>
-                  ${stampData ? `<img src="${stampData}" style="max-height: 120px; max-width: 200px; margin: 5px 0;" />` : ''}
-                  <p style="margin: 5px 0 0 0;">Authorized Signatory</p>
+              <div class="signature-section">
+                  <p>For</p>
+                  <p class="company">${companyName}</p>
+                  ${stampData ? `<img src="${stampData}" class="stamp-img" />` : ''}
+                  <p class="authorized">Authorized Signatory</p>
               </div>
           </div>
           <div class="footer">
-          ${includeFooter && footerData ? `<img src="${footerData}" class="footer-img"/>` : ''}
+            ${includeFooter && footerData ? `<img src="${footerData}" class="footer-img"/>` : ''}
           </div>
         </div>
       </body>

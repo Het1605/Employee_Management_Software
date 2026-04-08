@@ -59,95 +59,87 @@ export const SalarySlipPreview1 = ({
             src={headerData}
             alt="Header"
             className={styles.previewImage}
-            style={{ width: '100%' }}
           />
         )}
         
-        <div className={styles.previewTitle} style={{ marginTop: '0' }}>SALARY SLIP</div>
+        <div className={styles.salaryPreviewBody}>
+          <div className={styles.previewTitle} style={{ marginTop: '0' }}>SALARY SLIP</div>
 
-        <div style={{ margin: '14px 0', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
-            <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
-                <tbody>
-                    <tr>
-                        <td style={{ padding: '2px 0' }}><strong>Employee Name:</strong> {name}</td>
-                        <td style={{ padding: '2px 0' }}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
-                    </tr>
-                    <tr>
-                        <td style={{ padding: '2px 0' }}><strong>Designation:</strong> {designation}</td>
-                        <td style={{ padding: '2px 0' }}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
-                    </tr>
-                    <tr>
-                        <td style={{ padding: '2px 0' }}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
-                        <td style={{ padding: '2px 0' }}><strong>Total Leaves:</strong> {fDays(totalLeaves)}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+          <div className={styles.salaryInfoSection}>
+              <table className={styles.salaryInfoTable}>
+                  <tbody>
+                      <tr>
+                          <td className={styles.salaryInfoCell}><strong>Employee Name:</strong> {name}</td>
+                          <td className={styles.salaryInfoCell}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
+                      </tr>
+                      <tr>
+                          <td className={styles.salaryInfoCell}><strong>Designation:</strong> {designation}</td>
+                          <td className={styles.salaryInfoCell}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
+                      </tr>
+                      <tr>
+                          <td className={styles.salaryInfoCell}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
+                          <td className={styles.salaryInfoCell}><strong>Total Leaves:</strong> {fDays(totalLeaves)}</td>
+                      </tr>
+                  </tbody>
+              </table>
+          </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
-            <thead>
-                <tr style={{ backgroundColor: '#f2f2f2', border: '1px solid #ddd' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #ddd' }}>Description</th>
-                    <th style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>Earnings (₹)</th>
-                    <th style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>Deductions (₹)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {earnings.map((e, idx) => (
-                    <tr key={`earn-${idx}`}>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{e.name}</td>
-                        <td style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>{fAmt(e.amount)}</td>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}></td>
-                    </tr>
-                ))}
-                {deductions.map((d, idx) => (
-                    <tr key={`deduct-${idx}`}>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{d.name}</td>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}></td>
-                        <td style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>{fAmt(d.amount)}</td>
-                    </tr>
-                ))}
-                <tr style={{ backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>
-                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>TOTAL</td>
-                    <td style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>{fAmt(totalEarnings)}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', border: '1px solid #ddd' }}>{fAmt(totalDeductions)}</td>
-                </tr>
-                <tr style={{ backgroundColor: '#eeefff', fontWeight: 'bold', fontSize: '14px' }}>
-                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>NET PAY</td>
-                    <td style={{ padding: '10px', textAlign: 'right', border: '1px solid #ddd' }}>₹{fAmt(netSalary)}</td>
-                    <td style={{ padding: '10px', border: '1px solid #ddd' }}></td>
-                </tr>
-            </tbody>
-        </table>
+          <table className={styles.salaryLedgerTable}>
+              <thead>
+                  <tr className={styles.salaryLedgerHeader}>
+                      <th>Description</th>
+                      <th>Earnings (₹)</th>
+                      <th>Deductions (₹)</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {earnings.map((e, idx) => (
+                      <tr key={`earn-${idx}`}>
+                          <td className={styles.salaryLedgerCell}>{e.name}</td>
+                          <td className={styles.salaryLedgerCellRight}>{fAmt(e.amount)}</td>
+                          <td className={styles.salaryLedgerCell}></td>
+                      </tr>
+                  ))}
+                  {deductions.map((d, idx) => (
+                      <tr key={`deduct-${idx}`}>
+                          <td className={styles.salaryLedgerCell}>{d.name}</td>
+                          <td className={styles.salaryLedgerCell}></td>
+                          <td className={styles.salaryLedgerCellRight}>{fAmt(d.amount)}</td>
+                      </tr>
+                  ))}
+                  <tr className={styles.salaryTotalRow}>
+                      <td className={styles.salaryLedgerCell}>TOTAL</td>
+                      <td className={styles.salaryLedgerCellRight}>{fAmt(totalEarnings)}</td>
+                      <td className={styles.salaryLedgerCellRight}>{fAmt(totalDeductions)}</td>
+                  </tr>
+                  <tr className={styles.salaryNetPayRow}>
+                      <td>NET PAY</td>
+                      <td className={styles.salaryLedgerCellRight}>₹{fAmt(netSalary)}</td>
+                      <td></td>
+                  </tr>
+              </tbody>
+          </table>
 
-        <div className={styles.previewSignature}>
-          <p style={{ margin: 0 }}>For</p>
-          <p style={{ margin: '4px 0', fontWeight: 'bold' }}>{companyName}</p>
-          {stampData && (
-            <img
-              src={stampData}
-              alt="Company Stamp"
-              className={styles.previewSignatureImage}
-              style={{ maxHeight: '100px', width: 'auto' }}
-            />
-          )}
-          <p style={{ margin: 0 }}>Authorized Signatory</p>
+          <div className={styles.salarySignatureSection}>
+            <p>For</p>
+            <p><strong>{companyName}</strong></p>
+            {stampData && (
+              <img
+                src={stampData}
+                alt="Company Stamp"
+                className={styles.salaryStampImg}
+              />
+            )}
+            <p>Authorized Signatory</p>
+          </div>
         </div>
 
         {includeFooter && footerData && (
-          <img
-            src={footerData}
-            alt="Footer"
-            className={styles.previewImage}
-            style={{ 
-              position: 'absolute', 
-              bottom: '40px', 
-              left: '40px', 
-              right: '40px', 
-              width: 'calc(100% - 80px)' 
-            }}
-          />
+          <div className={styles.salaryFooter}>
+            <img src={footerData} alt="Footer" />
+          </div>
         )}
+
       </div>
     </div>
   );

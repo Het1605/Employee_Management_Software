@@ -299,3 +299,94 @@
   padding: 1.25rem 1.5rem;
   overflow: auto;
 }
+
+.previewBody {
+  flex: 1 1 auto;
+}
+
+.salaryPreviewBody {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.salaryInfoSection {
+  margin: 20px 0;
+  border-bottom: 2px solid #333;
+  padding-bottom: 10px;
+}
+
+.salaryInfoTable {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.salaryInfoCell {
+  padding: 2px 0;
+}
+
+.salaryLedgerTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.salaryLedgerHeader {
+  background-color: #f2f2f2;
+}
+
+.salaryLedgerHeader th {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.salaryLedgerHeader th:nth-child(2),
+.salaryLedgerHeader th:nth-child(3) {
+  text-align: right;
+}
+
+.salaryLedgerCell {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.salaryLedgerCellRight {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: right;
+}
+
+.salaryTotalRow {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.salaryNetPayRow {
+  background-color: #eeefff;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.salarySignatureSection {
+  margin-top: 20px;
+}
+
+.salaryStampImg {
+  max-height: 100px;
+  width: auto;
+  margin: 5px 0;
+}
+
+.salaryFooter {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.salaryFooter img {
+  width: 100%;
+  display: block;
+}
