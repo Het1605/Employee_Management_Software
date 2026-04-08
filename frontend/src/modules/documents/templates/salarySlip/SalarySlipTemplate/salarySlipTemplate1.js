@@ -89,11 +89,10 @@ export function generateSalarySlipTemplate1(payload) {
           </div>
 
           <div style="margin-top: 60px;">
-              <div style="text-align: center; width: 200px; float: right;">
-                  <img src="${stampData || ''}" style="max-height: 80px; margin: 0 auto;" />
-                  <p style="margin-top: 5px; border-top: 1px solid #000;">Authorized Signatory</p>
-              </div>
-              <div style="clear: both;"></div>
+              <p style="margin: 0;">For</p>
+              <p style="margin: 5px 0;"><strong>${form_data.company_name || payload.companyName || '[Company Name]'}</strong></p>
+              ${stampData ? `<img src="${stampData}" style="max-height: 80px; margin: 10px 0;" />` : ''}
+              <p style="margin: 0;">Authorized Signatory</p>
           </div>
       </div>
 

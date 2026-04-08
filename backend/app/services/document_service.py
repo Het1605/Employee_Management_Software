@@ -206,9 +206,18 @@ class DocumentService:
             net_salary = metrics['net_salary']
             year = metrics['year']
 
+            # Helper for formatting currency to avoid -0.00
+            def f_amt(val):
+                if -0.005 < val < 0.005: return "0.00"
+                return f"{val:,.2f}"
+
+            # Helper for days formatting
+            def f_days(val):
+                return int(val) if val == int(val) else val
+
             # Generate internal HTML for Salary Slip using calculated data
-            earnings_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{e['name']}</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{e['amount']:,.2f}</td><td style='padding: 10px; border: 1px solid #ddd;'></td></tr>" for e in earnings_list])
-            deductions_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{d['name']}</td><td style='padding: 10px; border: 1px solid #ddd;'></td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{d['amount']:,.2f}</td></tr>" for d in deductions_list])
+            earnings_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{e['name']}</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{f_amt(e['amount'])}</td><td style='padding: 10px; border: 1px solid #ddd;'></td></tr>" for e in earnings_list])
+            deductions_rows = "".join([f"<tr><td style='padding: 10px; border: 1px solid #ddd;'>{d['name']}</td><td style='padding: 10px; border: 1px solid #ddd;'></td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{f_amt(d['amount'])}</td></tr>" for d in deductions_list])
 
             salary_slip_html = f"""
             <div class="page">
@@ -226,8 +235,8 @@ class DocumentService:
                               <td><strong>Total Working Days:</strong> {total_working_days}</td>
                           </tr>
                           <tr>
-                              <td><strong>Effective Days:</strong> {float(effective_days)}</td>
-                              <td><strong>Total Leaves:</strong> {total_leaves}</td>
+                              <td><strong>Effective Days:</strong> {f_days(effective_days)}</td>
+                              <td><strong>Total Leaves:</strong> {f_days(total_leaves)}</td>
                           </tr>
                       </table>
                   </div>
@@ -244,20 +253,19 @@ class DocumentService:
                           {deductions_rows}
                           <tr style="background-color: #f9f9f9; font-weight: bold;">
                               <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
-                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{total_earnings:,.2f}</td>
-                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{total_deductions:,.2f}</td>
+                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{f_amt(total_earnings)}</td>
+                              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{f_amt(total_deductions)}</td>
                           </tr>
                       </tbody>
                   </table>
                   <div style="margin-top: 30px; padding: 15px; background-color: #eeefff; border: 1px solid #ccc; text-align: right;">
-                      <h3 style="margin: 0;">Net Pay: ₹{net_salary:,.2f}</h3>
+                      <h3 style="margin: 0;">Net Pay: ₹{f_amt(net_salary)}</h3>
                   </div>
                   <div style="margin-top: 60px;">
-                      <div style="text-align: center; width: 200px; float: right;">
-                          <img src="{company.company_stamp or ''}" style="max-height: 80px; margin: 0 auto;" />
-                          <p style="margin-top: 5px; border-top: 1px solid #000;">Authorized Signatory</p>
-                      </div>
-                      <div style="clear: both;"></div>
+                      <p>For</p>
+                      <p><strong>{metrics['company_name']}</strong></p>
+                      <img src="{metrics['company_stamp'] or ''}" style="max-height: 80px; margin: 10px 0;" />
+                      <p>Authorized Signatory</p>
                   </div>
               </div>
               {f'<img src="{company.footer_image}" class="footer-img" style="width: 100%; position: absolute; bottom: 0; left: 0;" />' if form.get("include_footer") and company.footer_image else ''}
