@@ -244,14 +244,16 @@ const SalaryStructureManagement = () => {
               try {
                 if (editingAssignment) {
                   await API.put(`/user-salary-structures/${editingAssignment.id}`, {
-                    user_id: data.user_id,
-                    structure_id: data.structure_id,
+                    user_id: Number(data.user_id),
+                    structure_id: Number(data.structure_id),
+                    ctc: Number(data.ctc),
                   });
                   showToast('Assignment updated', 'success');
                 } else {
                   await API.post('/user-salary-structures', {
-                    user_id: data.user_id,
-                    structure_id: data.structure_id,
+                    user_id: Number(data.user_id),
+                    structure_id: Number(data.structure_id),
+                    ctc: Number(data.ctc),
                   });
                   showToast('Assignment created', 'success');
                 }
@@ -321,6 +323,7 @@ const AssignmentTab = ({ companyId, users, structures, assignments, loading, onO
               <tr>
                 <th>Users</th>
                 <th>Assigned Structure</th>
+                <th>Annual CTC (₹)</th>
                 <th style={{ width: '120px' }}>Actions</th>
               </tr>
             </thead>
@@ -329,6 +332,7 @@ const AssignmentTab = ({ companyId, users, structures, assignments, loading, onO
                 <tr key={assignment.id}>
                   <td>{userMap[assignment.user_id] || `User ${assignment.user_id}`}</td>
                   <td>{structureMap[assignment.structure_id] || `Structure ${assignment.structure_id}`}</td>
+                  <td>₹{Number(assignment.ctc).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                   <td>
                     <div className={styles.inlineActions}>
                       <button className={styles.iconBtn} onClick={() => onOpenModal(assignment)} title="Edit">
@@ -352,22 +356,29 @@ const AssignmentTab = ({ companyId, users, structures, assignments, loading, onO
 const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editData }) => {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedStructure, setSelectedStructure] = useState('');
+  const [ctc, setCtc] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
     if (editData) {
       setSelectedUser(editData.user_id || '');
       setSelectedStructure(editData.structure_id || '');
+      setCtc(editData.ctc || '');
     } else {
       setSelectedUser('');
       setSelectedStructure('');
+      setCtc('');
     }
   }, [isOpen, editData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedUser || !selectedStructure) return;
-    onClose({ user_id: Number(selectedUser), structure_id: Number(selectedStructure) });
+    if (!selectedUser || !selectedStructure || !ctc || Number(ctc) <= 0) return;
+    onClose({ 
+      user_id: Number(selectedUser), 
+      structure_id: Number(selectedStructure),
+      ctc: Number(ctc)
+    });
   };
 
   if (!isOpen) return null;
@@ -399,6 +410,18 @@ const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editDa
                   <option key={structure.id} value={structure.id}>{structure.structure_name || structure.name}</option>
                 ))}
             </select>
+          </div>
+          <div className={styles.inputGroup}>
+            <label>Annual CTC (₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={ctc}
+              onChange={(e) => setCtc(e.target.value)}
+              placeholder="e.g. 600000"
+              required
+              min="0.01"
+            />
           </div>
           <div className={styles.modalActions}>
             <button type="button" className={styles.secondaryBtn} onClick={() => onClose(null)}>Cancel</button>

@@ -1,34 +1,34 @@
 export function generateSalarySlipTemplate1(payload) {
-  const { 
-    form_data = {},
-    title,
-    headerData,
-    footerData,
-    stampData,
-    includeFooter
-  } = payload || {};
+    const {
+        form_data = {},
+        title,
+        headerData,
+        footerData,
+        stampData,
+        includeFooter
+    } = payload || {};
 
-  // For the frontend preview before generation, these might be empty if we rely on backend.
-  // But for the generated PDF, they will be populated in form_data.
-  const name = form_data.employee_name || payload.username || '[Employee Name]';
-  const designation = form_data.designation || payload.position || '[Designation]';
-  const month = form_data.month || payload.month || '[Month]';
-  const year = form_data.year || payload.year || '[Year]';
-  const totalWorkingDays = form_data.total_working_days || 0;
-  const effectiveDays = form_data.effective_days || 0;
-  const leaves = form_data.total_leaves || 0;
-  
-  const earnings = form_data.earnings || [];
-  const deductions = form_data.deductions || [];
-  const totalEarnings = form_data.total_earnings || 0;
-  const totalDeductions = form_data.total_deductions || 0;
-  const netSalary = form_data.net_salary || 0;
+    // For the frontend preview before generation, these might be empty if we rely on backend.
+    // But for the generated PDF, they will be populated in form_data.
+    const name = form_data.employee_name || payload.username || '[Employee Name]';
+    const designation = form_data.designation || payload.position || '[Designation]';
+    const month = form_data.month || payload.month || '[Month]';
+    const year = form_data.year || payload.year || '[Year]';
+    const totalWorkingDays = form_data.total_working_days || 0;
+    const effectiveDays = form_data.effective_days || 0;
+    const leaves = form_data.total_leaves || 0;
 
-  const monthIndex = Number(month);
-  const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const displayMonth = (monthIndex >= 1 && monthIndex <= 12) ? monthNames[monthIndex] : month;
+    const earnings = form_data.earnings || [];
+    const deductions = form_data.deductions || [];
+    const totalEarnings = form_data.total_earnings || 0;
+    const totalDeductions = form_data.total_deductions || 0;
+    const netSalary = form_data.net_salary || 0;
 
-  return `
+    const monthIndex = Number(month);
+    const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const displayMonth = (monthIndex >= 1 && monthIndex <= 12) ? monthNames[monthIndex] : month;
+
+    return `
     <div class="page">
       <img src="${headerData || ''}" class="header-img" style="width: 100%;" />
       
@@ -63,7 +63,7 @@ export function generateSalarySlipTemplate1(payload) {
                   ${earnings.map(e => `
                       <tr>
                           <td style="padding: 10px; border: 1px solid #ddd;">${e.name}</td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(e.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td style="padding: 10px; border: 1px solid #ddd;"></td>
                       </tr>
                   `).join('')}
@@ -72,27 +72,29 @@ export function generateSalarySlipTemplate1(payload) {
                       <tr>
                           <td style="padding: 10px; border: 1px solid #ddd;">${d.name}</td>
                           <td style="padding: 10px; border: 1px solid #ddd;"></td>
-                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(d.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                          <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(d.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       </tr>
                   `).join('')}
 
                   <tr style="background-color: #f9f9f9; font-weight: bold;">
                       <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
-                      <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(totalEarnings).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                      <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(totalDeductions).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                      <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(totalEarnings).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${Number(totalDeductions).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+
+                  <tr style="background-color: #eeefff; font-weight: bold; font-size: 15px;">
+                      <td style="padding: 12px; border: 1px solid #ddd;">NET PAY</td>
+                      <td style="padding: 12px; text-align: right; border: 1px solid #ddd;">₹${Number(netSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style="padding: 12px; border: 1px solid #ddd;"></td>
                   </tr>
               </tbody>
           </table>
 
-          <div style="margin-top: 30px; padding: 15px; background-color: #eeefff; border: 1px solid #ccc; text-align: right;">
-              <h3 style="margin: 0;">Net Pay: ₹${Number(netSalary).toLocaleString('en-IN', {minimumFractionDigits: 2})}</h3>
-          </div>
-
-          <div style="margin-top: 60px;">
+          <div style="margin-top: 40px; text-align: left;">
               <p style="margin: 0;">For</p>
               <p style="margin: 5px 0;"><strong>${form_data.company_name || payload.companyName || '[Company Name]'}</strong></p>
-              ${stampData ? `<img src="${stampData}" style="max-height: 80px; margin: 10px 0;" />` : ''}
-              <p style="margin: 0;">Authorized Signatory</p>
+              ${stampData ? `<img src="${stampData}" style="max-height: 120px; max-width: 200px; margin: 5px 0;" />` : ''}
+              <p style="margin: 5px 0 0 0;">Authorized Signatory</p>
           </div>
       </div>
 

@@ -100,18 +100,20 @@ class DocumentService:
         return value.lower() or 'document'
 
     @staticmethod
-    def calculate_salary_metrics(db: Session, user_id: int, ctc: float, month: int, year: int, company_id: int):
+    def calculate_salary_metrics(db: Session, user_id: int, month: int, year: int, company_id: int):
         user = DocumentService._get_user(db, user_id)
         company = DocumentService._get_company(db, company_id)
         
-        # 1. Monthly Base
-        monthly_base = Decimal(str(ctc)) / Decimal('12')
-        
-        # 2. Structure
+        # 1. Structure & CTC
         assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.user_id == user.id).first()
-        if not assignment:
-            raise HTTPException(status_code=400, detail="User has no salary structure assigned")
+        if not assignment or not assignment.ctc:
+            raise HTTPException(status_code=400, detail="Salary structure or CTC not assigned to user")
+            
+        ctc = assignment.ctc
         structure = assignment.structure
+        
+        # 2. Monthly Base
+        monthly_base = Decimal(str(ctc)) / Decimal('12')
 
         # 3. Attendance
         att_summary = get_my_attendance(db, user.id, int(month), int(year))
@@ -123,27 +125,29 @@ class DocumentService:
         effective_days = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
         
         # 4. Calculation
+        total_leaves = Decimal(str(total_working_days)) - effective_days
         per_day_salary = monthly_base / Decimal(str(total_working_days))
-        earned_gross = per_day_salary * effective_days
-        leave_deduction = monthly_base - earned_gross
+        leave_deduction = per_day_salary * total_leaves
 
         # 5. Breakdown
         earnings_list = []
         deductions_list = []
         for detail in structure.details:
-            amount = (detail.percentage / Decimal('100')) * earned_gross
+            # Earned amounts are based on FULL monthly base
+            amount = (detail.percentage / Decimal('100')) * monthly_base
             comp = {"name": detail.component.name, "amount": round(float(amount), 2)}
             if detail.component.type == ComponentType.EARNING:
                 earnings_list.append(comp)
             else:
                 deductions_list.append(comp)
 
-        deductions_list.append({"name": "Leave Deduction", "amount": round(float(leave_deduction), 2)})
+        if leave_deduction > 0:
+            deductions_list.append({"name": "Leave Deduction", "amount": round(float(leave_deduction), 2)})
         
         total_earnings = sum(e['amount'] for e in earnings_list)
         total_deductions = sum(d['amount'] for d in deductions_list)
         net_salary = total_earnings - total_deductions
-        total_leaves = total_working_days - float(effective_days)
+        total_leaves_val = float(total_leaves)
 
         month_names = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         display_month = month_names[int(month)]
@@ -159,7 +163,7 @@ class DocumentService:
             "half_days": att_summary['half_days'],
             "absent_days": att_summary['absent_days'],
             "effective_days": float(effective_days),
-            "total_leaves": total_leaves,
+            "total_leaves": total_leaves_val,
             "earnings": earnings_list,
             "deductions": deductions_list,
             "total_earnings": round(float(total_earnings), 2),
@@ -181,14 +185,13 @@ class DocumentService:
             form = data.form_data or {}
             payload_data = form.get("data", {})
             user_id = payload_data.get("user_id")
-            ctc = payload_data.get("ctc")
             month = payload_data.get("month")
             year = payload_data.get("year")
 
-            if not all([user_id, ctc, month, year]):
-                 raise HTTPException(status_code=400, detail="Missing salary slip basic data (user, ctc, month, year)")
+            if not all([user_id, month, year]):
+                 raise HTTPException(status_code=400, detail="Missing salary slip basic data (user, month, year)")
 
-            metrics = DocumentService.calculate_salary_metrics(db, user_id, ctc, month, year, data.company_id)
+            metrics = DocumentService.calculate_salary_metrics(db, user_id, month, year, data.company_id)
             form.update(metrics)
             data.form_data = form
 
@@ -256,22 +259,25 @@ class DocumentService:
                               <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{f_amt(total_earnings)}</td>
                               <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">{f_amt(total_deductions)}</td>
                           </tr>
+                          <tr style="background-color: #eeefff; font-weight: bold; font-size: 15px;">
+                              <td style="padding: 12px; border: 1px solid #ddd;">NET PAY</td>
+                              <td style="padding: 12px; text-align: right; border: 1px solid #ddd;">₹{f_amt(net_salary)}</td>
+                              <td style="padding: 12px; border: 1px solid #ddd;"></td>
+                          </tr>
                       </tbody>
                   </table>
-                  <div style="margin-top: 30px; padding: 15px; background-color: #eeefff; border: 1px solid #ccc; text-align: right;">
-                      <h3 style="margin: 0;">Net Pay: ₹{f_amt(net_salary)}</h3>
-                  </div>
-                  <div style="margin-top: 60px;">
-                      <p>For</p>
-                      <p><strong>{metrics['company_name']}</strong></p>
-                      <img src="{metrics['company_stamp'] or ''}" style="max-height: 80px; margin: 10px 0;" />
-                      <p>Authorized Signatory</p>
+
+                  <div style="margin-top: 40px; text-align: left;">
+                      <p style="margin: 0;">For</p>
+                      <p style="margin: 5px 0;"><strong>{company.name}</strong></p>
+                      {f'<img src="{company.company_stamp}" style="max-height: 120px; max-width: 200px; margin: 5px 0;" />' if company.company_stamp else ''}
+                      <p style="margin: 5px 0 0 0;">Authorized Signatory</p>
                   </div>
               </div>
               {f'<img src="{company.footer_image}" class="footer-img" style="width: 100%; position: absolute; bottom: 0; left: 0;" />' if form.get("include_footer") and company.footer_image else ''}
             </div>
             """
-            data.content = salary_slip_html
+            html_content = salary_slip_html
 
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         upload_dir = os.path.join(base_dir, 'uploads', 'documents')
@@ -334,9 +340,7 @@ class DocumentService:
             }}
             .footer-img {{
               width: 100%;
-              position: absolute;
-              bottom: 0;
-              left: 0;
+              display: block;
             }}
             img {{
               max-width: 100%;

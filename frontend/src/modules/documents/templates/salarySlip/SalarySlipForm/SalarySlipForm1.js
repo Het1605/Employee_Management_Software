@@ -5,8 +5,6 @@ export const SalarySlipForm1 = ({
   users,
   selectedUserId,
   onUserChange,
-  ctc,
-  onCtcChange,
   month,
   onMonthChange,
   year,
@@ -30,16 +28,6 @@ export const SalarySlipForm1 = ({
               </option>
             ))}
           </select>
-        </div>
-
-        <div className={styles.formField}>
-          <label>Annual CTC (₹)</label>
-          <input
-            type="number"
-            placeholder="e.g. 600000"
-            value={ctc}
-            onChange={(e) => onCtcChange(e.target.value)}
-          />
         </div>
 
         <div className={styles.formField}>

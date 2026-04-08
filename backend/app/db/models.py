@@ -128,6 +128,7 @@ class UserSalaryStructure(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     structure_id = Column(Integer, ForeignKey("salary_structure_definitions.id"), nullable=False)
+    ctc = Column(Numeric(precision=15, scale=2), nullable=False)
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
 
     structure = relationship("SalaryStructureDefinition", back_populates="user_assignments")

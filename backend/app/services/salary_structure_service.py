@@ -256,6 +256,7 @@ class SalaryStructureService:
         assignment = SalaryStructureService.get_assignment(db, assignment_id)
         SalaryStructureService.get_definition(db, data.structure_id)
         assignment.structure_id = data.structure_id
+        assignment.ctc = data.ctc
         db.commit()
         db.refresh(assignment)
         return assignment

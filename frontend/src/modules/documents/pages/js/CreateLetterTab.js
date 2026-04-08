@@ -41,7 +41,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   // Salary Slip State
   const [salarySlipUserId, setSalarySlipUserId] = useState('');
   const [salarySlipUsers, setSalarySlipUsers] = useState([]);
-  const [ctc, setCtc] = useState('');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [salaryDetails, setSalaryDetails] = useState(null);
@@ -63,7 +62,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   // Live calculation for Salary Slip
   useEffect(() => {
     const isSalarySlip = selectedDocType?.name?.toLowerCase().includes('salary slip');
-    if (!isSalarySlip || !salarySlipUserId || !ctc || !month || !year || !selectedCompanyId) {
+    if (!isSalarySlip || !salarySlipUserId || !month || !year || !selectedCompanyId) {
        setSalaryDetails(null);
        return;
     }
@@ -72,7 +71,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       API.post('/documents/salary/calculate', null, {
         params: {
           user_id: salarySlipUserId,
-          ctc: ctc,
           month: month,
           year: year,
           company_id: selectedCompanyId
@@ -83,7 +81,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     }, 500); // debounce
 
     return () => clearTimeout(timeoutId);
-  }, [salarySlipUserId, ctc, month, year, selectedCompanyId, selectedDocType]);
+  }, [salarySlipUserId, month, year, selectedCompanyId, selectedDocType]);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -139,7 +137,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setDepartment('');
     setEndDate('');
     setSalarySlipUserId('');
-    setCtc('');
     setMonth(new Date().getMonth() + 1);
     setYear(new Date().getFullYear());
   }, []);
@@ -280,7 +277,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         setIncludeFooter(data.include_footer !== false);
       } else if (template_type === 'salary_slip') {
         setSalarySlipUserId(data.user_id ? String(data.user_id) : '');
-        setCtc(data.ctc || '');
         setMonth(data.month || new Date().getMonth() + 1);
         setYear(data.year || new Date().getFullYear());
         setIncludeFooter(data.include_footer !== false);
@@ -308,7 +304,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const isSalarySlip = docName.includes('salary slip');
 
     if (isSalarySlip) {
-        if (!title.trim() || !documentTypeId || !salarySlipUserId || !ctc || !month || !year) {
+        if (!title.trim() || !documentTypeId || !salarySlipUserId || !month || !year) {
             showToast('Please fill all required fields for Salary Slip.', 'error');
             return;
         }
@@ -355,7 +351,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       if (templateType === 'salary_slip') {
         formDataPayload.data = {
           user_id: Number(salarySlipUserId),
-          ctc: Number(ctc),
           month: Number(month),
           year: Number(year),
           include_footer: includeFooter,
@@ -564,8 +559,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   users={salarySlipUsers}
                   selectedUserId={salarySlipUserId}
                   onUserChange={setSalarySlipUserId}
-                  ctc={ctc}
-                  onCtcChange={setCtc}
                   month={month}
                   onMonthChange={setMonth}
                   year={year}
