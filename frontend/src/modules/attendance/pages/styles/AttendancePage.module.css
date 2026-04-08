@@ -1,0 +1,172 @@
+.attendanceContainer {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    min-height: calc(100vh - 150px);
+}
+
+.card {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 30px;
+}
+
+.dateSection {
+    background-color: #f1f5f9;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 30px;
+    border: 1px solid #e2e8f0;
+}
+
+.dateLabel {
+    font-size: 13px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.dateValue {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.sectionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.radioGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.radioLabel:hover:not(.disabled) {
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+}
+
+.radioLabel.selected {
+    border-color: #6366f1;
+    background-color: #eef2ff;
+}
+
+.radioLabel.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.radioLabel input {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: inherit;
+    accent-color: #6366f1;
+}
+
+.radioText {
+    font-size: 16px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.selected .radioText {
+    color: #4338ca;
+    font-weight: 600;
+}
+
+.submitButton {
+    width: 100%;
+    padding: 14px;
+    background-color: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.submitButton:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.offDayMessage {
+    background-color: #fff7ed;
+    color: #9a3412;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ffedd5;
+    font-weight: 500;
+}
+
+.message {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #dcfce7;
+}
+
+.error {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fee2e2;
+}
+
+.loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    font-weight: 500;
+    color: #64748b;
+}

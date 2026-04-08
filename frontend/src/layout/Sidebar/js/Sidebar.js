@@ -92,7 +92,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span className={styles.linkText}>Salary Structure</span>
               </NavLink>
             </div>
-            <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Attendance</div>
           </div>
         )}
 
@@ -112,6 +111,18 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         )}
         
+        <div className={styles.navGroup}>
+          <div className={styles.groupTitle}>Attendance</div>
+          <NavLink 
+            to="/employee/attendance" 
+            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            onClick={handleLinkClick}
+          >
+            <span className={styles.icon}>📝</span>
+            <span className={styles.linkText}>Mark Attendance</span>
+          </NavLink>
+        </div>
+
         <div className={styles.navGroup}>
           <div className={styles.groupTitle}>Self Service</div>
           <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>My Profile</div>

@@ -21,6 +21,7 @@ import AdminCalendarManagement from '../../modules/calendar/pages/js/AdminCalend
 import HRCalendarManagement from '../../modules/calendar/pages/js/HRCalendarManagement';
 import SalaryStructureManagement from '../../modules/payroll/pages/js/SalaryStructureManagement';
 import DocumentsPage from '../../modules/documents/pages/js/DocumentsPage';
+import AttendancePage from '../../modules/attendance/pages/js/AttendancePage';
 
 const AppRouter = () => {
   return (
@@ -158,6 +159,15 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
               <DocumentsPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/employee/attendance" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <AttendancePage />
             </ProtectedRoute>
           } 
         />

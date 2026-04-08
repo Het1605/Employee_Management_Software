@@ -39,6 +39,8 @@ function Login() {
       role = role ? role.toUpperCase() : "";
       
       // Store in localStorage for routing and identification
+      localStorage.setItem("token", res.data.access_token);
+      localStorage.setItem("userId", res.data.user.id);
       localStorage.setItem("username", userName);
       localStorage.setItem("userEmail", userEmail);
       localStorage.setItem("role", role); // Standardized key

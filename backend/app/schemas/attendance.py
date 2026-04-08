@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class AttendanceMark(BaseModel):
-    company_id: int
+    company_id: Optional[int] = None
     user_id: Optional[int] = None
     date: Optional[datetime.date] = None
     status: str # 'present', 'half_day', 'absent'

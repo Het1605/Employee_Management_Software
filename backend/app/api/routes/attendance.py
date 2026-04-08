@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
@@ -8,8 +8,6 @@ from typing import List, Optional
 
 router = APIRouter()
 
-# In this project, authentication is not globally enforced.
-# We identify the user performing the action from the request parameters (user_id/actor_id).
 def get_user_by_id(db: Session, user_id: int):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -21,12 +19,12 @@ def mark_attendance(
     attendance: AttendanceMark,
     db: Session = Depends(get_db)
 ):
-    # If user_id is in body, use it to identify the user for logic
+    # Use user_id provided in body
     actor = get_user_by_id(db, attendance.user_id) if attendance.user_id else None
     
     return attendance_service.mark_attendance(
         db, 
-        actor, # Passed as actor to determine role
+        actor, 
         attendance.company_id, 
         attendance.status, 
         attendance.user_id, 
@@ -49,8 +47,6 @@ def get_company_attendance(
     year: int = Query(..., ge=2000),
     db: Session = Depends(get_db)
 ):
-    # Role check is bypassed here to allow Swagger testing directly,
-    # as other management APIs in this project are open.
     return attendance_service.get_company_attendance(db, company_id, month, year)
 
 @router.get("/today", response_model=AttendanceToday)

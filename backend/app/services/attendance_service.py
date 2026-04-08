@@ -63,18 +63,23 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
     else:
         user_id = actor.id
         final_date = today
-        if status_str == 'absent':
-             raise HTTPException(status_code=400, detail="Employee cannot set attendance to 'absent'")
         if target_date and target_date != today:
              raise HTTPException(status_code=400, detail="Employee can only mark attendance for today")
 
-    # Check if user belongs to company
-    mapping = db.query(UserCompanyMapping).filter(
-        UserCompanyMapping.user_id == user_id,
-        UserCompanyMapping.company_id == company_id
-    ).first()
-    if not mapping:
-        raise HTTPException(status_code=403, detail="User does not belong to this company")
+    # Resolve company_id if not provided
+    if not company_id:
+        mapping = db.query(UserCompanyMapping).filter(UserCompanyMapping.user_id == user_id).first()
+        if not mapping:
+             raise HTTPException(status_code=400, detail="User is not assigned to any company")
+        company_id = mapping.company_id
+    else:
+        # Check if user belongs to company
+        mapping = db.query(UserCompanyMapping).filter(
+            UserCompanyMapping.user_id == user_id,
+            UserCompanyMapping.company_id == company_id
+        ).first()
+        if not mapping:
+            raise HTTPException(status_code=403, detail="User does not belong to this company")
 
     # Validation from get_day_status
     day_status = get_day_status(db, company_id, final_date)
