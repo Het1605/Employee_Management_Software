@@ -84,39 +84,37 @@ const AttendancePage = () => {
                         <>
                             <div className={styles.statusSection}>
                                 <p className={styles.sectionTitle}>Select Status</p>
+                                <p className={styles.helperText}>You can update your attendance multiple times for today.</p>
                                 <div className={styles.radioGroup}>
-                                    <label className={`${styles.radioLabel} ${status === 'present' ? styles.selected : ''} ${isMarked ? styles.disabled : ''}`}>
+                                    <label className={`${styles.radioLabel} ${status === 'present' ? styles.selected : ''}`}>
                                         <input 
                                             type="radio" 
                                             name="status" 
                                             value="present" 
                                             checked={status === 'present'}
                                             onChange={(e) => setStatus(e.target.value)}
-                                            disabled={isMarked}
                                         />
                                         <span className={styles.radioText}>Present</span>
                                     </label>
 
-                                    <label className={`${styles.radioLabel} ${status === 'half_day' ? styles.selected : ''} ${isMarked ? styles.disabled : ''}`}>
+                                    <label className={`${styles.radioLabel} ${status === 'half_day' ? styles.selected : ''}`}>
                                         <input 
                                             type="radio" 
                                             name="status" 
                                             value="half_day" 
                                             checked={status === 'half_day'}
                                             onChange={(e) => setStatus(e.target.value)}
-                                            disabled={isMarked}
                                         />
                                         <span className={styles.radioText}>Half Day</span>
                                     </label>
 
-                                    <label className={`${styles.radioLabel} ${status === 'absent' ? styles.selected : ''} ${isMarked ? styles.disabled : ''}`}>
+                                    <label className={`${styles.radioLabel} ${status === 'absent' ? styles.selected : ''}`}>
                                         <input 
                                             type="radio" 
                                             name="status" 
                                             value="absent" 
                                             checked={status === 'absent'}
                                             onChange={(e) => setStatus(e.target.value)}
-                                            disabled={isMarked}
                                         />
                                         <span className={styles.radioText}>Absent</span>
                                     </label>
@@ -132,9 +130,8 @@ const AttendancePage = () => {
                             <button 
                                 className={styles.submitButton} 
                                 onClick={handleMarkAttendance}
-                                disabled={isMarked}
                             >
-                                {isMarked ? 'Attendance Marked' : 'Mark Attendance'}
+                                {isMarked ? 'Update Attendance' : 'Mark Attendance'}
                             </button>
                         </>
                     )}

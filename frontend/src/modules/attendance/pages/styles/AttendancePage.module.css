@@ -55,6 +55,14 @@
     text-align: left;
 }
 
+.helperText {
+    font-size: 13px;
+    color: #64748b;
+    text-align: left;
+    margin-top: -10px;
+    margin-bottom: 20px;
+}
+
 .radioGroup {
     display: flex;
     flex-direction: column;
