@@ -9,10 +9,10 @@ from app.schemas.user import LoginRequest, ResetPasswordConfirm
 
 class AuthService:
     @staticmethod
-    def authenticate_user(db: Session, login_data: LoginRequest):
-        user = db.query(User).filter(User.email == login_data.email).first()
+    def authenticate_user(db: Session, email: str, password: str):
+        user = db.query(User).filter(User.email == email).first()
 
-        if not user or not verify_password(login_data.password, user.password):
+        if not user or not verify_password(password, user.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"

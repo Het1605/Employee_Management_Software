@@ -191,3 +191,27 @@ class Attendance(Base):
         Index('idx_company_attendance_date', 'company_id', 'date'),
         Index('idx_user_attendance_date', 'user_id', 'date')
     )
+
+class LeaveRequest(Base):
+    __tablename__ = "leave_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    total_days = Column(Numeric(precision=5, scale=2), nullable=False)
+    reason = Column(Text, nullable=True)
+    status = Column(String, default="pending", nullable=False)  # pending / approved / rejected
+    applied_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+    company = relationship("Company")
+
+    __table_args__ = (
+        Index('idx_leave_company_dates', 'company_id', 'start_date', 'end_date'),
+        Index('idx_leave_user_dates', 'user_id', 'start_date', 'end_date')
+    )

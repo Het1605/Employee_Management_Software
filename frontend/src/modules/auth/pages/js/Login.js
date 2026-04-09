@@ -27,9 +27,14 @@ function Login() {
     setError("");
 
     try {
-      const res = await API.post("/auth/login", {
-        email,
-        password,
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const res = await API.post("/auth/login", formData, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
 
       let role = res.data.role;
@@ -60,7 +65,14 @@ function Login() {
       }
 
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || "Login Failed: Invalid credentials";
+      let errorMsg = "Login Failed: Invalid credentials";
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === "string") {
+          errorMsg = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail)) {
+          errorMsg = err.response.data.detail[0]?.msg || JSON.stringify(err.response.data.detail);
+        }
+      }
       setError(errorMsg);
     } finally {
       setLoading(false);

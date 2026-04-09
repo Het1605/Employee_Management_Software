@@ -8,9 +8,11 @@ from app.api.dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 @router.post("/login")
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    return AuthService.authenticate_user(db, data)
+def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    return AuthService.authenticate_user(db, data.username, data.password)
 
 @router.post("/change-password")
 def change_password(data: ChangePasswordRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):

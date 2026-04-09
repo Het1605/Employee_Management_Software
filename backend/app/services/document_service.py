@@ -100,7 +100,32 @@ class DocumentService:
         return value.lower() or 'document'
 
     @staticmethod
-    def calculate_salary_metrics(db: Session, user_id: int, month: int, year: int, company_id: int):
+    def _calculate_approved_leaves_for_month(db: Session, user_id: int, year: int, month: int) -> int:
+        from app.db.models import LeaveRequest
+        from datetime import date
+        from calendar import monthrange
+        
+        _, last_day = monthrange(year, month)
+        month_start = date(year, month, 1)
+        month_end = date(year, month, last_day)
+        
+        leaves = db.query(LeaveRequest).filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.status == "approved",
+            LeaveRequest.start_date <= month_end,
+            LeaveRequest.end_date >= month_start
+        ).all()
+        
+        total_days = 0
+        for leave in leaves:
+            overlap_start = max(month_start, leave.start_date)
+            overlap_end = min(month_end, leave.end_date)
+            total_days += (overlap_end - overlap_start).days + 1
+            
+        return total_days
+
+    @staticmethod
+    def calculate_salary_metrics(db: Session, user_id: int, month: str, year: str, company_id: Optional[int] = None):
         user = DocumentService._get_user(db, user_id)
         company = DocumentService._get_company(db, company_id)
         
@@ -125,7 +150,8 @@ class DocumentService:
         effective_days = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
         
         # 4. Calculation
-        total_leaves = Decimal(str(total_working_days)) - effective_days
+        approved_leaves_count = DocumentService._calculate_approved_leaves_for_month(db, user.id, int(year), int(month))
+        total_leaves = Decimal(str(approved_leaves_count))
         per_day_salary = monthly_base / Decimal(str(total_working_days))
         leave_deduction = per_day_salary * total_leaves
 
@@ -211,7 +237,10 @@ class DocumentService:
             
             total_working_days_month_dec = Decimal(str(total_working_days_month))
             effective_days_month = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
-            total_leaves_month = total_working_days_month_dec - effective_days_month
+            
+            # Get exactly approved leaves for this particular month
+            approved_leaves_count = DocumentService._calculate_approved_leaves_for_month(db, user.id, int(year), month_idx)
+            total_leaves_month = Decimal(str(approved_leaves_count))
             
             # 4. Calculation
             per_day_salary = monthly_base / total_working_days_month_dec

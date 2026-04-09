@@ -4,7 +4,7 @@ from sqlalchemy import text
 from app.db.database import Base, engine
 from app.db import models
 from app.models import calendar  # Register Calendar models to Base
-from app.api.routes import auth, users, company, calendar, salary_component, salary_structure, document, attendance
+from app.api.routes import auth, users, company, calendar, salary_component, salary_structure, document, attendance, leave_request
 from app.core.config import settings
 from app.db.database import SessionLocal
 from app.services.document_service import DocumentService
@@ -47,6 +47,7 @@ app.include_router(salary_structure.router)
 app.include_router(salary_structure.assign_router)
 app.include_router(document.router)
 app.include_router(attendance.router, prefix="/attendance", tags=["Attendance"])
+app.include_router(leave_request.router)
 
 @app.get("/")
 def home():
