@@ -176,6 +176,94 @@ class DocumentService:
         }
 
     @staticmethod
+    def calculate_yearly_salary_metrics(db: Session, user_id: int, year: int, company_id: int):
+        user = DocumentService._get_user(db, user_id)
+        company = DocumentService._get_company(db, company_id)
+        
+        # 1. Structure & CTC
+        assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.user_id == user.id).first()
+        if not assignment or not assignment.ctc:
+            raise HTTPException(status_code=400, detail="Salary structure or CTC not assigned to user")
+            
+        ctc = assignment.ctc
+        structure = assignment.structure
+        
+        # 2. Monthly Base
+        monthly_base = Decimal(str(ctc)) / Decimal('12')
+
+        total_working_days_year = 0
+        effective_days_year = Decimal('0')
+        total_leaves_year = Decimal('0')
+        total_earnings_year = Decimal('0')
+        total_deductions_year = Decimal('0')
+        
+        monthly_data = []
+        month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        import calendar as pycal
+
+        for month_idx in range(1, 13):
+            # 3. Attendance for the month
+            att_summary = get_my_attendance(db, user.id, month_idx, int(year))
+            total_working_days_month = sum(1 for d in att_summary['attendance'] if d['day_type'] in ['working', 'half'])
+            if total_working_days_month == 0:
+                total_working_days_month = pycal.monthrange(int(year), month_idx)[1]
+            
+            total_working_days_month_dec = Decimal(str(total_working_days_month))
+            effective_days_month = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
+            total_leaves_month = total_working_days_month_dec - effective_days_month
+            
+            # 4. Calculation
+            per_day_salary = monthly_base / total_working_days_month_dec
+            leave_deduction_month = per_day_salary * total_leaves_month
+
+            # 5. Earnings & Components based on FULL monthly salary
+            components_dict = {}
+            for detail in structure.details:
+                amount = (detail.percentage / Decimal('100')) * monthly_base
+                components_dict[detail.component.name] = round(float(amount), 2)
+                if detail.component.type == ComponentType.EARNING:
+                    total_earnings_year += amount
+                else:
+                    total_deductions_year += amount
+
+            # 6. Store month data
+            monthly_data.append({
+                "month": f"{month_names[month_idx]} {year}",
+                "components": components_dict,
+                "leave_deduction": round(float(leave_deduction_month), 2),
+                "total_working_days": total_working_days_month,
+                "effective_days": float(effective_days_month),
+                "total_leaves": float(total_leaves_month)
+            })
+
+            total_working_days_year += total_working_days_month
+            effective_days_year += effective_days_month
+            total_leaves_year += total_leaves_month
+            total_deductions_year += leave_deduction_month
+
+        # 7. Final Net Pay
+        net_pay = total_earnings_year - total_deductions_year
+
+        return {
+            "employee_name": f"{user.first_name} {user.last_name}",
+            "designation": user.position or 'Employee',
+            "year": year,
+            "total_working_days": total_working_days_year,
+            "effective_days": float(effective_days_year),
+            "total_leaves": float(total_leaves_year),
+            "monthly_data": monthly_data,
+            "total_earnings": round(float(total_earnings_year), 2),
+            "total_deductions": round(float(total_deductions_year), 2),
+            "net_pay": round(float(net_pay), 2),
+            "header_image": company.header_image,
+            "footer_image": company.footer_image,
+            "company_stamp": company.company_stamp,
+            "company_name": company.name
+        }
+
+    @staticmethod
+
     def generate_document_pdf(db: Session, data: GeneratedDocumentCreate):
         doc_type = DocumentService._get_document_type(db, data.document_type_id)
         company = DocumentService._get_company(db, data.company_id)

@@ -34,6 +34,15 @@ def calculate_salary_preview(
 ):
     return DocumentService.calculate_salary_metrics(db, user_id, month, year, company_id)
 
+@router.post("/documents/salary/yearly-calculate")
+def calculate_yearly_salary_preview(
+    user_id: int,
+    year: int,
+    company_id: int,
+    db: Session = Depends(get_db)
+):
+    return DocumentService.calculate_yearly_salary_metrics(db, user_id, year, company_id)
+
 @router.post("/documents/send")
 def send_document(data: SendDocumentRequest, db: Session = Depends(get_db)):
     return DocumentService.send_document_email(db, data)
