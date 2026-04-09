@@ -23,6 +23,7 @@ import SalaryStructureManagement from '../../modules/payroll/pages/js/SalaryStru
 import DocumentsPage from '../../modules/documents/pages/js/DocumentsPage';
 import AttendancePage from '../../modules/attendance/pages/js/AttendancePage';
 import AttendanceManagement from '../../modules/attendance/pages/js/AttendanceManagement';
+import LeaveManagementPage from '../../modules/attendance/leave/pages/js/LeaveManagementPage';
 
 const AppRouter = () => {
   return (
@@ -187,6 +188,15 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER']}>
               <AttendancePage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/attendance/leave" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <LeaveManagementPage />
             </ProtectedRoute>
           } 
         />

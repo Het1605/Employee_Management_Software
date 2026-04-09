@@ -9,8 +9,7 @@ class LeaveRequestBase(BaseModel):
     reason: Optional[str] = None
 
 class LeaveRequestCreate(LeaveRequestBase):
-    user_id: int
-    company_id: int
+    pass
 
     @root_validator(pre=True)
     def check_dates(cls, values):

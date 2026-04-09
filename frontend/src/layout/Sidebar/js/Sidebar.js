@@ -135,12 +135,20 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className={styles.linkText}>Manage Attendance</span>
             </NavLink>
           )}
+
+          <NavLink 
+            to="/attendance/leave" 
+            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            onClick={handleLinkClick}
+          >
+            <span className={styles.icon}>🏖️</span>
+            <span className={styles.linkText}>Leave Management</span>
+          </NavLink>
         </div>
 
         <div className={styles.navGroup}>
           <div className={styles.groupTitle}>Self Service</div>
           <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>My Profile</div>
-          <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>Leave Requests</div>
         </div>
       </nav>
     </aside>
