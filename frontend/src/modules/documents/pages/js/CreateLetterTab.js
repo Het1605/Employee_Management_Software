@@ -12,6 +12,8 @@ import { ExperienceForm1 } from '../../templates/experienceLetter/ExperienceForm
 import { ExperiencePreview1 } from '../../templates/experienceLetter/ExperiencePreview/ExperiencePreview1';
 import { SalarySlipForm1 } from '../../templates/salarySlip/SalarySlipForm/SalarySlipForm1';
 import { SalarySlipPreview1 } from '../../templates/salarySlip/SalarySlipPreview/SalarySlipPreview1';
+import { SalarySlipForm2 } from '../../templates/salarySlip/SalarySlipForm/SalarySlipForm2';
+import { SalarySlipPreview2 } from '../../templates/salarySlip/SalarySlipPreview/SalarySlipPreview2';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -41,6 +43,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   // Salary Slip State
   const [salarySlipUserId, setSalarySlipUserId] = useState('');
   const [salarySlipUsers, setSalarySlipUsers] = useState([]);
+  const [salaryTemplateId, setSalaryTemplateId] = useState('salaryTemplate1');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [salaryDetails, setSalaryDetails] = useState(null);
@@ -62,26 +65,37 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   // Live calculation for Salary Slip
   useEffect(() => {
     const isSalarySlip = selectedDocType?.name?.toLowerCase().includes('salary slip');
-    if (!isSalarySlip || !salarySlipUserId || !month || !year || !selectedCompanyId) {
+    if (!isSalarySlip || !salarySlipUserId || !year || !selectedCompanyId) {
+       setSalaryDetails(null);
+       return;
+    }
+    if (salaryTemplateId === 'salaryTemplate1' && !month) {
        setSalaryDetails(null);
        return;
     }
 
     const timeoutId = setTimeout(() => {
-      API.post('/documents/salary/calculate', null, {
-        params: {
-          user_id: salarySlipUserId,
-          month: month,
-          year: year,
-          company_id: selectedCompanyId
-        }
-      })
+      const endpoint = salaryTemplateId === 'salaryTemplate2' 
+        ? '/documents/salary/yearly-calculate' 
+        : '/documents/salary/calculate';
+        
+      const params = {
+        user_id: salarySlipUserId,
+        year: year,
+        company_id: selectedCompanyId
+      };
+      
+      if (salaryTemplateId === 'salaryTemplate1') {
+        params.month = month;
+      }
+
+      API.post(endpoint, null, { params })
       .then(res => setSalaryDetails(res.data))
       .catch(() => setSalaryDetails(null));
     }, 500); // debounce
 
     return () => clearTimeout(timeoutId);
-  }, [salarySlipUserId, month, year, selectedCompanyId, selectedDocType]);
+  }, [salarySlipUserId, month, year, selectedCompanyId, selectedDocType, salaryTemplateId]);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -137,6 +151,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setDepartment('');
     setEndDate('');
     setSalarySlipUserId('');
+    setSalaryTemplateId('salaryTemplate1');
     setMonth(new Date().getMonth() + 1);
     setYear(new Date().getFullYear());
   }, []);
@@ -277,6 +292,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         setIncludeFooter(data.include_footer !== false);
       } else if (template_type === 'salary_slip') {
         setSalarySlipUserId(data.user_id ? String(data.user_id) : '');
+        setSalaryTemplateId(data.template_id || 'salaryTemplate1');
         setMonth(data.month || new Date().getMonth() + 1);
         setYear(data.year || new Date().getFullYear());
         setIncludeFooter(data.include_footer !== false);
@@ -304,8 +320,12 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const isSalarySlip = docName.includes('salary slip');
 
     if (isSalarySlip) {
-        if (!title.trim() || !documentTypeId || !salarySlipUserId || !month || !year) {
+        if (!title.trim() || !documentTypeId || !salarySlipUserId || !year) {
             showToast('Please fill all required fields for Salary Slip.', 'error');
+            return;
+        }
+        if (salaryTemplateId === 'salaryTemplate1' && !month) {
+            showToast('Please select a month.', 'error');
             return;
         }
     } else if (isInternship) {
@@ -349,7 +369,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       };
 
       if (templateType === 'salary_slip') {
+        formDataPayload.template_id = salaryTemplateId;
         formDataPayload.data = {
+          template_id: salaryTemplateId,
           user_id: Number(salarySlipUserId),
           month: Number(month),
           year: Number(year),
@@ -408,7 +430,10 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         documentTypeName: selectedDocType?.name,
         month,
         year,
-        form_data: templateType === 'salary_slip' ? salaryDetails || {} : {}
+        form_data: {
+          ...(templateType === 'salary_slip' ? salaryDetails || {} : {}),
+          template_id: salaryTemplateId
+        }
       });
       if (editingDocId) {
         await API.put(`/documents/${editingDocId}?company_id=${selectedCompanyId}`, {
@@ -555,30 +580,59 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
               </>
                 ) : isSalarySlip ? (
               <>
-                <SalarySlipForm1
-                  users={salarySlipUsers}
-                  selectedUserId={salarySlipUserId}
-                  onUserChange={setSalarySlipUserId}
-                  month={month}
-                  onMonthChange={setMonth}
-                  year={year}
-                  onYearChange={setYear}
-                  includeFooter={includeFooter}
-                  onIncludeFooterChange={setIncludeFooter}
-                  generating={generating}
-                  onGenerate={handleGeneratePdf}
-                  submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
-                />
-                <SalarySlipPreview1
-                  username={username}
-                  month={month}
-                  year={year}
-                  headerData={selectedCompany?.header_image || ''}
-                  footerData={selectedCompany?.footer_image || ''}
-                  stampData={selectedCompany?.company_stamp || ''}
-                  includeFooter={includeFooter}
-                  form_data={salaryDetails || {}}
-                />
+                {salaryTemplateId === 'salaryTemplate2' ? (
+                  <SalarySlipForm2
+                    users={salarySlipUsers}
+                    selectedUserId={salarySlipUserId}
+                    onUserChange={setSalarySlipUserId}
+                    year={year}
+                    onYearChange={setYear}
+                    includeFooter={includeFooter}
+                    onIncludeFooterChange={setIncludeFooter}
+                    generating={generating}
+                    onGenerate={handleGeneratePdf}
+                    submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
+                    templateId={salaryTemplateId}
+                    onTemplateChange={setSalaryTemplateId}
+                  />
+                ) : (
+                  <SalarySlipForm1
+                    users={salarySlipUsers}
+                    selectedUserId={salarySlipUserId}
+                    onUserChange={setSalarySlipUserId}
+                    month={month}
+                    onMonthChange={setMonth}
+                    year={year}
+                    onYearChange={setYear}
+                    includeFooter={includeFooter}
+                    onIncludeFooterChange={setIncludeFooter}
+                    generating={generating}
+                    onGenerate={handleGeneratePdf}
+                    submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
+                    templateId={salaryTemplateId}
+                    onTemplateChange={setSalaryTemplateId}
+                  />
+                )}
+                {salaryTemplateId === 'salaryTemplate2' ? (
+                  <SalarySlipPreview2
+                    headerData={selectedCompany?.header_image || ''}
+                    footerData={selectedCompany?.footer_image || ''}
+                    stampData={selectedCompany?.company_stamp || ''}
+                    includeFooter={includeFooter}
+                    form_data={salaryDetails || {}}
+                  />
+                ) : (
+                  <SalarySlipPreview1
+                    username={username}
+                    month={month}
+                    year={year}
+                    headerData={selectedCompany?.header_image || ''}
+                    footerData={selectedCompany?.footer_image || ''}
+                    stampData={selectedCompany?.company_stamp || ''}
+                    includeFooter={includeFooter}
+                    form_data={salaryDetails || {}}
+                  />
+                )}
               </>
                 ) : (
               <>

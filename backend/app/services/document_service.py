@@ -272,14 +272,21 @@ class DocumentService:
         if doc_type.code == "salary_slip":
             form = data.form_data or {}
             payload_data = form.get("data", {})
+            template_id = payload_data.get("template_id", "salaryTemplate1")
             user_id = payload_data.get("user_id")
-            month = payload_data.get("month")
             year = payload_data.get("year")
+            month = payload_data.get("month")
 
-            if not all([user_id, month, year]):
-                 raise HTTPException(status_code=400, detail="Missing salary slip basic data (user, month, year)")
+            if not user_id or not year:
+                 raise HTTPException(status_code=400, detail="Missing salary slip basic data (user, year)")
 
-            metrics = DocumentService.calculate_salary_metrics(db, user_id, month, year, data.company_id)
+            if template_id == "salaryTemplate2":
+                 metrics = DocumentService.calculate_yearly_salary_metrics(db, user_id, year, data.company_id)
+            else:
+                 if not month:
+                     raise HTTPException(status_code=400, detail="Missing salary slip basic data (month)")
+                 metrics = DocumentService.calculate_salary_metrics(db, user_id, month, year, data.company_id)
+                 
             form.update(metrics)
             data.form_data = form
 
@@ -313,6 +320,12 @@ class DocumentService:
 
         for key, value in data.model_dump(exclude_unset=True).items():
             setattr(document, key, value)
+
+        if data.content:
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            if document.file_name:
+                file_path = os.path.join(base_dir, 'uploads', 'documents', document.file_name)
+                HTML(string=data.content, base_url=base_dir).write_pdf(file_path)
 
         db.commit()
         db.refresh(document)

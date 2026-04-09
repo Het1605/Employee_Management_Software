@@ -1,12 +1,10 @@
 import React from 'react';
 import styles from '../../../pages/styles/DocumentsPage.module.css';
 
-export const SalarySlipForm1 = ({
+export const SalarySlipForm2 = ({
   users,
   selectedUserId,
   onUserChange,
-  month,
-  onMonthChange,
   year,
   onYearChange,
   includeFooter,
@@ -41,36 +39,12 @@ export const SalarySlipForm1 = ({
         </div>
 
         <div className={styles.formField}>
-          <label>Month</label>
-          <select value={month} onChange={(e) => onMonthChange(e.target.value)}>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {new Date(0, i).toLocaleString('default', { month: 'long' })}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.formField}>
           <label>Year</label>
           <select value={year} onChange={(e) => onYearChange(e.target.value)}>
             {[2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-        </div>
-
-        <div className={styles.formField}>
-          <label>Include Footer</label>
-          <div className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              id="includeFooter"
-              checked={includeFooter}
-              onChange={(e) => onIncludeFooterChange(e.target.checked)}
-            />
-            <label htmlFor="includeFooter" style={{ marginBottom: 0 }}>Use company footer</label>
-          </div>
         </div>
       </div>
 
