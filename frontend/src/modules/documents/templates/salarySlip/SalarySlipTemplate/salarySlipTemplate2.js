@@ -19,7 +19,7 @@ export function generateSalarySlipTemplate2(payload) {
     const monthly_data = form_data.monthly_data || [];
     const totalEarnings = safe(form_data.total_earnings);
     const totalDeductions = safe(form_data.total_deductions);
-    const netSalary = safe(form_data.net_salary);
+    const netSalary = safe(form_data.net_pay);
 
     const fAmt = (val) => {
         const num = Number(val);
@@ -45,32 +45,32 @@ export function generateSalarySlipTemplate2(payload) {
           * { box-sizing: border-box; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; line-height: 1.5; }
           .page { width: 1123px; height: 794px; margin: 0 auto; display: flex; flex-direction: column; box-sizing: border-box; }
-          .content-area { flex: 1 1 auto; padding: 40px; overflow: hidden; }
+          .content-area { flex: 1 1 auto; padding: 20px 40px; overflow: hidden; }
           img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
           
-          .salary-summary-title { text-align: center; margin-bottom: 24px; font-size: 18px; font-weight: bold; }
+          .salary-summary-title { text-align: center; margin-bottom: 18px; font-size: 15px; font-weight: bold; }
           
-          .info-section { margin-bottom: 20px; }
-          .info-table { width: 100%; font-size: 14px; border-collapse: collapse; }
-          .info-table td { padding: 4px 0; }
+          .info-section { margin-bottom: 18px; }
+          .info-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+          .info-table td { padding: 2px 0; }
           
-          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 12px; }
           .ledger-header { background-color: #f2f2f2; }
-          .ledger-header th { padding: 8px; text-align: left; border: 1px solid #ddd; }
+          .ledger-header th { padding: 4px; text-align: left; border: 1px solid #ddd; }
           .ledger-header th.right { text-align: right; }
           
-          .ledger-cell { padding: 6px 8px; border: 1px solid #ddd; text-align: left; }
+          .ledger-cell { padding: 3px 4px; border: 1px solid #ddd; text-align: left; }
           .ledger-cell.right { text-align: right; }
           .ledger-cell.center { text-align: center; }
           
           .total-row { background-color: #f9f9f9; font-weight: bold; }
-          .net-row { background-color: #eeefff; font-weight: bold; font-size: 15px; }
+          .net-row { background-color: #eeefff; font-weight: bold; font-size: 13px; }
           
-          .signature-section { margin-top: 30px; text-align: left; }
-          .signature-section p { margin: 0; }
-          .signature-section .company { margin: 5px 0; font-weight: bold; }
-          .stamp-img { max-height: 100px; max-width: 200px; margin: 5px 0; }
-          .authorized { margin: 5px 0 0 0; }
+          .signature-section { margin-top: 18px; text-align: left; }
+          .signature-section p { margin: 0; font-size: 12px; }
+          .signature-section .company { margin: 2px 0; font-weight: bold; }
+          .stamp-img { max-height: 120px; max-width: 180px; margin: 2px 0; }
+          .authorized { margin: 2px 0 0 0; }
         </style>
       </head>
       <body>
@@ -81,25 +81,14 @@ export function generateSalarySlipTemplate2(payload) {
               <div class="info-section">
                   <table class="info-table">
                       <tr>
-                          <td style="width: 50%;"><strong>Employee Name:</strong> ${name}</td>
-                          <td style="width: 50%;"><strong>Designation:</strong> ${designation}</td>
+                          <td style="width: 33%;"><strong>Employee Name:</strong> ${name}</td>
+                          <td style="width: 33%;"><strong>Designation:</strong> ${designation}</td>
+                          <td style="width: 33%;"><strong>Year:</strong> ${year}</td>
                       </tr>
-                      <tr>
-                          <td><strong>Year:</strong> ${year}</td>
-                          <td></td>
-                      </tr>
-                      <tr><td colspan="2" style="height: 10px;"></td></tr>
                       <tr>
                           <td><strong>Total Working Days:</strong> ${totalWorkingDays}</td>
-                          <td></td>
-                      </tr>
-                      <tr>
                           <td><strong>Effective Days:</strong> ${fDays(effectiveDays)}</td>
-                          <td></td>
-                      </tr>
-                      <tr>
                           <td><strong>Total Leaves:</strong> ${fDays(leaves)}</td>
-                          <td></td>
                       </tr>
                   </table>
               </div>
