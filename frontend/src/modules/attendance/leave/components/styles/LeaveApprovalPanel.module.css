@@ -123,6 +123,57 @@
     cursor: not-allowed;
 }
 
+.iconBtn {
+    background: none;
+    border: none;
+    color: #4b5563;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.iconBtn:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.updateBtn {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.updateBtn:hover {
+    opacity: 0.8;
+}
+
+.cancelBtn {
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.cancelBtn:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+}
+
 .emptyState {
     text-align: center;
     padding: 3rem 1rem;

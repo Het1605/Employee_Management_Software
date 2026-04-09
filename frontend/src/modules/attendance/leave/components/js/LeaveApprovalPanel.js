@@ -3,10 +3,18 @@ import API from '../../../../../core/api/apiClient';
 import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import styles from '../styles/LeaveApprovalPanel.module.css';
 
+const EditIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+    </svg>
+);
+
 const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
+    const [updatingId, setUpdatingId] = useState(null);
     const { selectedCompanyId } = useCompanyContext();
 
     const fetchRequests = useCallback(async () => {
@@ -43,6 +51,7 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
             if (onActionComplete) {
                 onActionComplete();
             }
+            setUpdatingId(null);
         } catch (err) {
             console.error(`Failed to ${status} request`, err);
             alert(`Failed to complete action: ${err.response?.data?.detail || err.message}`);
@@ -117,10 +126,41 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                                                     Reject
                                                 </button>
                                             </div>
+                                        ) : updatingId === req.id ? (
+                                            <div className={styles.actions}>
+                                                {req.status === 'rejected' && (
+                                                    <button 
+                                                        className={styles.approveBtn}
+                                                        onClick={() => handleAction(req.id, 'approved')}
+                                                        disabled={processingId === req.id}
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                )}
+                                                {req.status === 'approved' && (
+                                                    <button 
+                                                        className={styles.rejectBtn}
+                                                        onClick={() => handleAction(req.id, 'rejected')}
+                                                        disabled={processingId === req.id}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    className={styles.cancelBtn}
+                                                    onClick={() => setUpdatingId(null)}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
                                         ) : (
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                                Reviewed
-                                            </span>
+                                            <button 
+                                                className={styles.iconBtn}
+                                                onClick={() => setUpdatingId(req.id)}
+                                                title="Update Decision"
+                                            >
+                                                <EditIcon />
+                                            </button>
                                         )}
                                     </td>
                                 </tr>
