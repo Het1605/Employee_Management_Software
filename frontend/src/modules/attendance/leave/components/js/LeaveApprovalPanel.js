@@ -1,27 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../../../../core/api/apiClient';
+import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import styles from '../styles/LeaveApprovalPanel.module.css';
 
 const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
+    const { selectedCompanyId } = useCompanyContext();
 
     const fetchRequests = useCallback(async () => {
+        // If no company is selected yet, don't try to fetch (prevents 422 errors)
+        if (!selectedCompanyId) {
+            setRequests([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const res = await API.get(`/leave-requests`);
+            // company_id is required by the backend to isolate records
+            const res = await API.get(`/leave-requests?company_id=${parseInt(selectedCompanyId, 10)}`);
             setRequests(res.data);
         } catch (err) {
             console.error("Failed to fetch all leave requests", err);
+            setRequests([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedCompanyId]);
 
     useEffect(() => {
         fetchRequests();
-    }, [fetchRequests, refreshTrigger]);
+    }, [fetchRequests, refreshTrigger, selectedCompanyId]);
 
     const handleAction = async (id, status) => {
         setProcessingId(id);

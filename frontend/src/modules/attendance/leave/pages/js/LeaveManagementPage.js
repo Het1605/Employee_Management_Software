@@ -29,9 +29,13 @@ const LeaveManagementPage = () => {
                     </p>
                 </div>
 
-                {/* All Users can apply and see their own leaves */}
-                <LeaveRequestForm onLeaveCreated={handleRefresh} />
-                <MyLeaveRequests refreshTrigger={refreshTrigger} />
+                {/* Employee / Non-privileged view */}
+                {!isPrivileged && (
+                    <>
+                        <LeaveRequestForm onLeaveCreated={handleRefresh} />
+                        <MyLeaveRequests refreshTrigger={refreshTrigger} />
+                    </>
+                )}
 
                 {/* Only Privileged roles can see the Approval section */}
                 {isPrivileged && (

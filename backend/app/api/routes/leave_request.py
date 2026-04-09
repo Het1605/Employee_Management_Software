@@ -41,15 +41,11 @@ def get_my_leaves(db: Session = Depends(get_db), current_user: User = Depends(ge
     return query.order_by(LeaveRequest.applied_at.desc()).all()
 
 @router.get("", response_model=List[LeaveRequestOut])
-def get_all_leaves(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_all_leaves(company_id: int = Query(..., description="ID of the selected company"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to view all leaves")
         
-    mapping = db.query(UserCompanyMapping).filter_by(user_id=current_user.id).first()
-    if not mapping:
-        return []
-
-    leaves = db.query(LeaveRequest).filter(LeaveRequest.company_id == mapping.company_id).order_by(LeaveRequest.applied_at.desc()).all()
+    leaves = db.query(LeaveRequest).filter(LeaveRequest.company_id == company_id).order_by(LeaveRequest.applied_at.desc()).all()
     return leaves
 
 @router.put("/{leave_id}", response_model=LeaveRequestOut)
