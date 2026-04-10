@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../../../../core/api/apiClient';
 import { useCompanyContext } from '../../../../../contexts/CompanyContext';
-import styles from '../styles/LeaveApprovalPanel.module.css';
-
-const EditIcon = () => (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-    </svg>
-);
-
-const ViewIcon = () => (
+import styles from '../styles/LeaveApprovalPanel.module.css';const ViewIcon = () => (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
         <circle cx="12" cy="12" r="3"/>
@@ -28,7 +19,6 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
-    const [updatingId, setUpdatingId] = useState(null);
     const [viewingReason, setViewingReason] = useState(null);
     const { selectedCompanyId } = useCompanyContext();
 
@@ -66,7 +56,6 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
             if (onActionComplete) {
                 onActionComplete();
             }
-            setUpdatingId(null);
         } catch (err) {
             console.error(`Failed to ${status} request`, err);
             alert(`Failed to complete action: ${err.response?.data?.detail || err.message}`);
@@ -91,105 +80,76 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
             ) : requests.length === 0 ? (
                 <div className={styles.emptyState}>No leave requests exist for the company.</div>
             ) : (
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Employee Name</th>
-                                <th>Applied On</th>
-                                <th>Date Range</th>
-                                <th>Days</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {requests.map((req) => (
-                                <tr key={req.id}>
-                                    <td>
-                                        {req.user ? `${req.user.first_name} ${req.user.last_name}` : `User #${req.user_id}`}
-                                    </td>
-                                    <td>{formatDate(req.applied_at)}</td>
-                                    <td>{formatDate(req.start_date)} - {formatDate(req.end_date)}</td>
-                                    <td>{req.total_days}</td>
-                                    <td className={styles.reasonCell}>
-                                        {req.reason && req.reason !== '-' ? (
-                                            <button 
-                                                className={styles.viewReasonBtn} 
-                                                onClick={() => setViewingReason(req.reason)}
-                                                title="View Full Reason"
-                                            >
-                                                <ViewIcon />
-                                            </button>
-                                        ) : (
-                                            '-'
-                                        )}
-                                    </td>
-                                    <td>
-                                        <span className={`${styles.badge} ${styles[req.status.toLowerCase()] || ''}`}>
-                                            {req.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {req.status === 'pending' ? (
-                                            <div className={styles.actions}>
-                                                <button 
-                                                    className={styles.approveBtn}
-                                                    onClick={() => handleAction(req.id, 'approved')}
-                                                    disabled={processingId === req.id}
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button 
-                                                    className={styles.rejectBtn}
-                                                    onClick={() => handleAction(req.id, 'rejected')}
-                                                    disabled={processingId === req.id}
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        ) : updatingId === req.id ? (
-                                            <div className={styles.actions}>
-                                                {req.status === 'rejected' && (
-                                                    <button 
-                                                        className={styles.approveBtn}
-                                                        onClick={() => handleAction(req.id, 'approved')}
-                                                        disabled={processingId === req.id}
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                )}
-                                                {req.status === 'approved' && (
-                                                    <button 
-                                                        className={styles.rejectBtn}
-                                                        onClick={() => handleAction(req.id, 'rejected')}
-                                                        disabled={processingId === req.id}
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                )}
-                                                <button 
-                                                    className={styles.cancelBtn}
-                                                    onClick={() => setUpdatingId(null)}
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button 
-                                                className={styles.iconBtn}
-                                                onClick={() => setUpdatingId(req.id)}
-                                                title="Update Decision"
-                                            >
-                                                <EditIcon />
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className={styles.cardList}>
+                    {requests.map((req) => (
+                        <div key={req.id} className={styles.mobileCard}>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Employee:</span>
+                                <span className={styles.cardValue}>
+                                    {req.user ? `${req.user.first_name} ${req.user.last_name}` : `User #${req.user_id}`}
+                                </span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Applied On:</span>
+                                <span className={styles.cardValue}>{formatDate(req.applied_at)}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Date Range:</span>
+                                <span className={styles.cardValue}>{formatDate(req.start_date)} - {formatDate(req.end_date)}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Total Days:</span>
+                                <span className={styles.cardValue}>{req.total_days} days</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Reason:</span>
+                                <span className={styles.cardValue}>
+                                    {req.reason && req.reason !== '-' ? (
+                                        <button 
+                                            className={styles.viewReasonBtn} 
+                                            onClick={() => setViewingReason(req.reason)}
+                                            title="View Full Reason"
+                                        >
+                                            <ViewIcon />
+                                        </button>
+                                    ) : (
+                                        '-'
+                                    )}
+                                </span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Status:</span>
+                                <span className={styles.cardValue}>
+                                    <span className={`${styles.badge} ${styles[req.status.toLowerCase()] || ''}`}>
+                                        {req.status}
+                                    </span>
+                                </span>
+                            </div>
+                            <div className={styles.cardActions}>
+                                <span className={styles.cardLabel}>Actions:</span>
+                                <div className={styles.actionGroup}>
+                                    {(req.status === 'pending' || req.status === 'rejected') && (
+                                        <button 
+                                            className={styles.approveBtn}
+                                            onClick={() => handleAction(req.id, 'approved')}
+                                            disabled={processingId === req.id}
+                                        >
+                                            Approve
+                                        </button>
+                                    )}
+                                    {(req.status === 'pending' || req.status === 'approved') && (
+                                        <button 
+                                            className={styles.rejectBtn}
+                                            onClick={() => handleAction(req.id, 'rejected')}
+                                            disabled={processingId === req.id}
+                                        >
+                                            Reject
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
