@@ -5,31 +5,7 @@ from datetime import date, datetime, timedelta
 import calendar
 from fastapi import HTTPException, status
 
-def _get_company_approved_leave_dates(db: Session, company_id: int, month: int, year: int):
-    from app.db.models import LeaveRequest
-    start_date = date(year, month, 1)
-    last_day = calendar.monthrange(year, month)[1]
-    end_date = date(year, month, last_day)
-    
-    leaves = db.query(LeaveRequest).filter(
-        LeaveRequest.company_id == company_id,
-        LeaveRequest.status == "approved",
-        LeaveRequest.start_date <= end_date,
-        LeaveRequest.end_date >= start_date
-    ).all()
-    
-    company_leave_map = {}
-    for leave in leaves:
-        if leave.user_id not in company_leave_map:
-            company_leave_map[leave.user_id] = set()
-            
-        overlap_start = max(start_date, leave.start_date)
-        overlap_end = min(end_date, leave.end_date)
-        days = (overlap_end - overlap_start).days
-        for d in range(days + 1):
-            company_leave_map[leave.user_id].add(overlap_start + timedelta(days=d))
-            
-    return company_leave_map
+
 
 def get_day_status(db: Session, company_id: int, target_date: date):
     # Step 1: check override
@@ -171,9 +147,7 @@ def get_my_attendance(db: Session, user_id: int, month: int, year: int):
     absent_days = 0
     total_days = last_day
 
-    # Get leave requests for user
-    company_leaves = _get_company_approved_leave_dates(db, company_id, month, year)
-    user_leaves = company_leaves.get(user_id, set())
+
 
     for day in range(1, last_day + 1):
         curr_date = date(year, month, day)
@@ -181,10 +155,7 @@ def get_my_attendance(db: Session, user_id: int, month: int, year: int):
         
         day_type = get_day_status(db, company_id, curr_date)
         
-        if curr_date in user_leaves:
-            final_status = "ON_LEAVE"
-        else:
-            final_status = db_status if db_status else "absent"
+        final_status = db_status if db_status else "absent"
             
         attendance_list.append({"date": curr_date, "status": final_status, "day_type": day_type})
         
@@ -230,12 +201,11 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
         curr_date = date(year, month, day)
         day_types[curr_date] = get_day_status(db, company_id, curr_date)
 
-    company_leaves = _get_company_approved_leave_dates(db, company_id, month, year)
+
 
     response = []
     for u in users:
         user_records = company_record_map.get(u.id, {})
-        user_leave_dates = company_leaves.get(u.id, set())
         
         attendance_list = []
         present_count = 0
@@ -245,10 +215,7 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
         for curr_date, day_type in day_types.items():
             db_status = user_records.get(curr_date)
             
-            if curr_date in user_leave_dates:
-                final_status = "ON_LEAVE"
-            else:
-                final_status = db_status if db_status else "absent"
+            final_status = db_status if db_status else "absent"
             
             attendance_list.append({
                 "date": curr_date,

@@ -10,11 +10,26 @@ const EditIcon = () => (
     </svg>
 );
 
+const ViewIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+        <circle cx="12" cy="12" r="3"/>
+    </svg>
+);
+
+const CloseIcon = () => (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+);
+
 const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
     const [updatingId, setUpdatingId] = useState(null);
+    const [viewingReason, setViewingReason] = useState(null);
     const { selectedCompanyId } = useCompanyContext();
 
     const fetchRequests = useCallback(async () => {
@@ -98,10 +113,18 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                                     <td>{formatDate(req.applied_at)}</td>
                                     <td>{formatDate(req.start_date)} - {formatDate(req.end_date)}</td>
                                     <td>{req.total_days}</td>
-                                    <td className={styles.reasonCol}>
-                                        <span className={styles.reasonText} title={req.reason || 'N/A'}>
-                                            {req.reason || '-'}
-                                        </span>
+                                    <td className={styles.reasonCell}>
+                                        {req.reason && req.reason !== '-' ? (
+                                            <button 
+                                                className={styles.viewReasonBtn} 
+                                                onClick={() => setViewingReason(req.reason)}
+                                                title="View Full Reason"
+                                            >
+                                                <ViewIcon />
+                                            </button>
+                                        ) : (
+                                            '-'
+                                        )}
                                     </td>
                                     <td>
                                         <span className={`${styles.badge} ${styles[req.status.toLowerCase()] || ''}`}>
@@ -167,6 +190,27 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Reason Modal */}
+            {viewingReason && (
+                <div className={styles.modalOverlay} onClick={() => setViewingReason(null)}>
+                    <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>Leave Reason</h3>
+                            <button 
+                                className={styles.closeBtn} 
+                                onClick={() => setViewingReason(null)}
+                                aria-label="Close"
+                            >
+                                <CloseIcon />
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <p className={styles.fullReason}>{viewingReason}</p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
