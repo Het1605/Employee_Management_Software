@@ -203,6 +203,7 @@ class LeaveRequest(Base):
     total_days = Column(Numeric(precision=5, scale=2), nullable=False)
     reason = Column(Text, nullable=True)
     status = Column(String, default="pending", nullable=False)  # pending / approved / rejected
+    leave_type = Column(String, default="FULL_DAY", nullable=False) # FULL_DAY / HALF_DAY
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)

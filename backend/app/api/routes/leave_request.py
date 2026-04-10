@@ -17,7 +17,21 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
     if not mapping:
         raise HTTPException(status_code=400, detail="User does not belong to any company")
 
-    total_days = (request.end_date - request.start_date).days + 1
+    # Overlap check
+    existing = db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.status != "rejected",
+        LeaveRequest.start_date <= request.end_date,
+        LeaveRequest.end_date >= request.start_date
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Leave request overlaps with an existing request on these dates")
+
+    if request.leave_type == "HALF_DAY":
+        total_days = 0.5
+    else:
+        total_days = (request.end_date - request.start_date).days + 1
 
     db_request = LeaveRequest(
         user_id=current_user.id,
@@ -26,7 +40,8 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
         end_date=request.end_date,
         total_days=total_days,
         reason=request.reason,
-        status="pending"
+        status="pending",
+        leave_type=request.leave_type
     )
     db.add(db_request)
     db.commit()

@@ -61,12 +61,16 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
                                 <span className={styles.cardValue}>{formatDate(req.applied_at)}</span>
                             </div>
                             <div className={styles.cardRow}>
-                                <span className={styles.cardLabel}>Date Range:</span>
-                                <span className={styles.cardValue}>{formatDate(req.start_date)} - {formatDate(req.end_date)}</span>
+                                <span className={styles.cardLabel}>{req.start_date === req.end_date ? 'Date:' : 'Date Range:'}</span>
+                                <span className={styles.cardValue}>
+                                    {req.start_date === req.end_date 
+                                        ? formatDate(req.start_date) 
+                                        : `${formatDate(req.start_date)} - ${formatDate(req.end_date)}`}
+                                </span>
                             </div>
                             <div className={styles.cardRow}>
                                 <span className={styles.cardLabel}>Total Days:</span>
-                                <span className={styles.cardValue}>{req.total_days} days</span>
+                                <span className={styles.cardValue}>{req.total_days} {req.total_days === 1 || req.total_days === 0.5 ? 'Day' : 'Days'}</span>
                             </div>
                             <div className={styles.cardRow}>
                                 <span className={styles.cardLabel}>Reason:</span>

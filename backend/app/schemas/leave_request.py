@@ -7,6 +7,7 @@ class LeaveRequestBase(BaseModel):
     start_date: date
     end_date: date
     reason: Optional[str] = None
+    leave_type: str = "FULL_DAY"
 
 class LeaveRequestCreate(LeaveRequestBase):
     pass
@@ -15,8 +16,15 @@ class LeaveRequestCreate(LeaveRequestBase):
     def check_dates(cls, values):
         start_date = values.get('start_date')
         end_date = values.get('end_date')
-        if start_date and end_date and start_date > end_date:
-            raise ValueError('start_date must be less than or equal to end_date')
+        leave_type = values.get('leave_type', 'FULL_DAY')
+
+        if start_date and end_date:
+            if start_date > end_date:
+                raise ValueError('start_date must be less than or equal to end_date')
+            
+            if leave_type == "HALF_DAY" and start_date != end_date:
+                raise ValueError('HALF_DAY leave must be for a single date (start_date must equal end_date)')
+        
         return values
 
 class LeaveRequestUpdate(BaseModel):
@@ -43,6 +51,7 @@ class LeaveRequestOut(LeaveRequestBase):
     company_id: int
     total_days: Decimal
     status: str
+    leave_type: str
     applied_at: datetime
     reviewed_by: Optional[int] = None
     reviewed_at: Optional[datetime] = None

@@ -5,6 +5,7 @@ import styles from '../styles/LeaveRequestForm.module.css';
 const LeaveRequestForm = ({ onLeaveCreated }) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [leaveType, setLeaveType] = useState('FULL_DAY'); // FULL_DAY / HALF_DAY
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
@@ -12,12 +13,12 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!startDate || !endDate) {
-            setMessage({ text: 'Please select both start and end dates', type: 'error' });
+        if (!startDate || (leaveType === 'FULL_DAY' && !endDate)) {
+            setMessage({ text: 'Please select required dates', type: 'error' });
             return;
         }
-
-        if (new Date(startDate) > new Date(endDate)) {
+ 
+        if (leaveType === 'FULL_DAY' && new Date(startDate) > new Date(endDate)) {
             setMessage({ text: 'Start date cannot be after end date', type: 'error' });
             return;
         }
@@ -37,8 +38,9 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
         try {
             await API.post('/leave-requests', {
                 start_date: startDate,
-                end_date: endDate,
-                reason: reason
+                end_date: leaveType === 'HALF_DAY' ? startDate : endDate,
+                reason: reason,
+                leave_type: leaveType
             });
 
             setMessage({ text: 'Leave request submitted successfully!', type: 'success' });
@@ -74,9 +76,26 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
             )}
 
             <form onSubmit={handleSubmit}>
+                <div className={styles.typeToggleContainer}>
+                    <button 
+                        type="button"
+                        className={`${styles.typeBtn} ${leaveType === 'FULL_DAY' ? styles.activeType : ''}`}
+                        onClick={() => setLeaveType('FULL_DAY')}
+                    >
+                        Full Day
+                    </button>
+                    <button 
+                        type="button"
+                        className={`${styles.typeBtn} ${leaveType === 'HALF_DAY' ? styles.activeType : ''}`}
+                        onClick={() => setLeaveType('HALF_DAY')}
+                    >
+                        Half Day
+                    </button>
+                </div>
+
                 <div className={styles.formGrid}>
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Start Date</label>
+                        <label className={styles.label}>{leaveType === 'HALF_DAY' ? 'Date' : 'Start Date'}</label>
                         <input 
                             type="date" 
                             className={styles.input}
@@ -86,16 +105,18 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
                         />
                     </div>
                     
-                    <div className={styles.inputGroup}>
-                        <label className={styles.label}>End Date</label>
-                        <input 
-                            type="date" 
-                            className={styles.input}
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            required
-                        />
-                    </div>
+                    {leaveType === 'FULL_DAY' && (
+                        <div className={styles.inputGroup}>
+                            <label className={styles.label}>End Date</label>
+                            <input 
+                                type="date" 
+                                className={styles.input}
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                required
+                            />
+                        </div>
+                    )}
 
                     <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                         <label className={styles.label}>Reason (Optional)</label>
