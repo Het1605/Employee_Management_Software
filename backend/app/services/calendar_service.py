@@ -62,21 +62,22 @@ class CalendarService:
         # Ensure days exist first
         CalendarService.get_working_days(db, company_id)
         
-        from sqlalchemy import extract
-        
         for day_data in payload.days:
             config = db.query(WorkingDaysConfig).filter(
                 WorkingDaysConfig.company_id == company_id,
                 WorkingDaysConfig.day_of_week == day_data.day_of_week
             ).first()
             if config:
-                # Priority Logic: If a day is changed from OFF -> WORKING, delete holidays for that day.
-                # old_config is accessed before update
-                was_off = not config.is_working
-                now_working = day_data.is_working
-
                 config.is_working = day_data.is_working
                 config.is_half_day = day_data.is_half_day
+                
+                # Alternate Saturday Logic
+                if day_data.day_of_week == 5: # Saturday
+                    config.is_alternate_saturday = bool(day_data.is_alternate_saturday)
+                    config.off_saturdays = day_data.off_saturdays if day_data.off_saturdays is not None else []
+                else:
+                    config.is_alternate_saturday = False
+                    config.off_saturdays = []
         db.commit()
         return CalendarService.get_working_days(db, company_id)
 
@@ -298,21 +299,7 @@ class CalendarService:
     def get_day_status(db: Session, company_id: int, target_date: date) -> DayStatusResponse:
         CalendarService._ensure_company_exists(db, company_id)
         
-        # 1. Check override
-        override = db.query(CalendarOverrides).filter(
-            CalendarOverrides.company_id == company_id,
-            CalendarOverrides.date == target_date
-        ).first()
-        
-        if override:
-            return DayStatusResponse(
-                date=target_date,
-                status=override.override_type.value,
-                source="override",
-                name=override.reason
-            )
-
-        # 2. Check holiday
+        # 1. Check holiday (Higher Priority)
         holiday = db.query(Holidays).filter(
             Holidays.company_id == company_id,
             Holidays.date == target_date
@@ -326,7 +313,21 @@ class CalendarService:
                 name=holiday.name
             )
 
-        # 3. Check working_days_config
+        # 2. Check override (Custom Day)
+        override = db.query(CalendarOverrides).filter(
+            CalendarOverrides.company_id == company_id,
+            CalendarOverrides.date == target_date
+        ).first()
+        
+        if override:
+            return DayStatusResponse(
+                date=target_date,
+                status=override.override_type.value,
+                source="override",
+                name=override.reason
+            )
+
+        # 3. Check working_days_config (Rule based)
         day_of_week = target_date.weekday() # 0 = Monday, 6 = Sunday
         
         # Fetch configs, init if necessary
@@ -335,6 +336,20 @@ class CalendarService:
         
         if not config:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Invalid working day configuration")
+
+        # Saturday Alternate Logic (Month-wise)
+        if day_of_week == 5: # Saturday
+            if getattr(config, 'is_alternate_saturday', False):
+                # HR Formula: ((day_of_month - 1) // 7) + 1
+                week_number = ((target_date.day - 1) // 7) + 1
+                off_saturdays = getattr(config, 'off_saturdays', []) or []
+                if week_number in off_saturdays:
+                    return DayStatusResponse(
+                        date=target_date,
+                        status="holiday",
+                        source="rule",
+                        name=f"Alternate Saturday (Week {week_number})"
+                    )
 
         if config.is_half_day:
             return DayStatusResponse(

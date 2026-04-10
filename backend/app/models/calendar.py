@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, JSON, Enum as SQLEnum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -26,6 +26,8 @@ class WorkingDaysConfig(Base):
     day_of_week = Column(Integer, nullable=False)  # 0-6 (0=Monday, 6=Sunday)
     is_working = Column(Boolean, default=True, nullable=False)
     is_half_day = Column(Boolean, default=False, nullable=False)
+    is_alternate_saturday = Column(Boolean, default=False, nullable=True)
+    off_saturdays = Column(JSON, default=[], nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

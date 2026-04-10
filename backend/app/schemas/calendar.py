@@ -10,6 +10,8 @@ class WorkingDayBase(BaseModel):
     day_of_week: int = Field(..., ge=0, le=6, description="0=Monday, 6=Sunday")
     is_working: bool
     is_half_day: bool
+    is_alternate_saturday: Optional[bool] = False
+    off_saturdays: Optional[List[int]] = []
 
 class WorkingDayCreate(WorkingDayBase):
     pass

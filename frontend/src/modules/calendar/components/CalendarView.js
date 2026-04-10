@@ -5,24 +5,24 @@ import { fetchLeaveSummary } from '../services/calendarService';
 
 const generateCalendarDays = (year, month) => {
     // JS getDay() returns 0 for Sunday, 6 for Saturday. This matches our headers.
-    const firstDay = new Date(year, month, 1).getDay(); 
+    const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     // Prefix with nulls up to the first day of the month
-    const prefixDays = Array.from({length: firstDay}, () => null);
-    const monthDays = Array.from({length: daysInMonth}, (_, i) => new Date(year, month, i + 1));
+    const prefixDays = Array.from({ length: firstDay }, () => null);
+    const monthDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
     return [...prefixDays, ...monthDays];
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const CalendarView = () => {
     const { selectedCompanyId } = useCompanyContext();
     const { workingDays, holidays, overrides, loading: coreLoading } = useCalendarData();
-    
+
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDateInfo, setSelectedDateInfo] = useState(null); 
+    const [selectedDateInfo, setSelectedDateInfo] = useState(null);
     const [leaveSummary, setLeaveSummary] = useState({});
     const [fetchingLeaves, setFetchingLeaves] = useState(false);
 
@@ -57,11 +57,11 @@ const CalendarView = () => {
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
         const dtStr = `${yyyy}-${mm}-${dd}`;
-        
+
         // 1. Overrides
         const override = overrides.find(o => o.date === dtStr);
         if (override) return { status: override.override_type, name: override.reason || 'Override', source: 'Manual Override', dateStr: dtStr };
-        
+
         // 2. Holidays
         const holiday = holidays.find(h => h.date === dtStr);
         if (holiday) return { status: 'holiday', name: holiday.name, source: `Holiday (${holiday.type})`, dateStr: dtStr };
@@ -84,9 +84,9 @@ const CalendarView = () => {
 
     const isToday = (date) => {
         const today = new Date();
-        return date.getDate() === today.getDate() && 
-               date.getMonth() === today.getMonth() && 
-               date.getFullYear() === today.getFullYear();
+        return date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear();
     };
 
     if (!selectedCompanyId) return null;
@@ -96,28 +96,28 @@ const CalendarView = () => {
             <div className="calendar-month-nav-container">
                 <div className="calendar-month-nav-row1">
                     <button onClick={handlePrevMonth} className="nav-btn flex-shrink-0">‹</button>
-                    
-                    <select 
-                        className="company-select-modern text-center month-select" 
-                        value={month} 
+
+                    <select
+                        className="company-select-modern text-center month-select"
+                        value={month}
                         onChange={(e) => setCurrentDate(new Date(year, parseInt(e.target.value), 1))}
                     >
                         {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
                     </select>
-                    
-                    <select 
-                        className="company-select-modern text-center year-select" 
-                        value={year} 
+
+                    <select
+                        className="company-select-modern text-center year-select"
+                        value={year}
                         onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}
                     >
-                        {Array.from({length: 10}, (_, i) => year - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                        {Array.from({ length: 10 }, (_, i) => year - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
- 
+
                     <button onClick={handleNextMonth} className="nav-btn flex-shrink-0">›</button>
                 </div>
                 <button onClick={jumpToToday} className="btn-secondary today-btn truncate">Today</button>
             </div>
- 
+
             {coreLoading ? <div className="loading-state">Loading calendar data...</div> : (
                 <div className="calendar-scroll-area">
                     <div className="calendar-high-fidelity">
@@ -125,25 +125,25 @@ const CalendarView = () => {
                         {WEEKDAYS.map(day => (
                             <div key={day} className="calendar-week-header">{day}</div>
                         ))}
- 
+
                         {/* Grid Cells */}
                         {dates.map((date, index) => {
                             if (!date) return <div key={`empty-${index}`} className="calendar-cell-empty"></div>;
- 
+
                             const statusObj = getStatusForDate(date);
-                            let colorClass = 'loading'; 
-                            
+                            let colorClass = 'loading';
+
                             if (statusObj.status.includes('working')) colorClass = 'working';
                             if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
                             if (statusObj.status.includes('half_day')) colorClass = 'half-day';
- 
+
                             const todayClass = isToday(date) ? 'today-cell' : '';
                             const leaveCount = leaveSummary[statusObj.dateStr] || 0;
                             const showLeaveBadge = leaveCount > 0 && (statusObj.status === 'working' || statusObj.status === 'half_day');
- 
+
                             return (
-                                <div 
-                                    key={date.toISOString()} 
+                                <div
+                                    key={date.toISOString()}
                                     className={`calendar-cell ${colorClass} ${todayClass}`}
                                     onClick={() => setSelectedDateInfo({ date, statusObj, colorClass, leaveCount })}
                                     style={{ cursor: 'pointer' }}
@@ -157,7 +157,7 @@ const CalendarView = () => {
                                         ) : <div />}
                                         <div className="cell-date">{date.getDate()}</div>
                                     </div>
-                                    
+
                                     <div className="status-badge-container">
                                         <span className={`status-pill ${colorClass}`} title={statusObj.name}>
                                             {statusObj.name.length > 15 ? statusObj.name.substring(0, 15) + '...' : statusObj.name}
