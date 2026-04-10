@@ -52,3 +52,10 @@ class LeaveRequestOut(LeaveRequestBase):
 
     class Config:
         from_attributes = True
+
+class LeaveCalendarSummary(BaseModel):
+    date: date
+    leave_count: int
+
+    class Config:
+        from_attributes = True
