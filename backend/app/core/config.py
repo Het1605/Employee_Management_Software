@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     
     # Security
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     
     # Links
     FRONTEND_URL: str = "http://localhost:3000"

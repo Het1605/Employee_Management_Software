@@ -32,3 +32,11 @@ export const fetchImportOptions = (year, country = 'IN') =>
 
 export const fetchLeaveSummary = (companyId, month, year) =>
   API.get(`/leave-requests/calendar-summary?company_id=${companyId}&month=${month}&year=${year}`);
+
+export const fetchEmployeeCalendarSummary = (month, year) => {
+    return API.get(`/calendar/employee-summary?month=${month}&year=${year}`);
+};
+
+export const fetchMyCompanyCalendarConfig = () => {
+    return API.get('/calendar/my-config');
+};

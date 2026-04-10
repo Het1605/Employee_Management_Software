@@ -103,3 +103,8 @@ class DayStatusResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CompanyCalendarConfig(BaseModel):
+    working_days: List[WorkingDayResponse]
+    holidays: List[HolidayResponse]
+    overrides: List[OverrideResponse]

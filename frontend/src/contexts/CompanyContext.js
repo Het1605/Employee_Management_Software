@@ -23,6 +23,11 @@ export const CompanyProvider = ({ children }) => {
         const res = await API.get('/companies');
         const list = res.data || [];
         setCompanies(list);
+        
+        // Auto-select if nothing selected
+        if (!selectedCompany?.id && list.length > 0) {
+          setSelectedCompanyId(list[0]);
+        }
       } catch {
         setCompanies([]);
       } finally {
