@@ -1,15 +1,22 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.db.database import get_db
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, AdminPasswordReset, UserStatusUpdate
+from app.db.models import User
+from app.schemas.user import UserCreate, UserUpdate, UserResponse, AdminPasswordReset, UserStatusUpdate, ResignationRequest
 from app.services.user_service import UserService
+from app.api.dependencies.auth import get_current_user
+from app.db.database import get_db
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     return UserService.create_user(db, user_data)
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
 
 @router.get("/", response_model=List[UserResponse])
 def get_all_users(db: Session = Depends(get_db)):
@@ -33,3 +40,11 @@ def admin_reset_password(user_id: int, data: AdminPasswordReset, db: Session = D
 @router.patch("/{user_id}/toggle-status")
 def toggle_user_status(user_id: int, data: UserStatusUpdate, db: Session = Depends(get_db)):
     return UserService.toggle_user_status(db, user_id, data.is_active)
+
+@router.post("/resign")
+def submit_resignation(
+    data: ResignationRequest, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    return UserService.submit_resignation(db, current_user, data)

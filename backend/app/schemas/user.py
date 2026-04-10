@@ -71,3 +71,6 @@ class ResetPasswordConfirm(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
+class ResignationRequest(BaseModel):
+    end_date: date

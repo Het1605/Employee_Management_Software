@@ -25,6 +25,7 @@ import AttendancePage from '../../modules/attendance/pages/js/AttendancePage';
 import AttendanceManagement from '../../modules/attendance/pages/js/AttendanceManagement';
 import LeaveManagementPage from '../../modules/attendance/leave/pages/js/LeaveManagementPage';
 import EmployeeCalendarPage from '../../modules/calendar/pages/js/EmployeeCalendarPage';
+import MyProfile from '../../modules/user/pages/js/MyProfile';
 
 const AppRouter = () => {
   return (
@@ -206,6 +207,15 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
               <LeaveManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/employee/profile" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <MyProfile />
             </ProtectedRoute>
           } 
         />

@@ -1,0 +1,209 @@
+.profileContainer {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.profileHeader {
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.subtitle {
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.cardTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.detailItemLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.detailItemValue {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.statusActive {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.statusResigned {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.statusInactive {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.resignationSection {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.dateInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #111827;
+    transition: border-color 0.2s;
+}
+
+.dateInput:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.submitBtn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+    background-color: #4338ca;
+}
+
+.submitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.infoText {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid #6366f1;
+    font-size: 0.875rem;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.resignationBanner {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 8px;
+    color: #92400e;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modalBtns {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.confirmBtn {
+    flex: 1;
+    padding: 0.625rem;
+    background-color: #dc2626;
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.cancelBtn {
+    flex: 1;
+    padding: 0.625rem;
+    background-color: #f3f4f6;
+    color: #374151;
+    border-radius: 6px;
+    font-weight: 600;
+}

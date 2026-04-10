@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
+from datetime import date
 from app.db.models import User
-from app.schemas.user import UserCreate, UserUpdate, ChangePasswordRequest
+from app.schemas.user import UserCreate, UserUpdate, ChangePasswordRequest, ResignationRequest
 from app.core.security import hash_password, verify_password
 
 class UserService:
@@ -152,3 +152,19 @@ class UserService:
         user.is_active = is_active
         db.commit()
         return {"message": "User status updated"}
+
+    @staticmethod
+    def submit_resignation(db: Session, user: User, resignation_data: ResignationRequest):
+        if resignation_data.end_date < date.today():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="End date cannot be in the past"
+            )
+        
+        user.end_date = resignation_data.end_date
+        db.commit()
+        db.refresh(user)
+        return {
+            "message": "Resignation submitted successfully",
+            "end_date": user.end_date
+        }

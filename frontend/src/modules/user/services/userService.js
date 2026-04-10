@@ -1,5 +1,13 @@
 import API from '../../../core/api/apiClient';
 
+export const fetchUserProfile = () => {
+    return API.get('/users/me');
+};
+
+export const submitResignation = (endDate) => {
+    return API.post('/users/resign', { end_date: endDate });
+};
+
 export const fetchUsers = () => API.get('/users/');
 
 export const createUser = (payload) => API.post('/users/', payload);

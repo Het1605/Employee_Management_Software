@@ -159,7 +159,14 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         <div className={styles.navGroup}>
           <div className={styles.groupTitle}>Self Service</div>
-          <div className={styles.navLink} style={{ cursor: 'not-allowed', opacity: 0.5 }}>My Profile</div>
+          <NavLink 
+            to="/employee/profile" 
+            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            onClick={handleLinkClick}
+          >
+            <span className={styles.icon}>👤</span>
+            <span className={styles.linkText}>My Profile</span>
+          </NavLink>
         </div>
       </nav>
     </aside>
