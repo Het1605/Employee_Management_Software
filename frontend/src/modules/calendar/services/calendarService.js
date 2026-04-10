@@ -29,3 +29,6 @@ export const deleteOverride = (overrideId) => API.delete(`/calendar/overrides/${
 
 export const fetchImportOptions = (year, country = 'IN') =>
   API.get(`/calendar/import-holidays?year=${year}&country=${country}`);
+
+export const fetchLeaveSummary = (companyId, month, year) =>
+  API.get(`/leave-requests/calendar-summary?company_id=${companyId}&month=${month}&year=${year}`);

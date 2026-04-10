@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useCalendarData } from '../hooks/useCalendarData';
 import { useCompanyContext } from '../../../contexts/CompanyContext';
+import { fetchLeaveSummary } from '../services/calendarService';
 
 const generateCalendarDays = (year, month) => {
     // JS getDay() returns 0 for Sunday, 6 for Saturday. This matches our headers.
@@ -18,17 +19,40 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 
 const CalendarView = () => {
     const { selectedCompanyId } = useCompanyContext();
-    const { workingDays, holidays, overrides, loading } = useCalendarData();
+    const { workingDays, holidays, overrides, loading: coreLoading } = useCalendarData();
     
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDateInfo, setSelectedDateInfo] = useState(null); // htmlFor modal
+    const [selectedDateInfo, setSelectedDateInfo] = useState(null); 
+    const [leaveSummary, setLeaveSummary] = useState({});
+    const [fetchingLeaves, setFetchingLeaves] = useState(false);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const dates = useMemo(() => generateCalendarDays(year, month), [year, month]);
 
+    const fetchLeaves = useCallback(async () => {
+        if (!selectedCompanyId) return;
+        setFetchingLeaves(true);
+        try {
+            // Month is 0-indexed in JS, but 1-indexed in our API
+            const response = await fetchLeaveSummary(selectedCompanyId, month + 1, year);
+            const summaryMap = {};
+            response.data.forEach(item => {
+                summaryMap[item.date] = item.leave_count;
+            });
+            setLeaveSummary(summaryMap);
+        } catch (error) {
+            console.error("Error fetching leave summary:", error);
+        } finally {
+            setFetchingLeaves(false);
+        }
+    }, [selectedCompanyId, month, year]);
+
+    useEffect(() => {
+        fetchLeaves();
+    }, [fetchLeaves]);
+
     const getStatusForDate = (date) => {
-        // Adjust timezone offset issue with toISOString by manually formatting
         const yyyy = date.getFullYear();
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
@@ -36,22 +60,22 @@ const CalendarView = () => {
         
         // 1. Overrides
         const override = overrides.find(o => o.date === dtStr);
-        if (override) return { status: override.override_type, name: override.reason || 'Override', source: 'Manual Override' };
+        if (override) return { status: override.override_type, name: override.reason || 'Override', source: 'Manual Override', dateStr: dtStr };
         
         // 2. Holidays
         const holiday = holidays.find(h => h.date === dtStr);
-        if (holiday) return { status: 'holiday', name: holiday.name, source: `Holiday (${holiday.type})` };
+        if (holiday) return { status: 'holiday', name: holiday.name, source: `Holiday (${holiday.type})`, dateStr: dtStr };
 
         // 3. Working Days
-        const dayOfWeek = date.getDay(); // 0 is Sunday, exactly matching our backend standardization
+        const dayOfWeek = date.getDay();
         const wd = workingDays.find(w => w.day_of_week === dayOfWeek);
         if (wd) {
-            if (!wd.is_working) return { status: 'off', name: 'Off / Rest', source: 'Weekly Rule' };
-            if (wd.is_half_day) return { status: 'half_day', name: 'Half Day', source: 'Weekly Rule' };
-            return { status: 'working', name: 'Working', source: 'Weekly Rule' };
+            if (!wd.is_working) return { status: 'off', name: 'Off / Rest', source: 'Weekly Rule', dateStr: dtStr };
+            if (wd.is_half_day) return { status: 'half_day', name: 'Half Day', source: 'Weekly Rule', dateStr: dtStr };
+            return { status: 'working', name: 'Working', source: 'Weekly Rule', dateStr: dtStr };
         }
 
-        return { status: 'unknown', name: 'Unconfigured', source: 'N/A' };
+        return { status: 'unknown', name: 'Unconfigured', source: 'N/A', dateStr: dtStr };
     };
 
     const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
@@ -88,42 +112,52 @@ const CalendarView = () => {
                     >
                         {Array.from({length: 10}, (_, i) => year - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-
+ 
                     <button onClick={handleNextMonth} className="nav-btn flex-shrink-0">›</button>
                 </div>
                 <button onClick={jumpToToday} className="btn-secondary today-btn truncate">Today</button>
             </div>
-
-            {loading ? <div className="loading-state">Loading calendar data...</div> : (
+ 
+            {coreLoading ? <div className="loading-state">Loading calendar data...</div> : (
                 <div className="calendar-scroll-area">
                     <div className="calendar-high-fidelity">
                         {/* Header Row */}
                         {WEEKDAYS.map(day => (
                             <div key={day} className="calendar-week-header">{day}</div>
                         ))}
-
+ 
                         {/* Grid Cells */}
                         {dates.map((date, index) => {
                             if (!date) return <div key={`empty-${index}`} className="calendar-cell-empty"></div>;
-
+ 
                             const statusObj = getStatusForDate(date);
-                            let colorClass = 'loading'; // default
+                            let colorClass = 'loading'; 
                             
-                            // Map backend enum states to our CSS
                             if (statusObj.status.includes('working')) colorClass = 'working';
                             if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
                             if (statusObj.status.includes('half_day')) colorClass = 'half-day';
-
+ 
                             const todayClass = isToday(date) ? 'today-cell' : '';
-
+                            const leaveCount = leaveSummary[statusObj.dateStr] || 0;
+                            const showLeaveBadge = leaveCount > 0 && (statusObj.status === 'working' || statusObj.status === 'half_day');
+ 
                             return (
                                 <div 
                                     key={date.toISOString()} 
                                     className={`calendar-cell ${colorClass} ${todayClass}`}
-                                    onClick={() => setSelectedDateInfo({ date, statusObj, colorClass })}
+                                    onClick={() => setSelectedDateInfo({ date, statusObj, colorClass, leaveCount })}
                                     style={{ cursor: 'pointer' }}
                                 >
-                                    <div className="cell-date">{date.getDate()}</div>
+                                    <div className="calendar-cell-top">
+                                        {showLeaveBadge ? (
+                                            <div className="leave-count-badge">
+                                                <span className="icon-users">👥</span>
+                                                <span>{leaveCount} {leaveCount === 1 ? 'on leave' : 'on leave'}</span>
+                                            </div>
+                                        ) : <div />}
+                                        <div className="cell-date">{date.getDate()}</div>
+                                    </div>
+                                    
                                     <div className="status-badge-container">
                                         <span className={`status-pill ${colorClass}`} title={statusObj.name}>
                                             {statusObj.name.length > 15 ? statusObj.name.substring(0, 15) + '...' : statusObj.name}
