@@ -53,45 +53,47 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
             ) : requests.length === 0 ? (
                 <div className={styles.emptyState}>You have no leave requests.</div>
             ) : (
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Applied On</th>
-                                <th>Date Range</th>
-                                <th>Total Days</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {requests.map((req) => (
-                                <tr key={req.id}>
-                                    <td>{formatDate(req.applied_at)}</td>
-                                    <td>{formatDate(req.start_date)} - {formatDate(req.end_date)}</td>
-                                    <td>{req.total_days}</td>
-                                    <td className={styles.reasonCell}>
-                                        {req.reason && req.reason !== '-' ? (
-                                            <button 
-                                                className={styles.viewReasonBtn} 
-                                                onClick={() => setViewingReason(req.reason)}
-                                                title="View Full Reason"
-                                            >
-                                                <ViewIcon />
-                                            </button>
-                                        ) : (
-                                            '-'
-                                        )}
-                                    </td>
-                                    <td>
-                                        <span className={`${styles.badge} ${styles[req.status.toLowerCase()] || ''}`}>
-                                            {req.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className={styles.cardList}>
+                    {requests.map((req) => (
+                        <div key={req.id} className={styles.mobileCard}>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Applied On:</span>
+                                <span className={styles.cardValue}>{formatDate(req.applied_at)}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Date Range:</span>
+                                <span className={styles.cardValue}>{formatDate(req.start_date)} - {formatDate(req.end_date)}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Total Days:</span>
+                                <span className={styles.cardValue}>{req.total_days} days</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Reason:</span>
+                                <span className={styles.cardValue}>
+                                    {req.reason && req.reason !== '-' ? (
+                                        <button 
+                                            className={styles.viewReasonBtn} 
+                                            onClick={() => setViewingReason(req.reason)}
+                                            title="View Full Reason"
+                                        >
+                                            <ViewIcon />
+                                        </button>
+                                    ) : (
+                                        '-'
+                                    )}
+                                </span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Status:</span>
+                                <span className={styles.cardValue}>
+                                    <span className={`${styles.badge} ${styles[req.status.toLowerCase()] || ''}`}>
+                                        {req.status}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 

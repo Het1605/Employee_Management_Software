@@ -20,35 +20,43 @@
     color: #111827;
 }
 
-.tableWrapper {
-    overflow-x: auto;
+.cardList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
+.mobileCard {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.table th {
-    background-color: #f9fafb;
-    padding: 0.75rem 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #6b7280;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.table td {
-    padding: 1rem;
+.cardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
     font-size: 0.875rem;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
 }
 
-.table tr:last-child td {
-    border-bottom: none;
+.cardLabel {
+    font-weight: 600;
+    color: #6b7280;
+    min-width: 100px;
+}
+
+.cardValue {
+    font-weight: 500;
+    color: #111827;
+    text-align: right;
+    word-break: break-word;
 }
 
 .badge {
@@ -74,10 +82,6 @@
 .rejected {
     background-color: #fee2e2;
     color: #991b1b;
-}
-
-.reasonCell {
-    text-align: center;
 }
 
 .viewReasonBtn {
