@@ -8,6 +8,7 @@ from app.db.models import LeaveRequest, User, UserCompanyMapping
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
 from app.api.dependencies.auth import get_current_user
 from app.schemas.leave_request import LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestOut, LeaveCalendarSummary
+from app.services.calendar_service import CalendarService
 
 router = APIRouter(prefix="/leave-requests", tags=["Leave Management"])
 
@@ -126,27 +127,16 @@ def get_calendar_summary(
     ).all()
     weekly_config = {c.day_of_week: c for c in working_days_config}
 
+
+# ... in get_calendar_summary ...
     # 4. Process each day of the month
     summary = []
     for day in range(1, last_day + 1):
         curr_date = date(year, month, day)
         
-        # Determine if it's an off-day
-        is_off = False
-        
-        # Check override
-        if curr_date in override_map:
-            if override_map[curr_date] == OverrideType.HOLIDAY:
-                is_off = True
-        # Check holiday
-        elif curr_date in holiday_dates:
-            is_off = True
-        # Check weekly config
-        else:
-            day_of_week = (curr_date.weekday() + 1) % 7 # 0=Sunday
-            config = weekly_config.get(day_of_week)
-            if not config or not config.is_working:
-                is_off = True
+        # Use centralized status logic
+        status_info = CalendarService.get_day_status(db, company_id, curr_date)
+        is_off = status_info.status in ["holiday", "off"]
 
         if is_off:
             continue

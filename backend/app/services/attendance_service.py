@@ -4,49 +4,7 @@ from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, 
 from datetime import date, datetime, timedelta
 import calendar
 from fastapi import HTTPException, status
-
-
-
-def get_day_status(db: Session, company_id: int, target_date: date):
-    # Step 1: check override
-    override = db.query(CalendarOverrides).filter(
-        CalendarOverrides.company_id == company_id,
-        CalendarOverrides.date == target_date
-    ).first()
-
-    if override:
-        if override.override_type == OverrideType.WORKING:
-            return "working"
-        if override.override_type == OverrideType.HOLIDAY:
-            return "off"
-        if override.override_type == OverrideType.HALF_DAY:
-            return "half"
-
-    # Step 2: check holiday
-    holiday = db.query(Holidays).filter(
-        Holidays.company_id == company_id,
-        Holidays.date == target_date
-    ).first()
-
-    if holiday:
-        return "off"
-
-    # Step 3: weekly config
-    # Convert Python weekday (0=Monday...6=Sunday) to Standard (0=Sunday...6=Saturday)
-    day_of_week = (target_date.weekday() + 1) % 7
-
-    config = db.query(WorkingDaysConfig).filter(
-        WorkingDaysConfig.company_id == company_id,
-        WorkingDaysConfig.day_of_week == day_of_week
-    ).first()
-
-    if not config or not config.is_working:
-        return "off"
-
-    if config.is_half_day:
-        return "half"
-
-    return "working"
+from app.services.calendar_service import CalendarService
 
 def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, target_user_id: int = None, target_date: date = None):
     # If no actor (lockless swagger), handle as requested or identifying by target_user_id
@@ -83,13 +41,14 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
         if not mapping:
             raise HTTPException(status_code=403, detail="User does not belong to this company")
 
-    # Validation from get_day_status
-    day_status = get_day_status(db, company_id, final_date)
+    # Validation from CalendarService (Standardized 0=Sunday logic)
+    day_status_info = CalendarService.get_day_status(db, company_id, final_date)
+    day_status = day_status_info.status
     
-    if day_status == "off":
+    if day_status == "holiday" or day_status == "off":
         raise HTTPException(status_code=400, detail="Attendance not allowed on off day or holiday")
     
-    if day_status == "half":
+    if day_status == "half_day":
         if status_str not in ["present", "half_day", "absent"]: # Validation includes absent now
              raise HTTPException(status_code=400, detail="Invalid status for half working day")
 
@@ -153,7 +112,8 @@ def get_my_attendance(db: Session, user_id: int, month: int, year: int):
         curr_date = date(year, month, day)
         db_status = record_map.get(curr_date)
         
-        day_type = get_day_status(db, company_id, curr_date)
+        day_status_info = CalendarService.get_day_status(db, company_id, curr_date)
+        day_type = day_status_info.status
         
         final_status = db_status if db_status else "absent"
             
@@ -165,7 +125,7 @@ def get_my_attendance(db: Session, user_id: int, month: int, year: int):
             half_days += 1
         elif final_status == "absent":
              # Every working day must have a record, but if it doesn't, we still count as absent for stats
-             if day_type in ["working", "half"]:
+             if day_type in ["working", "half_day"]:
                   absent_days += 1
 
     return {
@@ -199,7 +159,8 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
     day_types = {}
     for day in range(1, last_day + 1):
         curr_date = date(year, month, day)
-        day_types[curr_date] = get_day_status(db, company_id, curr_date)
+        day_info = CalendarService.get_day_status(db, company_id, curr_date)
+        day_types[curr_date] = day_info.status
 
 
 
@@ -246,12 +207,13 @@ def get_today_status(db: Session, user_id: int):
     today = date.today()
     mapping = db.query(UserCompanyMapping).filter(UserCompanyMapping.user_id == user_id).first()
     company_id = mapping.company_id if mapping else None
-    day_type = get_day_status(db, company_id, today) if company_id else "working"
-    
     record = db.query(Attendance).filter(
         Attendance.user_id == user_id,
         Attendance.date == today
     ).first()
+    
+    day_status_info = CalendarService.get_day_status(db, company_id, today) if company_id else None
+    day_type = day_status_info.status if day_status_info else "working"
     
     status = record.status if record else "absent"
     return {"status": status, "day_type": day_type}

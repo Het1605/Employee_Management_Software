@@ -3,7 +3,7 @@ import { useCalendarData } from '../hooks/useCalendarData';
 import { useCalendarMutations } from '../hooks/useCalendarMutations';
 import { useToast } from '../../../contexts/ToastContext';
 
-const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const WorkingDaysConfig = () => {
     const { workingDays, loading, refreshData } = useCalendarData();
@@ -65,7 +65,7 @@ const WorkingDaysConfig = () => {
 
     const handleSave = async () => {
         // Validation: If alternate is enabled, at least one week must be selected
-        const satIndex = 5; // Saturday (Monday=0, Sat=5)
+        const satIndex = 6; // Saturday (Sunday=0, Sat=6)
         const satConfig = localDays[satIndex];
         if (satConfig.is_alternate_saturday && (!satConfig.off_saturdays || satConfig.off_saturdays.length === 0)) {
             showToast("Please select at least one OFF Saturday for the alternate rule.", "error");

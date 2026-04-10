@@ -43,7 +43,8 @@ class CalendarService:
         if len(days) == 0:
             default_days = []
             for i in range(7):
-                is_working = i < 5  # Mon-Fri working, Sat-Sun off
+                # Standard: 0=Sunday, 6=Saturday
+                is_working = (i != 0 and i != 6) 
                 default_days.append(WorkingDaysConfig(
                     company_id=company_id,
                     day_of_week=i,
@@ -71,8 +72,8 @@ class CalendarService:
                 config.is_working = day_data.is_working
                 config.is_half_day = day_data.is_half_day
                 
-                # Alternate Saturday Logic
-                if day_data.day_of_week == 5: # Saturday
+                # Alternate Saturday Logic (Day 6 is Saturday)
+                if day_data.day_of_week == 6: 
                     config.is_alternate_saturday = bool(day_data.is_alternate_saturday)
                     config.off_saturdays = day_data.off_saturdays if day_data.off_saturdays is not None else []
                 else:
@@ -328,17 +329,20 @@ class CalendarService:
             )
 
         # 3. Check working_days_config (Rule based)
-        day_of_week = target_date.weekday() # 0 = Monday, 6 = Sunday
+        # Python weekday() is 0=Mon, 6=Sun. 
+        # Project Standard: 0=Sun, 1=Mon, ..., 6=Sat.
+        # Mapping Formula: (PythonDay + 1) % 7
+        system_day = (target_date.weekday() + 1) % 7
         
         # Fetch configs, init if necessary
         days = CalendarService.get_working_days(db, company_id)
-        config = next((d for d in days if d.day_of_week == day_of_week), None)
+        config = next((d for d in days if d.day_of_week == system_day), None)
         
         if not config:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Invalid working day configuration")
 
-        # Saturday Alternate Logic (Month-wise)
-        if day_of_week == 5: # Saturday
+        # Saturday Alternate Logic (Saturday is Day 6)
+        if system_day == 6: 
             if getattr(config, 'is_alternate_saturday', False):
                 # HR Formula: ((day_of_month - 1) // 7) + 1
                 week_number = ((target_date.day - 1) // 7) + 1

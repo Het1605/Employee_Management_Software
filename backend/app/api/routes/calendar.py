@@ -17,6 +17,8 @@ from typing import List
 from app.db.database import get_db
 from app.api.dependencies.auth import get_current_user
 from app.db.models import User
+from app.services.calendar_service import CalendarService
+
 
 
 # Add router tags, etc.
@@ -166,42 +168,26 @@ def get_employee_calendar_summary(
 
     # 6. Build response
     days = []
+# ... inside get_employee_calendar_summary ...
+    # 6. Build response
+    days = []
     for d in range(1, last_day + 1):
         curr_date = date(year, month, d)
         
-        # Priority Rule:
-        # 1. Holiday (Rule or Override)
-        # 2. Off Day (Rule)
-        # 3. Leave (Approved Full/Half)
-        # 4. Attendance (Record found)
+        # Use Centralized Status Logic
+        status_info = CalendarService.get_day_status(db, company_id, curr_date)
 
         day_result = {
             "date": curr_date,
-            "day_type": "working",
+            "day_type": status_info.status.lower(),
             "attendance": att_map.get(curr_date),
             "leave": "full" if leave_data_map.get(curr_date) == "FULL_DAY" else ("half" if leave_data_map.get(curr_date) == "HALF_DAY" else None),
             "display_status": ""
         }
 
-        # Determine Primary Day Type
-        ovr = override_map.get(curr_date)
-        if ovr:
-            day_result["day_type"] = ovr.override_type.lower()
-        elif curr_date in holiday_map:
-            day_result["day_type"] = "holiday"
-        else:
-            wd_config = wd_map.get(curr_date.weekday())
-            if wd_config:
-                if not wd_config.is_working:
-                    day_result["day_type"] = "off"
-                elif wd_config.is_half_day:
-                    day_result["day_type"] = "half_day"
-            else:
-                day_result["day_type"] = "unknown"
-
-        # Apply Priority Status
+        # Apply Priority Status for display
         if day_result["day_type"] in ["holiday", "off"]:
-            day_result["display_status"] = "Holiday" if day_result["day_type"] == "holiday" else "Off"
+            day_result["display_status"] = status_info.name if status_info.name else ("Holiday" if day_result["day_type"] == "holiday" else "Off")
         elif day_result["leave"]:
             day_result["display_status"] = "🔵 On Leave" if day_result["leave"] == "full" else "🟡 Half Leave"
         elif day_result["attendance"]:
