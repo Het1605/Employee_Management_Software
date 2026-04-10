@@ -149,9 +149,9 @@ class DocumentService:
         
         effective_days = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
         
-        # 4. Calculation
-        approved_leaves_count = DocumentService._calculate_approved_leaves_for_month(db, user.id, int(year), int(month))
-        total_leaves = Decimal(str(approved_leaves_count))
+        # 4. Calculation (Mathematical Leave Deduction)
+        # Leave Days = Total Working Days - Effective Days
+        total_leaves = Decimal(str(total_working_days)) - effective_days
         per_day_salary = monthly_base / Decimal(str(total_working_days))
         leave_deduction = per_day_salary * total_leaves
 
@@ -238,11 +238,9 @@ class DocumentService:
             total_working_days_month_dec = Decimal(str(total_working_days_month))
             effective_days_month = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
             
-            # Get exactly approved leaves for this particular month
-            approved_leaves_count = DocumentService._calculate_approved_leaves_for_month(db, user.id, int(year), month_idx)
-            total_leaves_month = Decimal(str(approved_leaves_count))
-            
-            # 4. Calculation
+            # 4. Calculation (Mathematical Leave Deduction)
+            # Leave Days = Total Working Days - Effective Days
+            total_leaves_month = total_working_days_month_dec - effective_days_month
             per_day_salary = monthly_base / total_working_days_month_dec
             leave_deduction_month = per_day_salary * total_leaves_month
 
