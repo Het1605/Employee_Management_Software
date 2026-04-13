@@ -82,13 +82,19 @@ const Sidebar = ({ isOpen, onClose }) => {
           label: 'Manage Attendance', 
           roles: ['ADMIN', 'HR'] 
         },
-        { to: "/attendance/leave", icon: Umbrella, label: 'Leave Management' },
         { 
           to: "/employee/calendar", 
           icon: Calendar, 
           label: 'My Calendar',
           roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
         }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Leave Management',
+      items: [
+        { to: "/attendance/leave", icon: Umbrella, label: 'Manage Leaves' }
       ]
     },
     {
