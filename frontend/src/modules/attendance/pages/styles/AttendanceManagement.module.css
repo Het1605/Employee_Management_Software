@@ -147,20 +147,25 @@ th.stickyCol {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 16px;
 }
 
 .modal {
     background: white;
-    padding: 30px;
+    padding: 24px;
     border-radius: 16px;
     width: 100%;
-    max-width: 400px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    scrollbar-width: thin;
 }
 
 .modal h3 {
@@ -200,6 +205,10 @@ th.stickyCol {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     font-size: 15px;
+    width: 100%;
+    background-color: #f8fafc;
+    color: #1e293b;
+    cursor: pointer;
 }
 
 .modalActions {
@@ -215,6 +224,14 @@ th.stickyCol {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
+    color: #64748b;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.cancelBtn:hover {
+    background-color: #f8fafc;
+    color: #1e293b;
 }
 
 .saveBtn {
@@ -225,6 +242,13 @@ th.stickyCol {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.saveBtn:hover {
+    background-color: #4f46e5;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
 }
 
 .loader {
@@ -232,4 +256,139 @@ th.stickyCol {
     text-align: center;
     color: #64748b;
     font-weight: 500;
+}
+
+/* Responsive Table Adjustments */
+@media (max-width: 1024px) {
+    .stickyCol {
+        min-width: 140px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .filterCard {
+        padding: 16px;
+    }
+
+    .filterGroup {
+        gap: 16px;
+    }
+
+    .attendanceTable {
+        font-size: 13px;
+    }
+
+    .attendanceTable th, .attendanceTable td {
+        padding: 8px 4px;
+    }
+
+    .stickyCol {
+        min-width: 110px;
+        padding-left: 12px !important;
+    }
+
+    .dateHeader, .statsHeader {
+        width: 32px;
+        min-width: 32px;
+    }
+
+    .attendanceCell {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 8px;
+    }
+
+    .attendanceTable th, .attendanceTable td {
+        padding: 6px 2px;
+    }
+
+    .stickyCol {
+        min-width: 90px;
+        padding-left: 8px !important;
+    }
+
+    .dateHeader, .statsHeader {
+        width: 28px;
+        min-width: 28px;
+    }
+
+    .attendanceCell {
+        font-size: 10px;
+    }
+    
+    .statVal {
+        font-size: 11px;
+    }
+}
+
+/* Optimization for Ultra-Small Screens (300px - 320px) */
+@media (max-width: 360px) {
+    .attendanceTable {
+        font-size: 12px;
+    }
+
+    .stickyCol {
+        min-width: 80px;
+        padding-left: 6px !important;
+        font-size: 11px;
+    }
+
+    .dateHeader, .statsHeader {
+        width: 24px;
+        min-width: 24px;
+    }
+
+    .attendanceCell {
+        padding: 6px 0;
+    }
+}
+
+/* Modal Responsiveness */
+@media (max-width: 480px) {
+    .modal {
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .modal h3 {
+        font-size: 18px;
+        margin-bottom: 16px;
+    }
+
+    .modalInfo {
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+
+    .modalInfo p {
+        font-size: 13px;
+    }
+
+    .statusSelect {
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 360px) {
+    .modal {
+        padding: 16px;
+    }
+
+    .modalActions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .cancelBtn, .saveBtn {
+        width: 100%;
+        padding: 12px;
+    }
 }
