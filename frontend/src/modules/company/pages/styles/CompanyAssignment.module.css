@@ -2,6 +2,20 @@
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .container {
+        padding: 0.5rem;
+    }
 }
 
 /* Page Header */
@@ -106,6 +120,19 @@
     border-radius: 15px;
     padding: 2rem;
     box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 480px) {
+    .assignmentLayout {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    .assignmentLayout {
+        padding: 0.75rem;
+    }
 }
 
 .topControls {
@@ -214,6 +241,23 @@
         gap: 0.8rem;
     }
 
+    @media (max-width: 360px) {
+        .mobileCard {
+            padding: 0.8rem;
+            gap: 0.6rem;
+        }
+        
+        .mobileRowAvatar {
+            gap: 0.6rem;
+        }
+        
+        .userAvatar {
+            width: 30px;
+            height: 30px;
+            font-size: 0.75rem;
+        }
+    }
+
     .mobileRowAvatar {
         display: flex;
         align-items: center;
@@ -240,28 +284,28 @@
 
     .userNameMobile {
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 0.9rem;
         color: #1e293b;
-        white-space: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
+        white-space: normal;
+        word-break: break-word;
         flex: 1;
         min-width: 0;
     }
 
     .userEmailMobile {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         color: #64748b;
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-all;
     }
 
     .roleBadgeMobile {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
+        padding: 0.2rem 0.6rem;
         background: #f1f5f9;
         color: #475569;
         border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -270,14 +314,14 @@
 
     .inlineAssignBtnMobile, .inlineRemoveBtnMobile {
         width: 100%;
-        padding: 0.75rem;
+        padding: 0.6rem;
         border-radius: 6px;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         font-weight: 600;
         cursor: pointer;
         border: none;
         transition: all 0.2s;
-        margin-top: 0.5rem;
+        margin-top: 0.4rem;
     }
 
     .inlineAssignBtnMobile {
@@ -513,13 +557,13 @@
 
 .tabBtn {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.6rem;
     border: none;
     background: transparent;
     border-radius: 8px;
     color: #64748b;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -787,3 +831,44 @@
 
 .divider:not(:empty)::before { margin-right: 1rem; }
 .divider:not(:empty)::after { margin-left: 1rem; }
+
+@media (max-width: 480px) {
+    .listHeader span {
+        font-size: 0.875rem;
+    }
+    
+    .searchInput::placeholder {
+        font-size: 0.85rem;
+    }
+    
+    .searchInput {
+        font-size: 0.85rem;
+        padding-left: 2.2rem;
+    }
+    
+    .searchIcon {
+        left: 0.75rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .searchInput::placeholder {
+        font-size: 0.8rem;
+    }
+    
+    .searchInput {
+        font-size: 0.8rem;
+        padding-left: 2rem;
+        height: 40px;
+    }
+    
+    .searchIcon {
+        left: 0.6rem;
+        font-size: 0.9rem;
+    }
+    
+    .tabBtn {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+}
