@@ -1,5 +1,18 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Building2, 
+  Link as LinkIcon, 
+  Calendar, 
+  Banknote, 
+  FileText, 
+  ClipboardCheck, 
+  ClipboardList, 
+  Umbrella, 
+  UserCircle 
+} from 'lucide-react';
 import styles from '../style/Sidebar.module.css';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -11,6 +24,100 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   };
 
+  const menuConfig = [
+    {
+      type: 'link',
+      to: `/${role.toLowerCase()}`,
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      end: true
+    },
+    {
+      type: 'group',
+      title: 'Users Management',
+      roles: ['ADMIN', 'HR', 'MANAGER'],
+      items: [
+        { to: `/${role.toLowerCase()}/users`, icon: Users, label: 'Manage Users' }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Organization',
+      roles: ['HR', 'ADMIN'],
+      items: [
+        { to: "/admin/companies", icon: Building2, label: 'Manage Companies', end: true },
+        { to: "/admin/companies/assign", icon: LinkIcon, label: 'Company Assignment' },
+        { to: `/${role.toLowerCase()}/calendar`, icon: Calendar, label: 'Calendar' }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Payroll',
+      roles: ['HR', 'ADMIN'],
+      items: [
+        { to: `/${role.toLowerCase()}/salary-structure`, icon: Banknote, label: 'Salary Structure' }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Documents',
+      roles: ['HR', 'ADMIN'],
+      items: [
+        { to: "/documents", icon: FileText, label: 'Documents' }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Attendance',
+      items: [
+        { 
+          to: "/employee/attendance", 
+          icon: ClipboardCheck, 
+          label: 'Mark Attendance', 
+          roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
+        },
+        { 
+          to: `/${role.toLowerCase()}/attendance`, 
+          icon: ClipboardList, 
+          label: 'Manage Attendance', 
+          roles: ['ADMIN', 'HR'] 
+        },
+        { to: "/attendance/leave", icon: Umbrella, label: 'Leave Management' },
+        { 
+          to: "/employee/calendar", 
+          icon: Calendar, 
+          label: 'My Calendar',
+          roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
+        }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Self Service',
+      items: [
+        { to: "/employee/profile", icon: UserCircle, label: 'My Profile' }
+      ]
+    }
+  ];
+
+  const renderNavLink = (item) => {
+    const IconComponent = item.icon;
+    return (
+      <NavLink 
+        key={item.to}
+        to={item.to} 
+        className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`} 
+        end={item.end}
+        onClick={handleLinkClick}
+      >
+        <div className={styles.iconContainer}>
+          <IconComponent size={18} strokeWidth={2.25} />
+        </div>
+        <span className={styles.linkText}>{item.label}</span>
+      </NavLink>
+    );
+  };
+
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.isOpen : ''}`}>
       <div className={styles.sidebarHeader}>
@@ -19,155 +126,25 @@ const Sidebar = ({ isOpen, onClose }) => {
       </div>
 
       <nav className={styles.nav}>
-        <NavLink 
-          to={`/${role.toLowerCase()}`} 
-          className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`} 
-          end
-          onClick={handleLinkClick}
-        >
-          <span className={styles.icon}>📊</span>
-          <span className={styles.linkText}>Dashboard</span>
-        </NavLink>
-        
-        {['ADMIN', 'HR', 'MANAGER'].includes(role) && (
-          <div className={styles.navGroup}>
-            <div className={styles.groupTitle}>Users Management</div>
-            <div className={styles.subMenu}>
-              <NavLink 
-                to={`/${role.toLowerCase()}/users`} 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>👥</span>
-                <span className={styles.linkText}>Manage Users</span>
-              </NavLink>
+        {menuConfig.map((section, idx) => {
+          if (section.type === 'link') {
+            return renderNavLink(section);
+          }
+
+          // Group rendering
+          const hasGroupAccess = !section.roles || section.roles.includes(role);
+          if (!hasGroupAccess) return null;
+
+          const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(role));
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={idx} className={styles.navGroup}>
+              <h3 className={styles.groupTitle}>{section.title}</h3>
+              {visibleItems.map(renderNavLink)}
             </div>
-          </div>
-        )}
-
-        {/* Other menu items... */}
-        {(role === 'HR' || role === 'ADMIN') && (
-          <div className={styles.navGroup}>
-            <div className={styles.groupTitle}>Organization</div>
-            <div className={styles.subMenu}>
-              <NavLink 
-                to="/admin/companies" 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-                end
-              >
-                <span className={styles.icon}>🏢</span>
-                <span className={styles.linkText}>Manage Companies</span>
-              </NavLink>
-              <NavLink 
-                to="/admin/companies/assign" 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>🔗</span>
-                <span className={styles.linkText}>Company Assignment</span>
-              </NavLink>
-              <NavLink 
-                to={`/${role.toLowerCase()}/calendar`} 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>📅</span>
-                <span className={styles.linkText}>Calendar</span>
-              </NavLink>
-            </div>
-          </div>
-        )}
-
-        {(role === 'HR' || role === 'ADMIN') && (
-          <div className={styles.navGroup}>
-            <div className={styles.groupTitle}>Payroll</div>
-            <div className={styles.subMenu}>
-              <NavLink 
-                to={`/${role.toLowerCase()}/salary-structure`} 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>💰</span>
-                <span className={styles.linkText}>Salary Structure</span>
-              </NavLink>
-            </div>
-          </div>
-        )}
-
-        {(role === 'HR' || role === 'ADMIN') && (
-          <div className={styles.navGroup}>
-            <div className={styles.groupTitle}>Documents</div>
-            <div className={styles.subMenu}>
-              <NavLink 
-                to="/documents" 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>📄</span>
-                <span className={styles.linkText}>Documents</span>
-              </NavLink>
-            </div>
-          </div>
-        )}
-        
-        <div className={styles.navGroup}>
-          <div className={styles.groupTitle}>Attendance</div>
-          
-          {['EMPLOYEE', 'INTERN', 'MANAGER'].includes(role) && (
-            <NavLink 
-              to="/employee/attendance" 
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-              onClick={handleLinkClick}
-            >
-              <span className={styles.icon}>📝</span>
-              <span className={styles.linkText}>Mark Attendance</span>
-            </NavLink>
-          )}
-          
-          {['ADMIN', 'HR'].includes(role) && (
-            <NavLink 
-              to={`/${role.toLowerCase()}/attendance`} 
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-              onClick={handleLinkClick}
-            >
-              <span className={styles.icon}>📋</span>
-              <span className={styles.linkText}>Manage Attendance</span>
-            </NavLink>
-          )}
-
-            <NavLink 
-              to="/attendance/leave" 
-              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-              onClick={handleLinkClick}
-            >
-              <span className={styles.icon}>🏖️</span>
-              <span className={styles.linkText}>Leave Management</span>
-            </NavLink>
-
-            {['EMPLOYEE', 'INTERN', 'MANAGER'].includes(role) && (
-              <NavLink 
-                to="/employee/calendar" 
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                onClick={handleLinkClick}
-              >
-                <span className={styles.icon}>📅</span>
-                <span className={styles.linkText}>My Calendar</span>
-              </NavLink>
-            )}
-        </div>
-
-        <div className={styles.navGroup}>
-          <div className={styles.groupTitle}>Self Service</div>
-          <NavLink 
-            to="/employee/profile" 
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-            onClick={handleLinkClick}
-          >
-            <span className={styles.icon}>👤</span>
-            <span className={styles.linkText}>My Profile</span>
-          </NavLink>
-        </div>
+          );
+        })}
       </nav>
     </aside>
   );
