@@ -861,12 +861,10 @@ input:checked+.slider:before {
 }
 
 /* =========================================
-   RESPONSIVE DESIGN (Mobile & Tablet)
+   RESPONSIVE DESIGN (Consolidated)
    ========================================= */
 
 @media (max-width: 1024px) {
-
-    /* Tablet Overrides */
     .calendar-wrapper {
         padding: 1rem;
     }
@@ -881,13 +879,10 @@ input:checked+.slider:before {
 }
 
 @media (max-width: 768px) {
-
-    /* Mobile Overrides */
     .calendar-wrapper {
         padding: 10px;
     }
 
-    /* Header Responsive Scaling */
     .calendar-header-card {
         padding: 1rem;
         flex-direction: column;
@@ -896,10 +891,7 @@ input:checked+.slider:before {
     }
 
     .header-left {
-        flex-direction: row;
-        align-items: center;
         gap: 0.5rem;
-        flex-wrap: nowrap;
     }
 
     .company-select-modern {
@@ -907,81 +899,12 @@ input:checked+.slider:before {
         min-width: 0;
         font-size: 0.875rem;
         padding: 0.5rem 1rem;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
-    .calendar-company-select-wrapper {
-        max-width: none;
-    }
-
-    .calendar-company-select {
-        padding-right: 2.75rem;
-    }
-
-    /* Desktop overrides – show full month name and company selector */
-    @media (min-width: 1024px) {
-
-        .month-select,
-        .year-select {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: clip;
-        }
-
-        .company-select-modern {
-            width: auto;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: clip;
-        }
-
-        /* Override truncate utility for month/year selects and company selector on desktop */
-        .month-select.truncate,
-        .year-select.truncate,
-        .company-select-modern.truncate {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: clip;
-        }
-    }
-
-    /* Navigation Stack */
     .calendar-month-nav-container {
         flex-direction: column;
         align-items: stretch;
         gap: 0.75rem;
-    }
-
-    .calendar-month-nav-row1 {
-        justify-content: space-between;
-        gap: 0.25rem;
-    }
-
-    .month-select,
-    .year-select {
-        flex: 1;
-        min-width: 0;
-        padding: 0.5rem 0.25rem !important;
-        font-size: 0.875rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .nav-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1.25rem;
-        flex-shrink: 0;
-    }
-
-    .today-btn {
-        width: 100%;
-        font-size: 0.875rem;
-        padding: 0.5rem 0;
     }
 
     .calendar-high-fidelity {
@@ -989,45 +912,30 @@ input:checked+.slider:before {
         gap: 4px;
     }
 
-    /* Calendar Cell Scaling */
     .calendar-cell {
         min-height: 70px;
         min-width: 70px;
         padding: 0.25rem;
     }
 
-    .date-number {
-        font-size: 0.75rem;
-    }
-
-    .status-pill {
-        font-size: 0.6rem;
-        padding: 0.15rem;
-    }
-
-    /* Working Days Section Mobile Optimization */
     .working-days-card {
         padding: 1.5rem;
     }
 
     .day-list-item {
-        padding: 0.8rem 1rem;
-        gap: 1rem;
-        flex-wrap: wrap;
+        padding: 0.8rem 1.5rem;
+        gap: 1.5rem;
+        flex-wrap: nowrap;
     }
 
     .day-name {
-        min-width: 80px;
+        min-width: 110px;
         font-size: 1rem;
     }
 
     .half-day-section {
-        order: 3;
-        width: 100%;
-        margin-left: 0;
-        margin-top: 0.5rem;
-        padding-top: 0.5rem;
-        border-top: 1px dashed #f1f5f9;
+        order: unset;
+        width: auto;
     }
 
     .management-card {
@@ -1036,7 +944,6 @@ input:checked+.slider:before {
 
     .management-header {
         flex-direction: column;
-        align-items: stretch;
         gap: 1rem;
     }
 
@@ -1044,38 +951,139 @@ input:checked+.slider:before {
         grid-template-columns: 1fr;
     }
 
-    .data-card-header {
-        gap: 0.75rem;
-    }
-
-    /* Full width buttons */
+    /* Buttons should NOT stretch to 100% on tablets */
     .btn-primary-action,
     .btn-secondary,
     .btn-primary {
-        width: 100%;
-        justify-content: center;
+        width: auto;
+        max-width: max-content;
+        align-self: flex-start;
+    }
+
+    .card-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
     }
 }
 
 @media (max-width: 560px) {
     .day-list-item {
-        padding: 1rem;
-        gap: 0.75rem;
+        padding: 0.8rem 1rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .day-name {
         flex: 1;
+        min-width: 0;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .day-status {
         order: 2;
-        min-width: 0;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        min-width: 80px;
+        text-align: right;
     }
 
     .day-toggle-action {
         order: 1;
-        margin-left: 0;
+        margin-left: auto;
+    }
+
+    .half-day-section {
+        flex: 0 0 100% !important;
+        width: 100%;
+        order: 3;
+        margin-top: 0.4rem;
+    }
+
+    /* Full width buttons ONLY on mobile */
+    .btn-primary-action,
+    .btn-secondary,
+    .btn-primary {
+        width: 100%;
+        max-width: none;
+        justify-content: center;
+    }
+
+    .card-header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 360px) {
+    .working-days-card {
+        padding: 0.75rem;
+    }
+
+    .day-list-item {
+        padding: 0.75rem;
+        gap: 0.35rem;
+    }
+
+    .day-name {
+        font-size: 0.85rem;
+    }
+
+    .day-status {
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+
+    .switch-wrapper {
+        width: 40px;
+        height: 20px;
+    }
+
+    .slider:before {
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(20px);
+    }
+
+    .alternate-saturday-panel {
+        padding: 0.75rem;
+    }
+
+    .saturday-weeks-grid {
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .week-checkbox-label {
+        font-size: 0.75rem;
+    }
+
+    .searchInput::placeholder {
+        font-size: 0.8rem;
+    }
+
+    .searchInput {
+        font-size: 0.8rem;
+        padding-left: 2rem;
+        height: 40px;
+    }
+
+    .searchIcon {
+        left: 0.6rem;
+        font-size: 0.9rem;
+    }
+
+    .tabBtn {
+        padding: 0.5rem;
+        font-size: 0.75rem;
     }
 }
 
@@ -1086,13 +1094,21 @@ input:checked+.slider:before {
     border-radius: 8px;
     padding: 1.25rem;
     margin-top: 0.5rem;
-    margin-left: 140px; /* Aligned with after day-name */
+    margin-left: 140px;
+    /* Aligned with after day-name */
     animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .alternate-header {
@@ -1156,6 +1172,7 @@ input:checked+.slider:before {
     .alternate-saturday-panel {
         margin-left: 0;
     }
+
     .saturday-weeks-grid {
         flex-wrap: wrap;
         gap: 1rem;
