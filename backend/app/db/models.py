@@ -216,3 +216,24 @@ class LeaveRequest(Base):
         Index('idx_leave_company_dates', 'company_id', 'start_date', 'end_date'),
         Index('idx_leave_user_dates', 'user_id', 'start_date', 'end_date')
     )
+
+class SalarySlipDispatchLog(Base):
+    __tablename__ = "salary_slip_dispatch_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    document_type = Column(String, nullable=False)  # "monthly" or "yearly"
+    month = Column(Integer, nullable=True)
+    year = Column(Integer, nullable=False)
+    file_path = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="PENDING")
+    retry_count = Column(Integer, default=0)
+    last_attempt_at = Column(DateTime(timezone=True), nullable=True)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User")
+    company = relationship("Company")

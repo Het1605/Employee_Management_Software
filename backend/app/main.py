@@ -8,6 +8,7 @@ from app.api.routes import auth, users, company, calendar, salary_component, sal
 from app.core.config import settings
 from app.db.database import SessionLocal
 from app.services.document_service import DocumentService
+from app.services.dispatch_service import start_dispatch_scheduler
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -33,6 +34,8 @@ Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as db:
     DocumentService.seed_document_types(db)
+    # Start the automated salary slip dispatch scheduler
+    start_dispatch_scheduler()
 
 uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploads'))
 os.makedirs(uploads_dir, exist_ok=True)

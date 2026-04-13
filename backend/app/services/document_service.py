@@ -1,17 +1,12 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
 import os
 import time
 import re
 from weasyprint import HTML
-from email.mime.base import MIMEBase
-from email import encoders
 from typing import List, Optional
 from app.core.config import settings
-from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company, UserSalaryStructure, ComponentType
+from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company, UserSalaryStructure, ComponentType, SalarySlipDispatchLog
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
@@ -19,6 +14,7 @@ from app.schemas.document import (
 )
 from app.services.attendance_service import get_my_attendance
 from decimal import Decimal
+from app.core.email_utils import send_email_with_attachment
 
 
 DOCUMENT_TYPE_SEEDS = [
@@ -339,6 +335,48 @@ class DocumentService:
         db.add(document)
         db.commit()
         db.refresh(document)
+
+        # 4. SALARY SLIP DISPATCH LOGGING
+        if doc_type.code == "salary_slip":
+            form = data.form_data or {}
+            payload_data = form.get("data", {})
+            u_id = payload_data.get("user_id")
+            y_val = payload_data.get("year")
+            m_val = payload_data.get("month")
+            template_id = payload_data.get("template_id", "salaryTemplate1")
+
+            if u_id and y_val:
+                # Determine dispatch type and normalized period
+                dispatch_type = "yearly" if template_id == "salaryTemplate2" else "monthly"
+                norm_year = int(y_val)
+                norm_month = int(m_val) if dispatch_type == "monthly" and m_val else None
+
+                # Get user for email
+                user = db.query(User).filter(User.id == u_id).first()
+                if user:
+                    # Duplicate Check
+                    existing_log = db.query(SalarySlipDispatchLog).filter(
+                        SalarySlipDispatchLog.user_id == u_id,
+                        SalarySlipDispatchLog.document_type == dispatch_type,
+                        SalarySlipDispatchLog.month == norm_month,
+                        SalarySlipDispatchLog.year == norm_year
+                    ).first()
+
+                    if not existing_log:
+                        new_dispatch = SalarySlipDispatchLog(
+                            user_id=u_id,
+                            company_id=data.company_id,
+                            document_type=dispatch_type,
+                            month=norm_month,
+                            year=norm_year,
+                            file_path=file_path,
+                            email=user.email,
+                            status="PENDING",
+                            retry_count=0
+                        )
+                        db.add(new_dispatch)
+                        db.commit()
+
         return DocumentService._ensure_form_data(document)
 
     @staticmethod
@@ -390,12 +428,6 @@ class DocumentService:
         error_msg = None
 
         try:
-            if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="SMTP credentials are not configured",
-                )
-
             # Resolve file path from file_url
             file_path = None
             if document.file_url:
@@ -411,25 +443,15 @@ class DocumentService:
                     detail="Document file not found on server",
                 )
 
-            message = MIMEMultipart()
-            message["From"] = settings.SMTP_USER
-            message["To"] = user.email
-            message["Subject"] = f"Your Document - {document.title}"
-            body = "Hello,\n\nPlease find your document attached.\n\nRegards,\nHR Team"
-            message.attach(MIMEText(body, "plain"))
-
-            with open(file_path, "rb") as f:
-                mime_part = MIMEBase("application", "pdf")
-                mime_part.set_payload(f.read())
-                encoders.encode_base64(mime_part)
-                mime_part.add_header("Content-Disposition", f'attachment; filename="{document.file_name or "document.pdf"}"')
-                message.attach(mime_part)
-
-            server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(message)
-            server.quit()
+            # Use shared utility
+            send_email_with_attachment(
+                to_email=user.email,
+                subject=f"Your Document - {document.title}",
+                body="Hello,\n\nPlease find your document attached.\n\nRegards,\nHR Team",
+                file_path=file_path,
+                file_name=document.file_name or "document.pdf"
+            )
+            
             sent_status = "sent"
         except Exception as exc:
             error_msg = str(exc)
