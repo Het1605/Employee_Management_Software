@@ -261,6 +261,104 @@
 .emptyState {
     text-align: center;
     padding: 3rem 1rem;
-    color: #6b7280;
+    color: #64748b;
     font-size: 0.875rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .cardList {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .card {
+        padding: 1.25rem;
+        margin-top: 1.5rem;
+    }
+
+    .header {
+        margin-bottom: 1.25rem;
+    }
+
+    .cardList {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 1rem;
+    }
+
+    .title {
+        font-size: 1.1rem;
+    }
+
+    .mobileCard {
+        padding: 1rem;
+        gap: 0.6rem;
+    }
+
+    .cardRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+    }
+
+    .cardLabel {
+        min-width: unset;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .cardValue {
+        text-align: left;
+        font-size: 0.875rem;
+        width: 100%;
+        color: #1e293b;
+    }
+
+    .cardActions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .actionGroup {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .approveBtn, .rejectBtn {
+        flex: 1;
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* Modal Mobile Adjustments */
+    .modalCard {
+        width: 95%;
+    }
+
+    .modalHeader {
+        padding: 1rem;
+    }
+
+    .modalBody {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .actionGroup {
+        flex-direction: column;
+    }
+
+    .approveBtn, .rejectBtn {
+        width: 100%;
+    }
 }
