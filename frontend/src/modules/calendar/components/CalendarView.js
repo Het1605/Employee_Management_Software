@@ -70,6 +70,15 @@ const CalendarView = () => {
         const dayOfWeek = date.getDay();
         const wd = workingDays.find(w => w.day_of_week === dayOfWeek);
         if (wd) {
+            // Check for Alternate Saturdays (e.g., 2nd & 4th OFF)
+            if (dayOfWeek === 6 && wd.is_alternate_saturday) {
+                const weekOfMonth = Math.ceil(date.getDate() / 7);
+                const offWeeks = wd.off_saturdays || [];
+                if (offWeeks.includes(weekOfMonth)) {
+                    return { status: 'off', name: 'Off / Rest', source: 'Alternate Saturday Rule', dateStr: dtStr };
+                }
+            }
+
             if (!wd.is_working) return { status: 'off', name: 'Off / Rest', source: 'Weekly Rule', dateStr: dtStr };
             if (wd.is_half_day) return { status: 'half_day', name: 'Half Day', source: 'Weekly Rule', dateStr: dtStr };
             return { status: 'working', name: 'Working', source: 'Weekly Rule', dateStr: dtStr };

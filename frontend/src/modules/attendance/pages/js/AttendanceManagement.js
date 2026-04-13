@@ -3,11 +3,13 @@ import axios from 'axios';
 import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
 import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import styles from '../styles/AttendanceManagement.module.css';
+import { useCalendarData } from '../../../calendar/hooks/useCalendarData';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 const AttendanceManagement = () => {
     const { selectedCompany } = useCompanyContext();
+    const { workingDays, holidays, overrides } = useCalendarData();
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [attendanceData, setAttendanceData] = useState([]);
@@ -52,7 +54,10 @@ const AttendanceManagement = () => {
     );
 
     const handleCellClick = (emp, record) => {
-        if (record.day_type === 'off') return;
+        // Prevent modal on Off Days / Holidays
+        const calStatus = getDayStatus(record.date);
+        if (calStatus === 'off' || record.day_type === 'off') return;
+
         setSelectedRecord({
             userId: emp.user_id,
             name: emp.name,
@@ -80,16 +85,47 @@ const AttendanceManagement = () => {
         }
     };
 
-    const getStatusClass = (status, dayType) => {
-        if (dayType === 'off') return styles.offDay;
+    const getDayStatus = (dateStr) => {
+        if (!workingDays || workingDays.length === 0) return 'working';
+        
+        const date = new Date(dateStr);
+        // JS getDay() returns 0 for Sunday, 1 for Monday... 6 for Saturday
+        const dayOfWeek = date.getDay();
+        
+        // 1. Overrides
+        const override = overrides.find(o => o.date === dateStr);
+        if (override) return override.override_type; 
+
+        // 2. Holidays
+        const holiday = holidays.find(h => h.date === dateStr);
+        if (holiday) return 'off';
+
+        // 3. Working Days config
+        const wd = workingDays.find(w => w.day_of_week === dayOfWeek);
+        if (wd) {
+            // Check for Alternate Saturdays
+            if (dayOfWeek === 6 && wd.is_alternate_saturday) {
+                const weekOfMonth = Math.ceil(date.getDate() / 7);
+                const offWeeks = wd.off_saturdays || [];
+                if (offWeeks.includes(weekOfMonth)) return 'off';
+            }
+            if (!wd.is_working) return 'off';
+        }
+        return 'working';
+    };
+
+    const getStatusClass = (status, dayType, dateStr) => {
+        const calStatus = getDayStatus(dateStr);
+        if (calStatus === 'off') return styles.offDay;
         if (status === 'present') return styles.present;
         if (status === 'half_day') return styles.halfDay;
         if (status === 'absent') return styles.absent;
         return '';
     };
 
-    const getStatusInitial = (status, dayType) => {
-        if (dayType === 'off') return 'OFF';
+    const getStatusInitial = (status, dayType, dateStr) => {
+        const calStatus = getDayStatus(dateStr);
+        if (calStatus === 'off') return 'OFF';
         if (status === 'present') return 'P';
         if (status === 'half_day') return 'H';
         if (status === 'absent') return 'A';
@@ -155,11 +191,11 @@ const AttendanceManagement = () => {
                                             {emp.attendance.map((rec, idx) => (
                                                 <td 
                                                     key={idx} 
-                                                    className={`${styles.attendanceCell} ${getStatusClass(rec.status, rec.day_type)}`}
+                                                    className={`${styles.attendanceCell} ${getStatusClass(rec.status, rec.day_type, rec.date)}`}
                                                     onClick={() => handleCellClick(emp, rec)}
                                                     title={`${rec.date}: ${rec.status}`}
                                                 >
-                                                    {getStatusInitial(rec.status, rec.day_type)}
+                                                    {getStatusInitial(rec.status, rec.day_type, rec.date)}
                                                 </td>
                                             ))}
                                             <td className={styles.statVal}>{emp.present_days}</td>
