@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useCalendarMutations } from '../../hooks/useCalendarMutations';
 import { useToast } from '../../../../contexts/ToastContext';
-import ImportModal from '../../components/modals/ImportModal';
 import AddHolidayModal from '../../components/modals/AddHolidayModal';
 
 // Trash Icon SVG functional component
@@ -35,7 +34,6 @@ const HolidayManagement = () => {
     const { holidays, loading, refreshData } = useCalendarData();
     const { deleteHoliday } = useCalendarMutations(refreshData);
     const { showToast } = useToast();
-    const [showImportModal, setShowImportModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingHoliday, setEditingHoliday] = useState(null);
 
@@ -63,7 +61,6 @@ const HolidayManagement = () => {
                         <p className="subtitle">Manage public and company-specific holidays.</p>
                     </div>
                     <div className="action-buttons" style={{ display: 'flex', gap: '1rem' }}>
-                        <button className="btn-secondary" onClick={() => setShowImportModal(true)}>Import Holidays</button>
                         <button className="btn-primary-action" onClick={() => setShowAddModal(true)}>+ Add Holiday</button>
                     </div>
                 </div>
@@ -104,7 +101,7 @@ const HolidayManagement = () => {
                 </div>
             </div>
 
-            {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
+
             {(showAddModal || editingHoliday) && (
                 <AddHolidayModal 
                     editData={editingHoliday}

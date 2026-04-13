@@ -415,3 +415,101 @@ input:checked + .slider:before { transform: translateX(20px); }
   .tabHeader { flex-direction: column; align-items: flex-start; }
   .cardBottom { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
 }
+
+/* User Salary Assignment Card Styles */
+.assignmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.assignmentCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.assignmentCard:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.userName {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #0f172a;
+  line-height: 1.4;
+  word-break: break-word;
+  flex: 1;
+}
+
+.structureName {
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 500;
+  word-break: break-word;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.ctcAmount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .assignmentGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .assignmentGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .assignmentCard {
+    padding: 1rem;
+  }
+
+  .userName {
+    font-size: 1.05rem;
+  }
+
+  .structureName {
+    font-size: 0.9rem;
+  }
+
+  .ctcAmount {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .userName {
+    font-size: 1rem;
+  }
+  
+  .ctcAmount {
+    font-size: 0.9rem;
+  }
+}

@@ -317,36 +317,32 @@ const AssignmentTab = ({ companyId, users, structures, assignments, loading, onO
       ) : assignments.length === 0 ? (
         <div className={styles.placeholderCard}>No salary structures assigned to users yet</div>
       ) : (
-        <div className={styles.structureCard} style={{ boxShadow: 'none', border: '1px solid #e2e8f0' }}>
-          <table className={styles.structureTable}>
-            <thead>
-              <tr>
-                <th>Users</th>
-                <th>Assigned Structure</th>
-                <th>Annual CTC (₹)</th>
-                <th style={{ width: '120px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignments.map((assignment) => (
-                <tr key={assignment.id}>
-                  <td>{userMap[assignment.user_id] || `User ${assignment.user_id}`}</td>
-                  <td>{structureMap[assignment.structure_id] || `Structure ${assignment.structure_id}`}</td>
-                  <td>₹{Number(assignment.ctc).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                  <td>
-                    <div className={styles.inlineActions}>
-                      <button className={styles.iconBtn} onClick={() => onOpenModal(assignment)} title="Edit">
-                        <EditIcon />
-                      </button>
-                      <button className={`${styles.iconBtn} ${styles.delete}`} onClick={() => onDelete(assignment)} title="Delete">
-                        <TrashIcon />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className={styles.assignmentGrid}>
+          {assignments.map((assignment) => (
+            <div key={assignment.id} className={styles.assignmentCard}>
+              <div className={styles.cardRow}>
+                <span className={styles.userName} title={userMap[assignment.user_id]}>
+                  {userMap[assignment.user_id] || `User ${assignment.user_id}`}
+                </span>
+                <div className={styles.inlineActions}>
+                  <button className={styles.iconBtn} onClick={() => onOpenModal(assignment)} title="Edit">
+                    <EditIcon />
+                  </button>
+                  <button className={`${styles.iconBtn} ${styles.delete}`} onClick={() => onDelete(assignment)} title="Delete">
+                    <TrashIcon />
+                  </button>
+                </div>
+              </div>
+              <div className={styles.cardRow}>
+                <span className={styles.structureName}>
+                  {structureMap[assignment.structure_id] || `Structure ${assignment.structure_id}`}
+                </span>
+                <span className={styles.ctcAmount}>
+                  ₹{Number(assignment.ctc).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
