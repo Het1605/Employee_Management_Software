@@ -22,6 +22,12 @@ class UserBase(BaseModel):
     role: UserRole = UserRole.EMPLOYEE
     is_active: bool = True
 
+    @validator("start_date", "end_date", pre=True)
+    def handle_empty_date(cls, v):
+        if v == "":
+            return None
+        return v
+
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
     confirm_password: str = Field(..., min_length=8)
@@ -41,6 +47,12 @@ class UserUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     role: Optional[UserRole] = None
+
+    @validator("start_date", "end_date", pre=True)
+    def handle_empty_date(cls, v):
+        if v == "":
+            return None
+        return v
 
 class UserResponse(UserBase):
     id: int

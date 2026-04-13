@@ -61,6 +61,13 @@ class HolidayUpdate(BaseModel):
     source: Optional[HolidaySource] = None
     force: Optional[bool] = None
 
+    @field_validator('date', mode='before')
+    @classmethod
+    def check_empty_date(cls, v):
+        if v == "":
+            return None
+        return v
+
 
 class HolidayResponse(HolidayBase):
     id: int
@@ -85,6 +92,13 @@ class OverrideUpdate(BaseModel):
     override_type: Optional[OverrideType] = None
     reason: Optional[str] = None
     force: Optional[bool] = None
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def check_empty_date(cls, v):
+        if v == "":
+            return None
+        return v
 
 class OverrideResponse(OverrideBase):
     id: int

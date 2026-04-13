@@ -1,5 +1,5 @@
 import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import List, Optional
 
 class AttendanceMark(BaseModel):
@@ -8,6 +8,12 @@ class AttendanceMark(BaseModel):
     actor_id: Optional[int] = None
     date: Optional[datetime.date] = None
     status: str # 'present', 'half_day', 'absent'
+
+    @validator("date", pre=True)
+    def handle_empty_date(cls, v):
+        if v == "":
+            return None
+        return v
 
 class AttendanceResponse(BaseModel):
     date: datetime.date

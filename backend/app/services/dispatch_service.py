@@ -1,5 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from datetime import date, datetime
 import os
 import logging
@@ -30,21 +31,18 @@ class DispatchService:
 
             # 1. Process Monthly Slips
             if day_of_month >= MONTHLY_SEND_DAY:
-                # Calculate previous month and year
-                if today.month == 1:
-                    prev_month = 12
-                    target_year = today.year - 1
-                else:
-                    prev_month = today.month - 1
-                    target_year = today.year
-
-                logger.info(f"Processing monthly slips for {prev_month}/{target_year}")
+                logger.info(f"Processing all pending monthly slips prior to {today.month}/{today.year}")
                 
                 logs = db.query(SalarySlipDispatchLog).filter(
                     SalarySlipDispatchLog.document_type == "monthly",
                     SalarySlipDispatchLog.status != "SENT",
-                    SalarySlipDispatchLog.month == prev_month,
-                    SalarySlipDispatchLog.year == target_year
+                    or_(
+                        SalarySlipDispatchLog.year < today.year,
+                        and_(
+                            SalarySlipDispatchLog.year == today.year,
+                            SalarySlipDispatchLog.month < today.month
+                        )
+                    )
                 ).all()
                 
                 for log in logs:
@@ -52,13 +50,12 @@ class DispatchService:
 
             # 2. Process Yearly Slips
             if day_of_month >= YEARLY_SEND_DAY:
-                target_year = today.year - 1
-                logger.info(f"Processing yearly slips for {target_year}")
+                logger.info(f"Processing all pending yearly slips prior to {today.year}")
 
                 logs = db.query(SalarySlipDispatchLog).filter(
                     SalarySlipDispatchLog.document_type == "yearly",
                     SalarySlipDispatchLog.status != "SENT",
-                    SalarySlipDispatchLog.year == target_year
+                    SalarySlipDispatchLog.year < today.year
                 ).all()
 
                 for log in logs:
