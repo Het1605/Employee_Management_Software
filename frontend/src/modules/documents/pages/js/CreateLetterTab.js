@@ -200,13 +200,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setUsername('');
       setDepartment('');
       setStartDate('');
-      setEndDate('');
       return;
     }
     const found = internUsers.find((u) => String(u.id) === String(internUserId));
     if (!found) return;
     const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
-    setUsername(fullName);
     setDepartment(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
@@ -229,13 +227,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setUsername('');
       setPosition('');
       setStartDate('');
-      setEndDate('');
       return;
     }
     const found = experienceUsers.find((u) => String(u.id) === String(experienceUserId));
     if (!found) return;
     const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
-    setUsername(fullName);
     setPosition(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
@@ -304,7 +300,6 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
       setDepartment(data.department || '');
       setOfferDate(normalizeDateInput(data.date || data.offer_date));
       setStartDate(normalizeDateInput(data.start_date));
-      setEndDate(normalizeDateInput(data.end_date));
       return;
     }
   };

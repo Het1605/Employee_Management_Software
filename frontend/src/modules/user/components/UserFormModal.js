@@ -45,7 +45,6 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
     // Prepare payload (avoid empty strings for optional dates)
     const payload = { ...formData };
     if (!payload.start_date) delete payload.start_date;
-    if (!payload.end_date) delete payload.end_date;
     
     // Cleanup for submission
     if (user) {
@@ -134,6 +133,7 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
               onChange={handleChange}
             />
           </div>
+
           
           {/* Show password fields ONLY for New User */}
           {!user && (

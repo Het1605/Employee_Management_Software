@@ -37,10 +37,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 def admin_reset_password(user_id: int, data: AdminPasswordReset, db: Session = Depends(get_db)):
     return UserService.admin_reset_password(db, user_id, data.password)
 
-@router.patch("/{user_id}/toggle-status")
-def toggle_user_status(user_id: int, data: UserStatusUpdate, db: Session = Depends(get_db)):
-    return UserService.toggle_user_status(db, user_id, data.is_active)
-
 @router.post("/resign")
 def submit_resignation(
     data: ResignationRequest, 
@@ -48,3 +44,9 @@ def submit_resignation(
     current_user: User = Depends(get_current_user)
 ):
     return UserService.submit_resignation(db, current_user, data)
+
+@router.patch("/{user_id}/toggle-status")
+def toggle_user_status(user_id: int, data: UserStatusUpdate, db: Session = Depends(get_db)):
+    return UserService.toggle_user_status(db, user_id, data.is_active)
+
+

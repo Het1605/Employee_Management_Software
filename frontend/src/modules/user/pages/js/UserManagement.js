@@ -79,10 +79,10 @@ const UserManagement = () => {
       </div>
       <div className={styles.userGrid}>
         {users.map(user => (
-          <UserCard 
-            key={user.id} 
-            user={user} 
-            onEdit={() => { setSelectedUser(user); setIsModalOpen(true); }} 
+          <UserCard
+            key={user.id}
+            user={user}
+            onEdit={() => { setSelectedUser(user); setIsModalOpen(true); }}
             onChangePassword={() => { setSelectedUser(user); setIsPasswordModalOpen(true); }}
             onStatusChange={handleToggleStatus}
             onDelete={async () => {
@@ -100,16 +100,16 @@ const UserManagement = () => {
         ))}
       </div>
       {isModalOpen && (
-        <UserFormModal 
-          user={selectedUser} 
-          onClose={() => setIsModalOpen(false)} 
-          onSubmit={selectedUser ? handleUpdate : handleCreate} 
+        <UserFormModal
+          user={selectedUser}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={selectedUser ? handleUpdate : handleCreate}
         />
       )}
       {isPasswordModalOpen && (
-        <ChangePasswordModal 
-          user={selectedUser} 
-          onClose={() => setIsPasswordModalOpen(false)} 
+        <ChangePasswordModal
+          user={selectedUser}
+          onClose={() => setIsPasswordModalOpen(false)}
         />
       )}
     </MainLayout>

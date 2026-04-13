@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, validator, computed_field
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime, date
 from enum import Enum
+
 
 class UserRole(str, Enum):
     ADMIN = "ADMIN"
@@ -69,8 +70,10 @@ class ResetPasswordConfirm(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8)
 
+class ResignationRequest(BaseModel):
+    end_date: date
+
 class UserStatusUpdate(BaseModel):
     is_active: bool
 
-class ResignationRequest(BaseModel):
-    end_date: date
+
