@@ -11,6 +11,8 @@ from app.services.document_service import DocumentService
 from app.services.dispatch_service import start_dispatch_scheduler
 from fastapi.staticfiles import StaticFiles
 import os
+import time
+from sqlalchemy.exc import OperationalError
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -23,19 +25,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Drop legacy salary structure tables if they still exist
-with engine.begin() as conn:
-    conn.execute(text("DROP TABLE IF EXISTS structure_components CASCADE"))
-    conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
-    conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
+def wait_for_db():
+    print("Waiting for database connection...")
+    retries = 20
+    while retries > 0:
+        try:
+            # Attempt to connect to the engine
+            with engine.connect() as conn:
+                print("✅ Database connection successful!")
+                return
+        except (OperationalError, Exception) as e:
+            retries -= 1
+            print(f"❌ Database not ready ({e}). Retrying in 2 seconds... ({retries} retries left)")
+            time.sleep(2)
+    print("FATAL: Could not connect to database. Exiting.")
+    exit(1)
 
-# 🔥 Create tables in DB
-Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def startup_event():
+    # Ensure database is ready
+    wait_for_db()
 
-with SessionLocal() as db:
-    DocumentService.seed_document_types(db)
-    # Start the automated salary slip dispatch scheduler
-    start_dispatch_scheduler()
+    # Drop legacy salary structure tables if they still exist
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS structure_components CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
+
+    # 🔥 Create tables in DB
+    Base.metadata.create_all(bind=engine)
+
+    with SessionLocal() as db:
+        DocumentService.seed_document_types(db)
+        # Start the automated salary slip dispatch scheduler
+        start_dispatch_scheduler()
 
 uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploads'))
 os.makedirs(uploads_dir, exist_ok=True)

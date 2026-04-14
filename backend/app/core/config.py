@@ -20,8 +20,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
+        env_file=None,  # Rely primarily on environment variables
         extra="ignore"
     )
 
