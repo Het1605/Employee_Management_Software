@@ -20,14 +20,14 @@ app = FastAPI(title=settings.PROJECT_NAME)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 def wait_for_db():
     print("Waiting for database connection...")
-    retries = 20
+    retries = 60 # Wait up to 120 seconds
     while retries > 0:
         try:
             # Attempt to connect to the engine
@@ -36,7 +36,7 @@ def wait_for_db():
                 return
         except (OperationalError, Exception) as e:
             retries -= 1
-            print(f"❌ Database not ready ({e}). Retrying in 2 seconds... ({retries} retries left)")
+            print(f"❌ Database not ready. Retrying in 2 seconds... ({retries} retries left) Error: {str(e)[:100]}...")
             time.sleep(2)
     print("FATAL: Could not connect to database. Exiting.")
     exit(1)

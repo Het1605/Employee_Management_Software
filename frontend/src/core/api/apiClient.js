@@ -27,7 +27,6 @@ API.interceptors.request.use(
   }
 );
 
-// Auto-logout if token expires or is invalid
 API.interceptors.response.use(
   (response) => {
     return response;
@@ -37,7 +36,12 @@ API.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       localStorage.removeItem('role');
-      window.location.href = '/'; 
+      
+      // ONLY redirect if the user isn't already on an auth page, to prevent reload loops
+      const path = window.location.pathname;
+      if (path !== '/' && path !== '/forgot-password' && path !== '/reset-password') {
+        window.location.href = '/'; 
+      }
     }
     return Promise.reject(error);
   }

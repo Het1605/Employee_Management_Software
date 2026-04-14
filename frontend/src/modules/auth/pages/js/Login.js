@@ -65,7 +65,7 @@ function Login() {
       }
 
     } catch (err) {
-      let errorMsg = "Login Failed: Invalid credentials";
+      let errorMsg = "Login Failed: Network or Server Error";
       if (err.response?.data?.detail) {
         if (typeof err.response.data.detail === "string") {
           errorMsg = err.response.data.detail;
