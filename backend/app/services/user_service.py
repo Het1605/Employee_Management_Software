@@ -115,8 +115,11 @@ class UserService:
             )
 
     @staticmethod
-    def get_all_users(db: Session):
-        return db.query(User).all()
+    def get_all_users(db: Session, active_only: bool = False):
+        query = db.query(User)
+        if active_only:
+            query = query.filter(User.is_active == True)
+        return query.all()
 
     @staticmethod
     def change_password(db: Session, user_id: int, password_data: ChangePasswordRequest):

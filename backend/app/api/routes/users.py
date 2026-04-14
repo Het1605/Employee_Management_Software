@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.models import User
@@ -19,8 +19,12 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
 @router.get("/", response_model=List[UserResponse])
-def get_all_users(db: Session = Depends(get_db)):
-    return UserService.get_all_users(db)
+def get_all_users(
+    active_only: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return UserService.get_all_users(db, active_only=active_only)
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):

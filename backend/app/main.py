@@ -3,8 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.db.database import Base, engine
 from app.db import models
-from app.models import calendar  # Register Calendar models to Base
-from app.api.routes import auth, users, company, calendar, salary_component, salary_structure, document, attendance, leave_request
+from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides # Register Calendar models
+from app.api.routes.auth import router as auth_router
+from app.api.routes.users import router as users_router
+from app.api.routes.company import router as company_router
+from app.api.routes.calendar import router as calendar_router
+from app.api.routes.salary_component import router as salary_component_router
+from app.api.routes.salary_structure import router as salary_structure_router, assign_router as salary_assign_router
+from app.api.routes.document import router as document_router
+from app.api.routes.attendance import router as attendance_router
+from app.api.routes.leave_request import router as leave_request_router
+
 from app.core.config import settings
 from app.db.database import SessionLocal
 from app.services.document_service import DocumentService
@@ -52,7 +61,7 @@ def startup_event():
         conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
 
-    # 🔥 Create tables in DB
+    #  Create tables in DB
     Base.metadata.create_all(bind=engine)
 
     with SessionLocal() as db:
@@ -64,16 +73,16 @@ uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'upl
 os.makedirs(uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(company.router)
-app.include_router(calendar.router)
-app.include_router(salary_component.router)
-app.include_router(salary_structure.router)
-app.include_router(salary_structure.assign_router)
-app.include_router(document.router)
-app.include_router(attendance.router, prefix="/attendance", tags=["Attendance"])
-app.include_router(leave_request.router)
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(company_router)
+app.include_router(calendar_router)
+app.include_router(salary_component_router)
+app.include_router(salary_structure_router)
+app.include_router(salary_assign_router)
+app.include_router(document_router)
+app.include_router(attendance_router, prefix="/attendance", tags=["Attendance"])
+app.include_router(leave_request_router)
 
 @app.get("/")
 def home():

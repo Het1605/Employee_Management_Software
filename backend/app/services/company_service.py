@@ -117,14 +117,19 @@ class CompanyService:
 
     @staticmethod
     def get_assigned_users(db: Session, company_id: int):
-        company = CompanyService.get_company(db, company_id)
-        return company.users
+        return db.query(User).join(UserCompanyMapping).filter(
+            UserCompanyMapping.company_id == company_id,
+            User.is_active == True
+        ).all()
 
     @staticmethod
     def get_available_users(db: Session, company_id: int):
-        # Users NOT in this company
+        # Users NOT in this company AND ARE ACTIVE
         assigned_user_ids = db.query(UserCompanyMapping.user_id).filter(
             UserCompanyMapping.company_id == company_id
         ).all()
         assigned_ids = [uid[0] for uid in assigned_user_ids]
-        return db.query(User).filter(~User.id.in_(assigned_ids)).all()
+        return db.query(User).filter(
+            ~User.id.in_(assigned_ids),
+            User.is_active == True
+        ).all()
