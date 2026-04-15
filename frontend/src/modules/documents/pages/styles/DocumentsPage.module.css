@@ -663,14 +663,51 @@
     height: 28px;
     flex: 0 0 auto;
   }
-}
 
-@media (max-width: 480px) {
+  /* ─── View Modal: responsive on mobile ─── */
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+
   .modalCard {
+    max-width: 100%;
+    max-height: 95vh;
     border-radius: 12px;
   }
 
+  .modalHeader {
+    padding: 0.75rem 1rem;
+  }
+
+  .modalTitle {
+    font-size: 0.95rem;
+  }
+
+  .modalBody {
+    padding: 0.5rem;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Scale the A4 page to fit the modal width */
   .modalBody :global(.page) {
-    max-width: 100%;
+    transform-origin: top left;
+    transform: scale(var(--modal-page-scale, 0.36));
+    width: 794px;
+    height: 1123px;
+    overflow: hidden;
+  }
+
+  .modalBody {
+    --modal-page-scale: calc((100vw - 2rem) / 794);
+    min-height: calc(1123px * var(--modal-page-scale));
+    position: relative;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalBody {
+    --modal-page-scale: calc((100vw - 1.5rem) / 794);
+    min-height: calc(1123px * var(--modal-page-scale));
   }
 }
