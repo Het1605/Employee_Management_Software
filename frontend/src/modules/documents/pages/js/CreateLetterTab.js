@@ -169,6 +169,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   }, [selectedCompanyId, activeView, selectedDocType, setOfferUsers]);
 
   useEffect(() => {
+    const isOffer = selectedDocType?.name?.toLowerCase().includes('offer');
+    if (!isOffer) return;
     if (!offerUserId) {
       setUsername('');
       setPosition('');
@@ -179,9 +181,9 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     if (!found) return;
     const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
     setUsername(fullName);
-    if (!position && found.position) setPosition(found.position);
-    if (!startDate && found.start_date) setStartDate(found.start_date);
-  }, [offerUserId, offerUsers, position, startDate, setUsername, setPosition, setStartDate]);
+    if (found.position) setPosition(found.position);
+    if (found.start_date) setStartDate(found.start_date);
+  }, [offerUserId, offerUsers, selectedDocType]);
 
   useEffect(() => {
     const isIntern = selectedDocType?.name?.toLowerCase().includes('intern');
@@ -196,6 +198,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   }, [selectedCompanyId, activeView, selectedDocType, setInternUsers]);
 
   useEffect(() => {
+    const isIntern = selectedDocType?.name?.toLowerCase().includes('intern');
+    if (!isIntern) return;
     if (!internUserId) {
       setUsername('');
       setDepartment('');
@@ -205,10 +209,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const found = internUsers.find((u) => String(u.id) === String(internUserId));
     if (!found) return;
     const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
     setDepartment(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
-  }, [internUserId, internUsers, setUsername, setDepartment, setStartDate, setEndDate]);
+  }, [internUserId, internUsers, selectedDocType]);
 
   useEffect(() => {
     const isExperience = selectedDocType?.name?.toLowerCase().includes('experience');
@@ -223,6 +228,8 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   }, [selectedCompanyId, activeView, selectedDocType, setExperienceUsers]);
 
   useEffect(() => {
+    const isExperience = selectedDocType?.name?.toLowerCase().includes('experience');
+    if (!isExperience) return;
     if (!experienceUserId) {
       setUsername('');
       setPosition('');
@@ -232,10 +239,11 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     const found = experienceUsers.find((u) => String(u.id) === String(experienceUserId));
     if (!found) return;
     const fullName = found.full_name || `${found.first_name || ''} ${found.last_name || ''}`.trim();
+    setUsername(fullName);
     setPosition(found.position || '');
     setStartDate(found.start_date || '');
     setEndDate(found.end_date || '');
-  }, [experienceUserId, experienceUsers, setUsername, setPosition, setStartDate, setEndDate]);
+  }, [experienceUserId, experienceUsers, selectedDocType]);
 
   useEffect(() => {
     const isSalarySlip = selectedDocType?.name?.toLowerCase().includes('salary slip');
