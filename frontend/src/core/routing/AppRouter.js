@@ -71,6 +71,14 @@ const AppRouter = () => {
           } 
         />
         <Route 
+          path="/admin/company-assignment" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <CompanyAssignment />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/admin/calendar" 
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
@@ -96,6 +104,22 @@ const AppRouter = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/admin/documents" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <DocumentsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/leave-management" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <LeaveManagementPage />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* HR Routes */}
         <Route 
@@ -111,6 +135,22 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
               <UserManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/companies" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <CompanyManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/company-assignment" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <CompanyAssignment />
             </ProtectedRoute>
           } 
         />
@@ -136,6 +176,22 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
               <AttendanceManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/documents" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <DocumentsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/leave-management" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <LeaveManagementPage />
             </ProtectedRoute>
           } 
         />
