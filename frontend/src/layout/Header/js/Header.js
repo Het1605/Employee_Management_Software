@@ -12,6 +12,7 @@ const Header = ({ onToggleSidebar }) => {
   const username = localStorage.getItem('username') || 'User';
   const role = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
   const { companies, selectedCompanyId, setSelectedCompanyId, loadingCompanies } = useCompanyContext();
+  const selectedCompanyName = companies.find(c => String(c.id) === String(selectedCompanyId))?.name || '';
 
   const handleLogout = () => {
     localStorage.clear();
@@ -46,6 +47,7 @@ const Header = ({ onToggleSidebar }) => {
               value={selectedCompanyId || ''}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
               disabled={loadingCompanies || companies.length === 0}
+              title={selectedCompanyName}
             >
               <option value="" disabled>
                 {loadingCompanies ? 'Loading...' : 'Select Company'}

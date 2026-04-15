@@ -7,7 +7,7 @@ from app.db.database import get_db
 from app.db.models import LeaveRequest, User, UserCompanyMapping
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
 from app.api.dependencies.auth import get_current_user
-from app.schemas.leave_request import LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestOut, LeaveCalendarSummary
+from app.schemas.leave_request import LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, LeaveRequestOut, LeaveCalendarSummary
 from app.services.calendar_service import CalendarService
 
 router = APIRouter(prefix="/leave-requests", tags=["Leave Management"])
@@ -18,10 +18,11 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
     if not mapping:
         raise HTTPException(status_code=400, detail="User does not belong to any company")
 
-    # Overlap check
+    # Overlap check (exclude soft-deleted)
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
         LeaveRequest.status != "rejected",
+        LeaveRequest.is_deleted == False,
         LeaveRequest.start_date <= request.end_date,
         LeaveRequest.end_date >= request.start_date
     ).first()
@@ -55,7 +56,11 @@ def get_my_leaves(db: Session = Depends(get_db), current_user: User = Depends(ge
     if not mapping:
         return []
 
-    query = db.query(LeaveRequest).filter(LeaveRequest.user_id == current_user.id, LeaveRequest.company_id == mapping.company_id)
+    query = db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.company_id == mapping.company_id,
+        LeaveRequest.is_deleted == False
+    )
     return query.order_by(LeaveRequest.applied_at.desc()).all()
 
 @router.get("", response_model=List[LeaveRequestOut])
@@ -63,7 +68,10 @@ def get_all_leaves(company_id: int = Query(..., description="ID of the selected 
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to view all leaves")
         
-    leaves = db.query(LeaveRequest).filter(LeaveRequest.company_id == company_id).order_by(LeaveRequest.applied_at.desc()).all()
+    leaves = db.query(LeaveRequest).filter(
+        LeaveRequest.company_id == company_id,
+        LeaveRequest.is_deleted == False
+    ).order_by(LeaveRequest.applied_at.desc()).all()
     return leaves
 
 @router.put("/{leave_id}", response_model=LeaveRequestOut)
@@ -71,14 +79,144 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to approve or reject leaves")
         
-    db_request = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
+    db_request = db.query(LeaveRequest).filter(
+        LeaveRequest.id == leave_id,
+        LeaveRequest.is_deleted == False
+    ).first()
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
-        
+
+    if db_request.status != "pending":
+        raise HTTPException(status_code=400, detail="Only pending leave requests can be approved or rejected")
+
     db_request.status = request.status
     db_request.reviewed_by = current_user.id
     db_request.reviewed_at = datetime.utcnow()
     
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+# ─── Employee Edit ───────────────────────────────────────────────────────────
+@router.patch("/{leave_id}/edit", response_model=LeaveRequestOut)
+def employee_edit_leave(
+    leave_id: int,
+    request: LeaveRequestEdit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Employee edits their own leave request.
+    - Allowed when status is PENDING or APPROVED.
+    - If APPROVED, status resets to PENDING for re-review.
+    - REJECTED leaves cannot be edited.
+    """
+    db_request = db.query(LeaveRequest).filter(
+        LeaveRequest.id == leave_id,
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.is_deleted == False
+    ).first()
+
+    if not db_request:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    if db_request.status == "rejected":
+        raise HTTPException(status_code=400, detail="Cannot edit a rejected leave request")
+
+    # If currently approved, reset to pending for re-review
+    if db_request.status == "approved":
+        db_request.status = "pending"
+        db_request.reviewed_by = None
+        db_request.reviewed_at = None
+
+    # Update fields based on leave type
+    db_request.leave_type = request.leave_type
+    db_request.start_date = request.start_date
+
+    if request.leave_type == "HALF_DAY":
+        db_request.end_date = request.start_date
+        db_request.total_days = 0.5
+    else:
+        db_request.end_date = request.end_date
+        db_request.total_days = (request.end_date - request.start_date).days + 1
+
+    if request.reason is not None:
+        db_request.reason = request.reason
+
+    # Overlap check (exclude self and soft-deleted)
+    overlap = db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.id != leave_id,
+        LeaveRequest.status != "rejected",
+        LeaveRequest.is_deleted == False,
+        LeaveRequest.start_date <= db_request.end_date,
+        LeaveRequest.end_date >= db_request.start_date
+    ).first()
+
+    if overlap:
+        raise HTTPException(status_code=400, detail="Updated dates overlap with an existing leave request")
+
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+# ─── Employee Delete (soft) ──────────────────────────────────────────────────
+@router.delete("/{leave_id}/my", response_model=LeaveRequestOut)
+def employee_delete_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Employee soft-deletes their own leave request (any status).
+    """
+    db_request = db.query(LeaveRequest).filter(
+        LeaveRequest.id == leave_id,
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.is_deleted == False
+    ).first()
+
+    if not db_request:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    db_request.is_deleted = True
+    db_request.deleted_by = "EMPLOYEE"
+    db_request.deleted_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+# ─── Admin Delete (soft) ─────────────────────────────────────────────────────
+@router.delete("/{leave_id}", response_model=LeaveRequestOut)
+def admin_delete_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Admin/HR soft-deletes a leave request.
+    - NOT allowed when status is PENDING.
+    - Only allowed when status is APPROVED or REJECTED.
+    """
+    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete leave requests")
+
+    db_request = db.query(LeaveRequest).filter(
+        LeaveRequest.id == leave_id,
+        LeaveRequest.is_deleted == False
+    ).first()
+
+    if not db_request:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    if db_request.status == "pending":
+        raise HTTPException(status_code=400, detail="Cannot delete a pending leave request. Approve or reject it first.")
+
+    db_request.is_deleted = True
+    db_request.deleted_by = "ADMIN"
+    db_request.deleted_at = datetime.utcnow()
+
     db.commit()
     db.refresh(db_request)
     return db_request
@@ -99,10 +237,11 @@ def get_calendar_summary(
     last_day = calendar.monthrange(year, month)[1]
     end_date = date(year, month, last_day)
 
-    # 2. Fetch all approved leaves for the company in this month
+    # 2. Fetch all approved leaves for the company in this month (exclude soft-deleted)
     leaves = db.query(LeaveRequest).filter(
         LeaveRequest.company_id == company_id,
         LeaveRequest.status == "approved",
+        LeaveRequest.is_deleted == False,
         LeaveRequest.start_date <= end_date,
         LeaveRequest.end_date >= start_date
     ).all()

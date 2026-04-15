@@ -28,8 +28,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project code
 COPY . .
 
-# Ensure uploads directory exists
-RUN mkdir -p uploads
+# Ensure uploads directory exists (inside container, backed by Docker volume)
+RUN mkdir -p /app/uploads/documents
 
 EXPOSE 8000
 

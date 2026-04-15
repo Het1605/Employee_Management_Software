@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
 
+# DB COmmend -> docker exec -it employee_db psql -U postgres -d employee_db
+
 class User(Base):
     __tablename__ = "users"
 
@@ -207,6 +209,9 @@ class LeaveRequest(Base):
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+    deleted_by = Column(String, nullable=True)  # 'EMPLOYEE' or 'ADMIN'
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", foreign_keys=[user_id])
     reviewer = relationship("User", foreign_keys=[reviewed_by])

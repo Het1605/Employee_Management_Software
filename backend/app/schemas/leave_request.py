@@ -37,6 +37,35 @@ class LeaveRequestUpdate(BaseModel):
             raise ValueError('status must be approved or rejected')
         return values
 
+
+class LeaveRequestEdit(BaseModel):
+    """Schema for employee editing their own leave request."""
+    start_date: date
+    end_date: Optional[date] = None
+    reason: Optional[str] = None
+    leave_type: str = "FULL_DAY"
+
+    @root_validator(pre=True)
+    def validate_edit(cls, values):
+        start_date = values.get('start_date')
+        end_date = values.get('end_date')
+        leave_type = values.get('leave_type', 'FULL_DAY')
+
+        if not start_date:
+            raise ValueError('start_date is required')
+
+        if leave_type == "FULL_DAY":
+            if not end_date:
+                raise ValueError('end_date is required for FULL_DAY leave')
+            if start_date > end_date:
+                raise ValueError('start_date must be less than or equal to end_date')
+
+        if leave_type == "HALF_DAY" and end_date and start_date != end_date:
+            raise ValueError('HALF_DAY leave must be for a single date')
+
+        return values
+
+
 class LeaveRequestOutUser(BaseModel):
     id: int
     first_name: str
@@ -55,6 +84,9 @@ class LeaveRequestOut(LeaveRequestBase):
     applied_at: datetime
     reviewed_by: Optional[int] = None
     reviewed_at: Optional[datetime] = None
+    is_deleted: bool = False
+    deleted_by: Optional[str] = None
+    deleted_at: Optional[datetime] = None
     
     # We optionally include the user for HR view
     user: Optional[LeaveRequestOutUser] = None

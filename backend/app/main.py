@@ -61,6 +61,11 @@ def startup_event():
         conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
 
+        # Add soft-delete columns to leave_requests (safe idempotent migration)
+        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE"))
+        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_by VARCHAR NULL"))
+        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL"))
+
     #  Create tables in DB
     Base.metadata.create_all(bind=engine)
 
@@ -69,9 +74,9 @@ def startup_event():
         # Start the automated salary slip dispatch scheduler
         start_dispatch_scheduler()
 
-uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploads'))
-os.makedirs(uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+UPLOADS_DIR = "/app/uploads"
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.include_router(auth_router)
 app.include_router(users_router)

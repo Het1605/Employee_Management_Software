@@ -41,15 +41,15 @@
 .companySelectContainer {
   display: flex;
   align-items: center;
-  position: relative;
   background-color: #f8fafc;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 8px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s;
   height: 40px;
-  min-width: 0; /* Important for truncation */
-  max-width: 320px; /* Prevent it from getting too large on desktop */
+  min-width: 0;
+  flex: 1;
+  max-width: 100%;
 }
 
 .companySelectContainer:hover {
@@ -68,34 +68,34 @@
   justify-content: center;
   color: #3b82f6;
   flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .companySelect {
-  padding: 0 32px 0 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
   border: none;
   background-color: transparent;
   color: #0f172a;
   font-size: 0.875rem;
   font-weight: 600;
-  width: 100%;
   cursor: pointer;
   outline: none;
   appearance: none;
-  z-index: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  z-index: 1;
 }
 
 .selectArrow {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   color: #94a3b8;
   pointer-events: none;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .rightSection {
@@ -249,7 +249,7 @@
   }
   
   .companySelectContainer {
-    max-width: 150px; /* Stricter truncation on small screens */
+    max-width: 100%;
   }
 
   /* Ensure items stay centered and don't overflow */
@@ -269,11 +269,11 @@
   }
   
   .companySelectContainer {
-    max-width: 120px;
-    padding: 0 8px;
+    max-width: 100%;
+    padding: 0 4px;
   }
   
   .companyIcon {
-    display: none; /* Save space on very small screens */
+    display: none;
   }
 }

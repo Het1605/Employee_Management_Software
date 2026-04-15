@@ -108,6 +108,7 @@ class DocumentService:
         leaves = db.query(LeaveRequest).filter(
             LeaveRequest.user_id == user_id,
             LeaveRequest.status == "approved",
+            LeaveRequest.is_deleted == False,
             LeaveRequest.start_date <= month_end,
             LeaveRequest.end_date >= month_start
         ).all()
@@ -313,14 +314,13 @@ class DocumentService:
             form.update(metrics)
             data.form_data = form
 
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-        upload_dir = os.path.join(base_dir, 'uploads', 'documents')
+        upload_dir = "/app/uploads/documents"
         os.makedirs(upload_dir, exist_ok=True)
 
         filename = f"{DocumentService._slugify(data.title)}_{int(time.time())}.pdf"
         file_path = os.path.join(upload_dir, filename)
 
-        HTML(string=data.content, base_url=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))).write_pdf(file_path)
+        HTML(string=data.content, base_url="/app").write_pdf(file_path)
 
         file_url = f"/uploads/documents/{filename}"
 
@@ -387,10 +387,9 @@ class DocumentService:
             setattr(document, key, value)
 
         if data.content:
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
             if document.file_name:
-                file_path = os.path.join(base_dir, 'uploads', 'documents', document.file_name)
-                HTML(string=data.content, base_url=base_dir).write_pdf(file_path)
+                file_path = os.path.join("/app/uploads/documents", document.file_name)
+                HTML(string=data.content, base_url="/app").write_pdf(file_path)
 
         db.commit()
         db.refresh(document)
@@ -428,12 +427,10 @@ class DocumentService:
         error_msg = None
 
         try:
-            # Resolve file path from file_url
+            # Resolve file path from file_url (Docker volume: /app/uploads/...)
             file_path = None
             if document.file_url:
-                relative = document.file_url.lstrip("/")
-                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-                candidate = os.path.join(base_dir, relative)
+                candidate = os.path.join("/app", document.file_url.lstrip("/"))
                 if os.path.isfile(candidate):
                     file_path = candidate
 
