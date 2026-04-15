@@ -268,6 +268,7 @@ const SalaryStructureManagement = () => {
             structures={structuresList}
             companyId={selectedCompanyId}
             editData={editingAssignment}
+            assignments={assignments}
           />
         )}
       </div>
@@ -349,7 +350,7 @@ const AssignmentTab = ({ companyId, users, structures, assignments, loading, onO
   );
 };
 
-const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editData }) => {
+const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editData, assignments = [] }) => {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedStructure, setSelectedStructure] = useState('');
   const [ctc, setCtc] = useState('');
@@ -391,7 +392,14 @@ const AssignmentModal = ({ isOpen, onClose, users, structures, companyId, editDa
             <label>User</label>
             <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} required>
               <option value="" disabled>Select user</option>
-              {users.map((user) => (
+              {users
+                .filter((user) => {
+                  // When editing, always show the currently assigned user
+                  if (editData && Number(user.id) === Number(editData.user_id)) return true;
+                  // Hide users who already have an assignment
+                  return !assignments.some((a) => Number(a.user_id) === Number(user.id));
+                })
+                .map((user) => (
                 <option key={user.id} value={user.id}>{user.full_name || `${user.first_name} ${user.last_name}`.trim()}</option>
               ))}
             </select>
@@ -465,13 +473,6 @@ const ComponentsTab = ({ components, setComponents, isModalOpen, setIsModalOpen,
     }
   };
 
-  const handleToggle = (id) => {
-    const comp = components.find((c) => c.id === id);
-    if (!comp || !companyId) return;
-    API.patch(`/salary-components/${id}/status?company_id=${companyId}`, { is_active: !comp.is_active })
-      .then(() => refreshComponents())
-      .catch((err) => showToast('Update failed: ' + handleApiError(err), 'error'));
-  };
 
   const handleDelete = (comp) => {
     if (window.confirm(`Delete component "${comp.name}"?`)) {
@@ -525,16 +526,6 @@ const ComponentsTab = ({ components, setComponents, isModalOpen, setIsModalOpen,
                 <span className={`${styles.badge} ${comp.is_taxable ? styles.badgeTaxable : styles.badgeNonTaxable}`}>
                   {comp.is_taxable ? 'Taxable' : 'Non-Taxable'}
                 </span>
-              </div>
-
-              <div className={styles.cardBottom}>
-                <div className={styles.statusToggle}>
-                  <label className={styles.switch}>
-                    <input type="checkbox" checked={comp.is_active} onChange={() => handleToggle(comp.id)} />
-                    <span className={styles.slider}></span>
-                  </label>
-                  <span className={styles.statusLabel}>{comp.is_active ? 'Active' : 'Inactive'}</span>
-                </div>
               </div>
             </div>
           ))

@@ -66,6 +66,9 @@ def startup_event():
         conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_by VARCHAR NULL"))
         conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL"))
 
+        # Remove is_active from salary_components (no longer used)
+        conn.execute(text("ALTER TABLE salary_components DROP COLUMN IF EXISTS is_active"))
+
     #  Create tables in DB
     Base.metadata.create_all(bind=engine)
 

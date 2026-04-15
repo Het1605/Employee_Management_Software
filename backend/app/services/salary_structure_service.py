@@ -39,10 +39,8 @@ class SalaryStructureService:
             )
 
     @staticmethod
-    def get_salary_components(db: Session, company_id: int, is_active: Optional[bool] = None):
+    def get_salary_components(db: Session, company_id: int):
         query = db.query(SalaryComponent).filter(SalaryComponent.company_id == company_id)
-        if is_active is not None:
-            query = query.filter(SalaryComponent.is_active == is_active)
         return query.all()
 
     @staticmethod
@@ -79,13 +77,6 @@ class SalaryStructureService:
         db.commit()
         return {"detail": "Component deleted successfully"}
 
-    @staticmethod
-    def update_salary_component_status(db: Session, component_id: int, company_id: int, data):
-        component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
-        component.is_active = data.is_active
-        db.commit()
-        db.refresh(component)
-        return component
 
     # ---------- Salary Structure Definitions ----------
     @staticmethod

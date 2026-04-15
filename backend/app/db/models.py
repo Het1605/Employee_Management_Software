@@ -77,7 +77,6 @@ class SalaryComponent(Base):
     name = Column(String, index=True, nullable=False)
     type = Column(Enum(ComponentType), nullable=False)
     is_taxable = Column(Boolean, default=True)
-    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

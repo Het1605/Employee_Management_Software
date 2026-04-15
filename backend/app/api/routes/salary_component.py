@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
-from typing import List,Optional
+from typing import List
 from fastapi import Query
 
 
 from app.db.database import get_db
 from app.schemas.salary_structure import (
-    SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse, SalaryStatusUpdate
+    SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
 )
 from app.services.salary_structure_service import SalaryStructureService
 
@@ -22,10 +22,9 @@ def create_component(
 @router.get("/", response_model=List[SalaryComponentResponse])
 def get_components(
     company_id: int = Query(...),
-    is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
-    return SalaryStructureService.get_salary_components(db,company_id, is_active)
+    return SalaryStructureService.get_salary_components(db, company_id)
 
 @router.get("/{component_id}", response_model=SalaryComponentResponse)
 def get_component(
@@ -42,16 +41,7 @@ def update_component(
     company_id: int = Query(...),
     db: Session = Depends(get_db)
 ):
-    return SalaryStructureService.update_salary_component(db, component_id,company_id, data)
-
-@router.patch("/{component_id}/status", response_model=SalaryComponentResponse)
-def patch_component_status(
-    component_id: int,
-    data: SalaryStatusUpdate,
-    company_id: int = Query(...),
-    db: Session = Depends(get_db)
-):
-    return SalaryStructureService.update_salary_component_status(db, component_id, company_id, data)
+    return SalaryStructureService.update_salary_component(db, component_id, company_id, data)
 
 @router.delete("/{component_id}")
 def delete_component(

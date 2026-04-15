@@ -10,7 +10,6 @@ class SalaryComponentResponse(BaseModel):
     name: str
     type: ComponentType
     is_taxable: bool
-    is_active: bool
 
     class Config:
         from_attributes = True
@@ -25,10 +24,6 @@ class SalaryComponentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     type: Optional[ComponentType] = None
     is_taxable: Optional[bool] = None
-    is_active: Optional[bool] = None
-
-class SalaryStatusUpdate(BaseModel):
-    is_active: bool
 
 # ---------------- New Salary Structure Schema ----------------
 
