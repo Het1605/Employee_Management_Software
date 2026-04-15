@@ -42,13 +42,13 @@ export function generateSalarySlipTemplate1(payload) {
           @page { size: A4; margin: 0; }
           * { box-sizing: border-box; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; line-height: 1.5; }
-          .page { width: 794px; height: 1123px; margin: 0 auto; display: flex; flex-direction: column; box-sizing: border-box; }
-          .header { width: 100%; flex: 0 0 auto; margin: 0; padding: 0; }
+          .page { width: 794px; height: 1123px; margin: 0 auto; position: relative; box-sizing: border-box; overflow: hidden; }
+          .header { width: 100%; margin: 0; padding: 0; }
           .header img { width: 100%; display: block; margin: 0; padding: 0; }
-          .content-area { flex: 1 1 auto; padding: 40px; padding-bottom: 180px; overflow: hidden; }
-          .footer { width: 100%; flex: 0 0 auto; }
+          .content-area { padding: 40px; padding-bottom: 50px; }
+          .footer { position: absolute; bottom: 0; left: 0; width: 100%; }
           .footer img { width: 100%; display: block; }
-          img { max-width: 100%; height: auto; display: block; page-break-inside: avoid; }
+          img { max-width: 100%; height: auto; display: block; }
           
           .salary-title { text-align: center; margin-bottom: 24px; }
           .salary-title h2 { margin: 0; }
