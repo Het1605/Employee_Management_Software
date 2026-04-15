@@ -19,3 +19,21 @@
     margin-top: 0.5rem;
     font-size: 1rem;
 }
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0.75rem;
+    }
+
+    .pageHeader {
+        margin-bottom: 1.25rem;
+    }
+
+    .pageTitle {
+        font-size: 1.5rem;
+    }
+
+    .pageSubtitle {
+        font-size: 0.95rem;
+    }
+}
