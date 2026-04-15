@@ -17,7 +17,15 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setFormData({ ...formData, [name]: digitsOnly });
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = (e) => {
@@ -42,9 +50,15 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
       }
     }
 
+    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+
     // Prepare payload (avoid empty strings for optional dates)
     const payload = { ...formData };
     if (!payload.start_date) delete payload.start_date;
+    if (!payload.phone) delete payload.phone;
     
     // Cleanup for submission
     if (user) {
@@ -101,10 +115,17 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
             <label>Phone Number</label>
             <input 
               name="phone" 
+              type="tel"
               value={formData.phone} 
               onChange={handleChange} 
-              placeholder="+1 234 567 890"
+              placeholder="9876543210"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="[0-9]{10}"
             />
+            <small style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+              Enter exactly 10 digits
+            </small>
           </div>
           <div className={styles.inputGroup}>
             <label>Position</label>

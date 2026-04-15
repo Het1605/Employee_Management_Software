@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field, validator, computed_field
 from typing import Optional, Any
 from datetime import datetime, date
 from enum import Enum
+import re
 
 
 class UserRole(str, Enum):
@@ -28,6 +29,15 @@ class UserBase(BaseModel):
             return None
         return v
 
+    @validator("phone", pre=True)
+    def validate_phone(cls, v):
+        if v in (None, ""):
+            return None
+        phone = str(v).strip()
+        if not re.fullmatch(r"\d{10}", phone):
+            raise ValueError("Phone number must be exactly 10 digits")
+        return phone
+
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
     confirm_password: str = Field(..., min_length=8)
@@ -53,6 +63,15 @@ class UserUpdate(BaseModel):
         if v == "":
             return None
         return v
+
+    @validator("phone", pre=True)
+    def validate_phone(cls, v):
+        if v in (None, ""):
+            return None
+        phone = str(v).strip()
+        if not re.fullmatch(r"\d{10}", phone):
+            raise ValueError("Phone number must be exactly 10 digits")
+        return phone
 
 class UserResponse(UserBase):
     id: int
@@ -87,5 +106,4 @@ class ResignationRequest(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
-
 
