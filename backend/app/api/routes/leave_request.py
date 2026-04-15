@@ -86,9 +86,6 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    if db_request.status != "pending":
-        raise HTTPException(status_code=400, detail="Only pending leave requests can be approved or rejected")
-
     db_request.status = request.status
     db_request.reviewed_by = current_user.id
     db_request.reviewed_at = datetime.utcnow()
