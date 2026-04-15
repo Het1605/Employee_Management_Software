@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from '../../../pages/styles/DocumentsPage.module.css';
+import DocumentInputField from '../../shared/DocumentInputField';
 
 export const InternshipForm1 = ({
   users,
@@ -19,26 +20,24 @@ export const InternshipForm1 = ({
   onIncludeFooterChange,
   generating,
   onGenerate,
+  errors = {},
   submitLabel = 'Generate PDF',
 }) => (
   <div className={styles.formColumn}>
     <div className={styles.formGrid}>
       {/* 2. Date */}
-      <div className={styles.formField}>
-        <label>Date (DD Mon, YYYY)</label>
+      <DocumentInputField label="Date (DD Mon, YYYY)" required error={errors.offer_date}>
         <input type="date" value={offerDate} onChange={(e) => onOfferDateChange(e.target.value)} />
-      </div>
+      </DocumentInputField>
       {/* 3. Title */}
-      <div className={styles.formField}>
-        <label>Title</label>
+      <DocumentInputField label="Title" required error={errors.personTitle}>
         <select value={personTitle} onChange={(e) => onPersonTitleChange(e.target.value)}>
           <option value="Mr">Mr</option>
           <option value="Ms">Ms</option>
         </select>
-      </div>
+      </DocumentInputField>
       {/* 4. Name */}
-      <div className={styles.formField}>
-        <label>Intern Name</label>
+      <DocumentInputField label="Intern Name" required error={errors.user_id}>
         <select value={selectedUserId} onChange={(e) => onUserChange(e.target.value)}>
           <option value="">Select intern</option>
           {users.map((u) => (
@@ -47,32 +46,30 @@ export const InternshipForm1 = ({
             </option>
           ))}
         </select>
-      </div>
+      </DocumentInputField>
       {/* 5. Department */}
-      <div className={styles.formField}>
-        <label>Department</label>
+      <DocumentInputField label="Department" required error={errors.department}>
         <input type="text" value={department} onChange={(e) => onDepartmentChange(e.target.value)} placeholder="Enter department" />
-      </div>
+      </DocumentInputField>
       {/* 6. Start date */}
-      <div className={styles.formField}>
-        <label>Start Date</label>
+      <DocumentInputField label="Start Date" required error={errors.start_date}>
         <input type="date" value={startDate} onChange={(e) => onStartDateChange(e.target.value)} />
-      </div>
+      </DocumentInputField>
       {/* 7. End date */}
-      <div className={styles.formField}>
-        <label>End Date</label>
+      <DocumentInputField label="End Date" required error={errors.end_date}>
         <input type="date" value={endDate} onChange={(e) => onEndDateChange(e.target.value)} />
-      </div>
+      </DocumentInputField>
       {/* 8. Footer */}
       <div className={styles.formField}>
-        <label className={styles.checkboxRow}>
+        <label className={styles.fieldLabel}>Include Footer</label>
+        <div className={styles.checkboxRow}>
           <input
             type="checkbox"
             checked={includeFooter}
             onChange={(e) => onIncludeFooterChange(e.target.checked)}
           />
-          Include Footer
-        </label>
+          <span>Use company footer</span>
+        </div>
       </div>
     </div>
     <div className={styles.actionsRow}>

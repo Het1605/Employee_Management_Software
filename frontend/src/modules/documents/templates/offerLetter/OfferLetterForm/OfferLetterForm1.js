@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from '../../../pages/styles/DocumentsPage.module.css';
+import DocumentInputField from '../../shared/DocumentInputField';
 
 export const OfferLetterForm1 = ({
   users,
@@ -15,12 +16,12 @@ export const OfferLetterForm1 = ({
   onIncludeFooterChange,
   generating,
   onGenerate,
+  errors = {},
   submitLabel = 'Generate PDF',
 }) => (
   <div className={styles.formColumn}>
     <div className={styles.formGrid}>
-      <div className={styles.formField}>
-        <label>User</label>
+      <DocumentInputField label="User" required error={errors.user_id}>
         <select value={selectedUserId} onChange={(e) => onUserChange(e.target.value)}>
           {users.length === 0 ? (
             <option value="">No users available for this company</option>
@@ -35,21 +36,18 @@ export const OfferLetterForm1 = ({
             </>
           )}
         </select>
-      </div>
-      <div className={styles.formField}>
-        <label>Date</label>
+      </DocumentInputField>
+      <DocumentInputField label="Date" required error={errors.offer_date}>
         <input type="date" value={offerDate} onChange={(e) => onOfferDateChange(e.target.value)} />
-      </div>
-      <div className={styles.formField}>
-        <label>Position</label>
+      </DocumentInputField>
+      <DocumentInputField label="Position" required error={errors.position}>
         <input type="text" value={position} onChange={(e) => onPositionChange(e.target.value)} placeholder="Enter position" />
-      </div>
-      <div className={styles.formField}>
-        <label>Start Date</label>
+      </DocumentInputField>
+      <DocumentInputField label="Start Date" required error={errors.start_date}>
         <input type="date" value={startDate} onChange={(e) => onStartDateChange(e.target.value)} />
-      </div>
+      </DocumentInputField>
       <div className={styles.formField}>
-        <label>Include Footer</label>
+        <label className={styles.fieldLabel}>Include Footer</label>
         <div className={styles.checkboxRow}>
           <input
             type="checkbox"

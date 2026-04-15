@@ -14,6 +14,7 @@ import { SalarySlipForm1 } from '../../templates/salarySlip/SalarySlipForm/Salar
 import { SalarySlipPreview1 } from '../../templates/salarySlip/SalarySlipPreview/SalarySlipPreview1';
 import { SalarySlipForm2 } from '../../templates/salarySlip/SalarySlipForm/SalarySlipForm2';
 import { SalarySlipPreview2 } from '../../templates/salarySlip/SalarySlipPreview/SalarySlipPreview2';
+import DocumentInputField from '../../templates/shared/DocumentInputField';
 import styles from '../styles/DocumentsPage.module.css';
 
 const CreateLetterTab = ({ activeView, setActiveView }) => {
@@ -51,6 +52,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   const [includeFooter, setIncludeFooter] = useState(true);
   const [department, setDepartment] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const selectedDocType = useMemo(
     () => documentTypes.find((t) => String(t.id) === String(documentTypeId)),
@@ -61,6 +63,169 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     () => companies.find((c) => String(c.id) === String(selectedCompanyId)),
     [companies, selectedCompanyId]
   );
+
+  const clearFieldError = React.useCallback((fieldName) => {
+    setFieldErrors((prev) => {
+      if (!prev[fieldName]) return prev;
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
+  }, []);
+
+  const setTitleValue = React.useCallback((value) => {
+    setTitle(value);
+    clearFieldError('title');
+  }, [clearFieldError]);
+
+  const setDocumentTypeValue = React.useCallback((value) => {
+    setDocumentTypeId(value);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next.documentTypeId;
+      delete next.user_id;
+      delete next.offer_date;
+      delete next.position;
+      delete next.start_date;
+      delete next.end_date;
+      delete next.department;
+      delete next.month;
+      delete next.year;
+      delete next.template_id;
+      delete next.personTitle;
+      return next;
+    });
+  }, []);
+
+  const setOfferUserValue = React.useCallback((value) => {
+    setOfferUserId(value);
+    clearFieldError('user_id');
+  }, [clearFieldError]);
+
+  const setInternUserValue = React.useCallback((value) => {
+    setInternUserId(value);
+    clearFieldError('user_id');
+  }, [clearFieldError]);
+
+  const setExperienceUserValue = React.useCallback((value) => {
+    setExperienceUserId(value);
+    clearFieldError('user_id');
+  }, [clearFieldError]);
+
+  const setSalarySlipUserValue = React.useCallback((value) => {
+    setSalarySlipUserId(value);
+    clearFieldError('user_id');
+  }, [clearFieldError]);
+
+  const setOfferDateValue = React.useCallback((value) => {
+    setOfferDate(value);
+    clearFieldError('offer_date');
+  }, [clearFieldError]);
+
+  const setPositionValue = React.useCallback((value) => {
+    setPosition(value);
+    clearFieldError('position');
+  }, [clearFieldError]);
+
+  const setStartDateValue = React.useCallback((value) => {
+    setStartDate(value);
+    clearFieldError('start_date');
+  }, [clearFieldError]);
+
+  const setEndDateValue = React.useCallback((value) => {
+    setEndDate(value);
+    clearFieldError('end_date');
+  }, [clearFieldError]);
+
+  const setDepartmentValue = React.useCallback((value) => {
+    setDepartment(value);
+    clearFieldError('department');
+  }, [clearFieldError]);
+
+  const setMonthValue = React.useCallback((value) => {
+    setMonth(value);
+    clearFieldError('month');
+  }, [clearFieldError]);
+
+  const setYearValue = React.useCallback((value) => {
+    setYear(value);
+    clearFieldError('year');
+  }, [clearFieldError]);
+
+  const setSalaryTemplateValue = React.useCallback((value) => {
+    setSalaryTemplateId(value);
+    clearFieldError('template_id');
+  }, [clearFieldError]);
+
+  const validateDocumentFields = React.useCallback(() => {
+    const errors = {};
+    const docName = selectedDocType?.name?.toLowerCase() || '';
+    const isIntern = docName.includes('intern');
+    const isExperience = docName.includes('experience');
+    const isSalarySlip = docName.includes('salary slip');
+
+    if (!selectedCompanyId) {
+      errors.companyId = 'Select a company from the header first.';
+    }
+    if (!title.trim()) {
+      errors.title = 'This field is required';
+    }
+    if (!documentTypeId) {
+      errors.documentTypeId = 'This field is required';
+    }
+
+    if (isSalarySlip) {
+      if (!salaryTemplateId) errors.template_id = 'This field is required';
+      if (!salarySlipUserId) errors.user_id = 'This field is required';
+      if (!month && salaryTemplateId === 'salaryTemplate1') errors.month = 'This field is required';
+      if (!year) errors.year = 'This field is required';
+    } else if (isIntern) {
+      if (!personTitle) errors.personTitle = 'This field is required';
+      if (!internUserId) errors.user_id = 'This field is required';
+      if (!department.trim()) errors.department = 'This field is required';
+      if (!startDate) errors.start_date = 'This field is required';
+      if (!endDate) errors.end_date = 'This field is required';
+      if (!offerDate) errors.offer_date = 'This field is required';
+    } else if (isExperience) {
+      if (!personTitle) errors.personTitle = 'This field is required';
+      if (!experienceUserId) errors.user_id = 'This field is required';
+      if (!position.trim()) errors.position = 'This field is required';
+      if (!startDate) errors.start_date = 'This field is required';
+      if (!endDate) errors.end_date = 'This field is required';
+      if (!offerDate) errors.offer_date = 'This field is required';
+    } else {
+      if (!offerUserId) errors.user_id = 'This field is required';
+      if (!position.trim()) errors.position = 'This field is required';
+      if (!startDate) errors.start_date = 'This field is required';
+      if (!offerDate) errors.offer_date = 'This field is required';
+    }
+
+    return errors;
+  }, [
+    selectedCompanyId,
+    selectedDocType,
+    title,
+    documentTypeId,
+    salaryTemplateId,
+    salarySlipUserId,
+    month,
+    year,
+    personTitle,
+    internUserId,
+    department,
+    startDate,
+    endDate,
+    offerDate,
+    experienceUserId,
+    position,
+    offerUserId,
+  ]);
+
+  useEffect(() => {
+    if (selectedCompanyId && fieldErrors.companyId) {
+      clearFieldError('companyId');
+    }
+  }, [selectedCompanyId, fieldErrors.companyId, clearFieldError]);
 
   // Live calculation for Salary Slip
   useEffect(() => {
@@ -154,6 +319,7 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
     setSalaryTemplateId('salaryTemplate1');
     setMonth(new Date().getMonth() + 1);
     setYear(new Date().getFullYear());
+    setFieldErrors({});
   }, []);
 
   useEffect(() => {
@@ -313,53 +479,15 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
   };
 
   const handleGeneratePdf = async () => {
-    if (!selectedCompanyId) {
-      showToast('Select a company from the header first.', 'error');
+    const errors = validateDocumentFields();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
     const docName = selectedDocType?.name?.toLowerCase() || '';
     const isInternship = docName.includes('intern');
     const isExperience = docName.includes('experience');
     const isSalarySlip = docName.includes('salary slip');
-
-    if (isSalarySlip) {
-        if (!title.trim() || !documentTypeId || !salarySlipUserId || !year) {
-            showToast('Please fill all required fields for Salary Slip.', 'error');
-            return;
-        }
-        if (salaryTemplateId === 'salaryTemplate1' && !month) {
-            showToast('Please select a month.', 'error');
-            return;
-        }
-    } else if (isInternship) {
-      if (!title.trim() || !documentTypeId || !internUserId || !personTitle || !department.trim() || !startDate || !endDate || !offerDate) {
-        showToast('Please select a user and fill all required fields.', 'error');
-        return;
-      }
-    } else if (isExperience) {
-      if (
-        !title.trim() ||
-        !documentTypeId ||
-        !personTitle ||
-        !experienceUserId ||
-        !position.trim() ||
-        !startDate ||
-        !endDate ||
-        !offerDate
-      ) {
-        showToast('Please select a user and fill all required fields.', 'error');
-        return;
-      }
-    } else {
-      if (!selectedCompany) {
-        showToast('Select a company from the header first.', 'error');
-        return;
-      }
-      if (!title.trim() || !documentTypeId || !offerUserId || !position.trim() || !startDate || !offerDate) {
-        showToast('Please select a user and fill all required fields.', 'error');
-        return;
-      }
-    }
     setGenerating(true);
     try {
       const templateType = isSalarySlip ? 'salary_slip' : isExperience ? 'experience_letter' : isInternship ? 'internship_letter' : 'offer_letter';
@@ -481,25 +609,32 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
         </div>
 
         <div className={styles.formGrid}>
-          <div className={styles.formField}>
-            <label>Title</label>
+          <DocumentInputField label="Title" required error={fieldErrors.title}>
             <input
               type="text"
               placeholder="Enter letter title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => setTitleValue(e.target.value)}
+              aria-invalid={!!fieldErrors.title}
             />
-          </div>
-          <div className={styles.formField}>
-            <label>Document Type</label>
-            <select value={documentTypeId} onChange={(e) => setDocumentTypeId(e.target.value)}>
+          </DocumentInputField>
+          <DocumentInputField label="Document Type" required error={fieldErrors.documentTypeId}>
+            <select
+              value={documentTypeId}
+              onChange={(e) => setDocumentTypeValue(e.target.value)}
+              aria-invalid={!!fieldErrors.documentTypeId}
+            >
               <option value="" disabled>Select type</option>
               {documentTypes.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-          </div>
+          </DocumentInputField>
         </div>
+
+        {fieldErrors.companyId && (
+          <div className={styles.inlineAlert}>{fieldErrors.companyId}</div>
+        )}
 
         {documentTypeId && (
           (() => {
@@ -514,21 +649,25 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 <InternshipForm1
                   users={internUsers}
                   selectedUserId={internUserId}
-                  onUserChange={setInternUserId}
+                  onUserChange={setInternUserValue}
                   offerDate={offerDate}
-                  onOfferDateChange={setOfferDate}
+                  onOfferDateChange={setOfferDateValue}
                   department={department}
-                  onDepartmentChange={setDepartment}
+                  onDepartmentChange={setDepartmentValue}
                   startDate={startDate}
-                  onStartDateChange={setStartDate}
+                  onStartDateChange={setStartDateValue}
                   endDate={endDate}
-                  onEndDateChange={setEndDate}
+                  onEndDateChange={setEndDateValue}
                   personTitle={personTitle}
-                  onPersonTitleChange={setPersonTitle}
+                  onPersonTitleChange={(value) => {
+                    setPersonTitle(value);
+                    clearFieldError('personTitle');
+                  }}
                   includeFooter={includeFooter}
                   onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  errors={fieldErrors}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <InternshipPreview1
@@ -550,21 +689,25 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 <ExperienceForm1
                   users={experienceUsers}
                   selectedUserId={experienceUserId}
-                  onUserChange={setExperienceUserId}
+                  onUserChange={setExperienceUserValue}
                   position={position}
-                  onPositionChange={setPosition}
+                  onPositionChange={setPositionValue}
                   startDate={startDate}
-                  onStartDateChange={setStartDate}
+                  onStartDateChange={setStartDateValue}
                   endDate={endDate}
-                  onEndDateChange={setEndDate}
+                  onEndDateChange={setEndDateValue}
                   offerDate={offerDate}
-                  onOfferDateChange={setOfferDate}
+                  onOfferDateChange={setOfferDateValue}
                   personTitle={personTitle}
-                  onPersonTitleChange={setPersonTitle}
+                  onPersonTitleChange={(value) => {
+                    setPersonTitle(value);
+                    clearFieldError('personTitle');
+                  }}
                   includeFooter={includeFooter}
                   onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  errors={fieldErrors}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <ExperiencePreview1
@@ -587,33 +730,35 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                   <SalarySlipForm2
                     users={salarySlipUsers}
                     selectedUserId={salarySlipUserId}
-                    onUserChange={setSalarySlipUserId}
+                    onUserChange={setSalarySlipUserValue}
                     year={year}
-                    onYearChange={setYear}
+                    onYearChange={setYearValue}
                     includeFooter={includeFooter}
                     onIncludeFooterChange={setIncludeFooter}
                     generating={generating}
                     onGenerate={handleGeneratePdf}
                     submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                     templateId={salaryTemplateId}
-                    onTemplateChange={setSalaryTemplateId}
+                    onTemplateChange={setSalaryTemplateValue}
+                    errors={fieldErrors}
                   />
                 ) : (
                   <SalarySlipForm1
                     users={salarySlipUsers}
                     selectedUserId={salarySlipUserId}
-                    onUserChange={setSalarySlipUserId}
+                    onUserChange={setSalarySlipUserValue}
                     month={month}
-                    onMonthChange={setMonth}
+                    onMonthChange={setMonthValue}
                     year={year}
-                    onYearChange={setYear}
+                    onYearChange={setYearValue}
                     includeFooter={includeFooter}
                     onIncludeFooterChange={setIncludeFooter}
                     generating={generating}
                     onGenerate={handleGeneratePdf}
                     submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                     templateId={salaryTemplateId}
-                    onTemplateChange={setSalaryTemplateId}
+                    onTemplateChange={setSalaryTemplateValue}
+                    errors={fieldErrors}
                   />
                 )}
                 {salaryTemplateId === 'salaryTemplate2' ? (
@@ -642,17 +787,18 @@ const CreateLetterTab = ({ activeView, setActiveView }) => {
                 <OfferLetterForm1
                   users={offerUsers}
                   selectedUserId={offerUserId}
-                  onUserChange={setOfferUserId}
+                  onUserChange={setOfferUserValue}
                   offerDate={offerDate}
-                  onOfferDateChange={setOfferDate}
+                  onOfferDateChange={setOfferDateValue}
                   position={position}
-                  onPositionChange={setPosition}
+                  onPositionChange={setPositionValue}
                   startDate={startDate}
-                  onStartDateChange={setStartDate}
+                  onStartDateChange={setStartDateValue}
                   includeFooter={includeFooter}
                   onIncludeFooterChange={setIncludeFooter}
                   generating={generating}
                   onGenerate={handleGeneratePdf}
+                  errors={fieldErrors}
                   submitLabel={editingDocId ? 'Update Document' : 'Generate PDF'}
                 />
                 <OfferLetterPreview1

@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from '../../../pages/styles/DocumentsPage.module.css';
+import DocumentInputField from '../../shared/DocumentInputField';
 
 export const SalarySlipForm1 = ({
   users,
@@ -15,21 +16,20 @@ export const SalarySlipForm1 = ({
   onGenerate,
   submitLabel,
   templateId,
-  onTemplateChange
+  onTemplateChange,
+  errors = {},
 }) => {
   return (
     <div className={styles.formColumn}>
       <div className={styles.formGrid}>
-        <div className={styles.formField}>
-          <label>Template</label>
+        <DocumentInputField label="Template" required error={errors.template_id}>
           <select value={templateId} onChange={(e) => onTemplateChange(e.target.value)}>
             <option value="salaryTemplate1">Salary Slip Template 1 (Monthly)</option>
             <option value="salaryTemplate2">Salary Slip Template 2 (Yearly Landscape)</option>
           </select>
-        </div>
+        </DocumentInputField>
 
-        <div className={styles.formField}>
-          <label>Employee</label>
+        <DocumentInputField label="Employee" required error={errors.user_id}>
           <select value={selectedUserId} onChange={(e) => onUserChange(e.target.value)}>
             <option value="">Select Employee</option>
             {users.map((u) => (
@@ -38,10 +38,9 @@ export const SalarySlipForm1 = ({
               </option>
             ))}
           </select>
-        </div>
+        </DocumentInputField>
 
-        <div className={styles.formField}>
-          <label>Month</label>
+        <DocumentInputField label="Month" required error={errors.month}>
           <select value={month} onChange={(e) => onMonthChange(e.target.value)}>
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i + 1} value={i + 1}>
@@ -49,19 +48,18 @@ export const SalarySlipForm1 = ({
               </option>
             ))}
           </select>
-        </div>
+        </DocumentInputField>
 
-        <div className={styles.formField}>
-          <label>Year</label>
+        <DocumentInputField label="Year" required error={errors.year}>
           <select value={year} onChange={(e) => onYearChange(e.target.value)}>
             {[2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-        </div>
+        </DocumentInputField>
 
         <div className={styles.formField}>
-          <label>Include Footer</label>
+          <label className={styles.fieldLabel}>Include Footer</label>
           <div className={styles.checkboxRow}>
             <input
               type="checkbox"
