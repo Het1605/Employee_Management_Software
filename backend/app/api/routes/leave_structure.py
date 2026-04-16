@@ -27,6 +27,7 @@ from app.schemas.leave_structure import (
     LeaveAssignmentOut,
     LeaveBalanceOut,
     LeaveDeductRequest,
+    LeaveDayType,
     LeaveStructureCreate,
     LeaveStructureOut,
 )
@@ -212,8 +213,24 @@ def deduct_leave_balance(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Deducts approved leave days from the user balance.
-    Called internally by the leave approval flow.
+    Deducts approved leave days from the user's active balance.
+    Called internally by the leave approval flow after a leave is approved.
+
+    **Half-day example:**
+    ```json
+    { "user_id": 1, "leave_category": "CL", "leave_day_type": "HALF_DAY", "days": 0.5 }
+    ```
+
+    **Full-day example (3 days):**
+    ```json
+    { "user_id": 1, "leave_category": "PL", "leave_day_type": "FULL_DAY", "days": 3 }
+    ```
+
+    Rejects the request if:
+    - The user has no leave structure assigned.
+    - The remaining balance is below 0.5 (minimum unit).
+    - The remaining balance is less than the requested days.
+
     Only ADMIN / HR / MANAGER can trigger deductions.
     """
     if current_user.role not in ("ADMIN", "HR", "MANAGER"):

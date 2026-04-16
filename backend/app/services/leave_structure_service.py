@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -50,9 +50,19 @@ def _now_utc() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
+# Smallest deductible leave unit — prevents sub-half-day deductions
+_MIN_LEAVE_UNIT = Decimal("0.5")
+
+
 def _monthly_value(total_days: int) -> Decimal:
-    """Round (total_days / 12) to 2 d.p."""
-    return Decimal(str(round(total_days / 12, 2)))
+    """
+    Compute monthly credit using pure Decimal arithmetic to avoid float drift.
+    Formula: total_days / 12, rounded to 2 decimal places.
+    Examples: 12 days → 1.00 | 15 days → 1.25 | 7 days → 0.58
+    """
+    return (Decimal(str(total_days)) / Decimal("12")).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
 
 
 def _get_current_year_month() -> tuple[int, int]:
@@ -298,14 +308,24 @@ class LeaveStructureService:
                 f"{request.leave_category.value} for this period."
             )
 
+        # Guard 1: user must hold at least the minimum leave unit (0.5)
+        if balance.remaining < _MIN_LEAVE_UNIT:
+            raise ValueError(
+                f"No {request.leave_category.value} balance remaining. "
+                f"Minimum required: {_MIN_LEAVE_UNIT} day(s), "
+                f"available: {balance.remaining}"
+            )
+
+        # Guard 2: remaining must cover the full requested amount
         if balance.remaining < request.days:
             raise ValueError(
                 f"Insufficient {request.leave_category.value} balance. "
                 f"Available: {balance.remaining}, requested: {request.days}"
             )
 
-        balance.used      += request.days
-        balance.remaining -= request.days
+        days = request.days.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        balance.used      = (balance.used + days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        balance.remaining = (balance.remaining - days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         db.commit()
         db.refresh(balance)
         return balance
@@ -354,8 +374,14 @@ class LeaveStructureService:
         if not balance:
             raise ValueError("Balance record not found for reversal.")
 
-        balance.used      = max(Decimal("0"), balance.used - request.days)
-        balance.remaining += request.days
+        days = request.days.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        balance.used = max(
+            Decimal("0"),
+            (balance.used - days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        )
+        balance.remaining = (balance.remaining + days).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
         db.commit()
         db.refresh(balance)
         return balance
@@ -501,7 +527,7 @@ def run_year_end_reset(target_year: Optional[int] = None) -> dict:
                             "user_id":    assignment.user_id,
                             "leave_type": detail.leave_type.value,
                             "year":       year,
-                            "days":       float(remaining),
+                            "days":       round(float(remaining), 2),
                         }
                     )
                     balance.remaining = Decimal("0")

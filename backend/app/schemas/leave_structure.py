@@ -3,6 +3,7 @@ Pydantic Schemas — Leave Structure & Assignment
 """
 
 from __future__ import annotations
+import enum
 from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional
 from datetime import datetime
@@ -99,14 +100,59 @@ class LeaveBalanceOut(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
+# Leave Day Type
+# ─────────────────────────────────────────────────────────────
+
+class LeaveDayType(str, enum.Enum):
+    """Granularity of a single leave request."""
+    FULL_DAY = "FULL_DAY"
+    HALF_DAY = "HALF_DAY"
+
+
+# ─────────────────────────────────────────────────────────────
 # Leave Deduction (used by leave management / approval flow)
 # ─────────────────────────────────────────────────────────────
 
 class LeaveDeductRequest(BaseModel):
     """
     Called by the leave approval flow to deduct days from the active balance.
-    leave_category is PL / CL / SL identifying which bucket to deduct from.
+
+    Fields:
+      - user_id        : Target user
+      - leave_category : PL / CL / SL — which bucket to deduct from
+      - leave_day_type : FULL_DAY (default) or HALF_DAY
+      - days           : Total days to deduct.
+                         Must be exactly 0.5 for HALF_DAY;
+                         a whole positive integer (≥ 1) for FULL_DAY.
+
+    Examples:
+      Half day    → { "leave_day_type": "HALF_DAY", "days": 0.5 }
+      2 full days → { "leave_day_type": "FULL_DAY",  "days": 2   }
     """
     user_id:        int
     leave_category: LeaveType
-    days:           Decimal = Field(..., gt=0)
+    leave_day_type: LeaveDayType = LeaveDayType.FULL_DAY
+    days:           Decimal = Field(
+        ...,
+        ge=Decimal("0.5"),
+        description=(
+            "Total days to deduct. "
+            "Use 0.5 for HALF_DAY; a whole number ≥ 1 for FULL_DAY."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_days_for_leave_day_type(self) -> "LeaveDeductRequest":
+        """Ensure `days` is consistent with `leave_day_type`."""
+        if self.leave_day_type == LeaveDayType.HALF_DAY:
+            if self.days != Decimal("0.5"):
+                raise ValueError(
+                    "For HALF_DAY leave, days must be exactly 0.5"
+                )
+        else:  # FULL_DAY
+            # days must be a whole number (1, 2, 3 …)
+            if self.days % Decimal("1") != Decimal("0") or self.days < Decimal("1"):
+                raise ValueError(
+                    "For FULL_DAY leave, days must be a whole number ≥ 1 (e.g. 1, 2, 3)"
+                )
+        return self
