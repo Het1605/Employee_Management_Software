@@ -37,8 +37,10 @@ from app.models.leave_structure import (
 )
 from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
+    LeaveAssignmentUpdate,
     LeaveDeductRequest,
     LeaveStructureCreate,
+    LeaveStructureUpdate,
 )
 
 
@@ -385,6 +387,199 @@ class LeaveStructureService:
         db.commit()
         db.refresh(balance)
         return balance
+
+    # ──────────────────────────────────────────
+    # 7. Update Leave Structure
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def update_structure(
+        db: Session, structure_id: int, payload: LeaveStructureUpdate
+    ) -> LeaveStructure:
+        """
+        Update a leave structure's name and/or per-leave-type rules.
+
+        Safety guarantee:
+          Existing leave_balances are NEVER touched by this operation.
+          Only future allocations (cron jobs / new assignments) will pick
+          up the updated total_days / allocation_type / reset_policy.
+        """
+        structure = db.query(LeaveStructure).filter_by(id=structure_id).first()
+        if not structure:
+            raise ValueError(f"Leave structure {structure_id} not found.")
+
+        # Rename if requested — check uniqueness
+        if payload.name is not None:
+            clash = (
+                db.query(LeaveStructure)
+                .filter(
+                    LeaveStructure.name == payload.name,
+                    LeaveStructure.id != structure_id,
+                )
+                .first()
+            )
+            if clash:
+                raise ValueError(
+                    f"Leave structure name '{payload.name}' is already in use."
+                )
+            structure.name = payload.name
+
+        # Update detail rows if provided
+        if payload.details is not None:
+            detail_map = {d.leave_type: d for d in payload.details}
+            for detail in structure.details:
+                if detail.leave_type in detail_map:
+                    item = detail_map[detail.leave_type]
+                    detail.total_days      = item.total_days
+                    detail.allocation_type = item.allocation_type
+                    detail.reset_policy    = item.reset_policy
+
+        db.commit()
+        db.refresh(structure)
+        return structure
+
+    # ──────────────────────────────────────────
+    # 8. Delete Leave Structure
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def delete_structure(db: Session, structure_id: int) -> None:
+        """
+        Delete a leave structure and its detail rows (cascade).
+        Raises ValueError if any user is currently assigned to this structure.
+        """
+        structure = db.query(LeaveStructure).filter_by(id=structure_id).first()
+        if not structure:
+            raise ValueError(f"Leave structure {structure_id} not found.")
+
+        assigned_count = (
+            db.query(LeaveAssignment)
+            .filter_by(structure_id=structure_id)
+            .count()
+        )
+        if assigned_count > 0:
+            raise ValueError(
+                f"Cannot delete leave structure '{structure.name}': "
+                f"it is currently assigned to {assigned_count} user(s). "
+                "Remove all assignments first."
+            )
+
+        db.delete(structure)  # cascade removes leave_structure_details
+        db.commit()
+
+    # ──────────────────────────────────────────
+    # 9. Update Assignment (change structure)
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def update_assignment(
+        db: Session, user_id: int, payload: LeaveAssignmentUpdate
+    ) -> LeaveAssignment:
+        """
+        Change the leave structure assigned to a user.
+
+        Current-period balance rows are updated in place:
+          - total_allocated  → new structure's value
+          - remaining        → max(0, new_allocated - already_used)
+          - used             → preserved (represents actual taken days)
+
+        Historical balance rows (prior periods) are left completely untouched.
+        """
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        if not assignment:
+            raise ValueError(f"No leave assignment found for user {user_id}.")
+
+        new_structure = db.query(LeaveStructure).filter_by(id=payload.structure_id).first()
+        if not new_structure:
+            raise ValueError(f"Leave structure {payload.structure_id} not found.")
+
+        assignment.structure_id = payload.structure_id
+        db.flush()
+
+        # Update or create current-period balances with the new structure's rules
+        LeaveStructureService._reinitialize_current_balances(db, user_id, new_structure)
+
+        db.commit()
+        db.refresh(assignment)
+        return assignment
+
+    @staticmethod
+    def _reinitialize_current_balances(
+        db: Session, user_id: int, structure: LeaveStructure
+    ) -> None:
+        """
+        For each leave type in the structure, update or create the current-period
+        balance row to reflect the structure's rules.
+
+        `used` is always preserved. `remaining` is recalculated as:
+            max(0, new_total_allocated - used)
+        """
+        year, month = _get_current_year_month()
+
+        for detail in structure.details:
+            if detail.allocation_type == AllocationType.YEARLY:
+                target_month = None
+                new_alloc    = Decimal(str(detail.total_days))
+            else:  # MONTHLY
+                target_month = month
+                new_alloc    = _monthly_value(detail.total_days)
+
+            balance = (
+                db.query(LeaveBalance)
+                .filter_by(
+                    user_id=user_id,
+                    leave_type=detail.leave_type,
+                    year=year,
+                    month=target_month,
+                )
+                .first()
+            )
+            if balance:
+                # Preserve used; recalculate allocated + remaining
+                balance.total_allocated = new_alloc
+                balance.remaining = max(
+                    Decimal("0"),
+                    (new_alloc - balance.used).quantize(
+                        Decimal("0.01"), rounding=ROUND_HALF_UP
+                    ),
+                )
+            else:
+                # Fresh row — no prior usage
+                db.add(
+                    LeaveBalance(
+                        user_id=user_id,
+                        leave_type=detail.leave_type,
+                        year=year,
+                        month=target_month,
+                        total_allocated=new_alloc,
+                        used=Decimal("0"),
+                        remaining=new_alloc,
+                    )
+                )
+
+    # ──────────────────────────────────────────
+    # 10. Delete Assignment
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def delete_assignment(db: Session, user_id: int) -> None:
+        """
+        Remove a user's leave assignment and all their leave balance records.
+
+        Note: past LeaveRequest rows are NOT deleted — they live in the
+        leave_requests table and represent the permanent attendance history.
+        """
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        if not assignment:
+            raise ValueError(f"No leave assignment found for user {user_id}.")
+
+        # Wipe all balance rows for this user (no active structure = no valid buckets)
+        db.query(LeaveBalance).filter_by(user_id=user_id).delete(
+            synchronize_session=False
+        )
+
+        db.delete(assignment)
+        db.commit()
 
 
 # ─────────────────────────────────────────────────────────────

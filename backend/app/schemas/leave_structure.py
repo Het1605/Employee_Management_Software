@@ -62,11 +62,49 @@ class LeaveStructureOut(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
+# Leave Structure — Update
+# ─────────────────────────────────────────────────────────────
+
+class LeaveStructureDetailUpdate(BaseModel):
+    """One detail row for an update request. leave_type acts as the key."""
+    leave_type:      LeaveType
+    total_days:      int = Field(..., gt=0, description="Must be > 0")
+    allocation_type: AllocationType
+    reset_policy:    ResetPolicy
+
+
+class LeaveStructureUpdate(BaseModel):
+    """
+    Partial update for a leave structure.
+    - name        : optional rename (must still be unique)
+    - details     : if provided, must include exactly PL, CL, and SL entries
+    """
+    name:    Optional[str] = Field(None, min_length=1, max_length=150)
+    details: Optional[List[LeaveStructureDetailUpdate]] = None
+
+    @model_validator(mode="after")
+    def validate_details_if_provided(self) -> "LeaveStructureUpdate":
+        if self.details is not None:
+            provided = {d.leave_type for d in self.details}
+            required = {LeaveType.PL, LeaveType.CL, LeaveType.SL}
+            if provided != required:
+                raise ValueError(
+                    "details must contain exactly one entry for each of PL, CL, and SL"
+                )
+        return self
+
+
+# ─────────────────────────────────────────────────────────────
 # Leave Assignment
 # ─────────────────────────────────────────────────────────────
 
 class LeaveAssignmentCreate(BaseModel):
     user_id:      int
+    structure_id: int
+
+
+class LeaveAssignmentUpdate(BaseModel):
+    """Change the structure assigned to a user."""
     structure_id: int
 
 

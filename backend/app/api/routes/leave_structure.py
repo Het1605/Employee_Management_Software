@@ -2,16 +2,23 @@
 Leave Structure & Assignment API Routes
 ========================================
 Endpoints:
-  POST   /leave-structures                 — Create a leave structure
-  GET    /leave-structures                 — List all structures
-  GET    /leave-structures/{id}            — Get single structure
-  POST   /leave-assignments                — Assign structure to user
-  GET    /leave-balances/{user_id}         — Get user's full balance history
-  GET    /leave-balances/{user_id}/current — Current period balances
+  POST   /leave-structures                   — Create a leave structure
+  GET    /leave-structures                   — List all structures
+  GET    /leave-structures/{id}              — Get single structure
+  PUT    /leave-structures/{id}              — Update structure name / details
+  DELETE /leave-structures/{id}              — Delete (only if unassigned)
+  POST   /leave-assignments                  — Assign structure to user
+  GET    /leave-assignments/{user_id}        — Get user's active assignment
+  PUT    /leave-assignments/{user_id}        — Reassign to a different structure
+  DELETE /leave-assignments/{user_id}        — Remove assignment + balances
+  GET    /leave-balances/{user_id}           — Full balance history
+  GET    /leave-balances/{user_id}/current   — Current-period balances
+  POST   /leave-balances/deduct             — Deduct approved leave
+  POST   /leave-balances/reverse            — Reverse a deduction
 
-Cron trigger endpoints (Admin-only; for manual trigger / testing):
-  POST   /leave-cron/monthly-allocation   — Trigger monthly allocation
-  POST   /leave-cron/year-end-reset       — Trigger year-end reset
+Cron trigger endpoints (Admin-only):
+  POST   /leave-cron/monthly-allocation      — Trigger monthly allocation
+  POST   /leave-cron/year-end-reset         — Trigger year-end reset
 """
 
 from typing import List, Optional
@@ -25,11 +32,13 @@ from app.models.leave_structure import LeaveAssignment
 from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
     LeaveAssignmentOut,
+    LeaveAssignmentUpdate,
     LeaveBalanceOut,
     LeaveDeductRequest,
     LeaveDayType,
     LeaveStructureCreate,
     LeaveStructureOut,
+    LeaveStructureUpdate,
 )
 from app.services.leave_structure_service import (
     LeaveStructureService,
@@ -105,6 +114,61 @@ def get_leave_structure(
     return structure
 
 
+@router.put(
+    "/leave-structures/{structure_id}",
+    response_model=LeaveStructureOut,
+    summary="Update a leave structure (Admin / HR only)",
+)
+def update_leave_structure(
+    structure_id: int,
+    payload: LeaveStructureUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update a leave structure's **name** and/or **leave-type details**.
+
+    - If `name` is omitted, it is left unchanged.
+    - If `details` is provided it must include all three types: PL, CL, SL.
+    - Existing leave balances are **never modified** by this endpoint;
+      only future cron allocations will use the new `total_days` / `allocation_type`.
+    """
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave structures.")
+
+    try:
+        structure = LeaveStructureService.update_structure(db, structure_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return structure
+
+
+@router.delete(
+    "/leave-structures/{structure_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a leave structure (Admin / HR only)",
+)
+def delete_leave_structure(
+    structure_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Permanently delete a leave structure.
+
+    **Rejected** if the structure is currently assigned to any user.
+    Remove all user assignments first, then retry.
+    """
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave structures.")
+
+    try:
+        LeaveStructureService.delete_structure(db, structure_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 # ─────────────────────────────────────────────────────────────
 # Leave Assignments
 # ─────────────────────────────────────────────────────────────
@@ -150,6 +214,63 @@ def get_user_assignment(
     if not assignment:
         raise HTTPException(status_code=404, detail=f"No leave structure assigned to user {user_id}.")
     return assignment
+
+
+@router.put(
+    "/leave-assignments/{user_id}",
+    response_model=LeaveAssignmentOut,
+    summary="Reassign a user to a different leave structure (Admin / HR only)",
+)
+def update_leave_assignment(
+    user_id: int,
+    payload: LeaveAssignmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Change the leave structure assigned to a user.
+
+    - The user's **current-period** balance rows are updated in-place:
+      `total_allocated` is set to the new structure's value and
+      `remaining` is recalculated as `max(0, new_allocated - used)`.
+    - **Historical** balance rows (prior months / years) are untouched.
+    - Already-taken leave days (`used`) are always preserved.
+    """
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave assignments.")
+
+    try:
+        assignment = LeaveStructureService.update_assignment(db, user_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return assignment
+
+
+@router.delete(
+    "/leave-assignments/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a user's leave assignment and balances (Admin / HR only)",
+)
+def delete_leave_assignment(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Removes the user's leave structure assignment and **all** their
+    `leave_balances` rows.
+
+    Past `leave_requests` records are **not** affected — leave history
+    is preserved permanently in that table.
+    """
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave assignments.")
+
+    try:
+        LeaveStructureService.delete_assignment(db, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 # ─────────────────────────────────────────────────────────────
