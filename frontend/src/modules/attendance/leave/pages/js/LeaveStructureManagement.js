@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MainLayout from '../../../../../layout/MainLayout/js/MainLayout';
 import API from '../../../../../core/api/apiClient';
 import { useToast } from '../../../../../contexts/ToastContext';
@@ -20,6 +20,9 @@ const LeaveStructureManagement = () => {
 
     const [isStructureModalOpen, setIsStructureModalOpen] = useState(false);
     const [editingStructure, setEditingStructure] = useState(null);
+
+    const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+    const [editingAssignment, setEditingAssignment] = useState(null);
 
     const fetchData = useCallback(async () => {
         if (!selectedCompanyId) return;
@@ -80,6 +83,39 @@ const LeaveStructureManagement = () => {
         }
     };
 
+    const openAssignmentModal = (assignment = null) => {
+        setEditingAssignment(assignment);
+        setIsAssignmentModalOpen(true);
+    };
+
+    const handleSaveAssignment = async (formData) => {
+        if (!selectedCompanyId) {
+            showToast('No company selected', 'error');
+            return;
+        }
+
+        try {
+            if (editingAssignment) {
+                await API.put(`/leave-assignments/${editingAssignment.user_id}`, {
+                    structure_id: Number(formData.structure_id)
+                });
+                showToast('Assignment updated successfully', 'success');
+            } else {
+                await API.post('/leave-assignments', {
+                    company_id: Number(selectedCompanyId),
+                    user_id: Number(formData.user_id),
+                    structure_id: Number(formData.structure_id)
+                });
+                showToast('Assignment created successfully', 'success');
+            }
+            setIsAssignmentModalOpen(false);
+            setEditingAssignment(null);
+            fetchData();
+        } catch (err) {
+            showToast('Assignment failed: ' + handleApiError(err), 'error');
+        }
+    };
+
     if (!isAdminOrHR) {
         return (
             <MainLayout title="Unauthorized">
@@ -135,6 +171,7 @@ const LeaveStructureManagement = () => {
                         structures={structures}
                         refresh={fetchData} 
                         showToast={showToast}
+                        onOpenModal={openAssignmentModal}
                     />
                 )}
 
@@ -143,6 +180,19 @@ const LeaveStructureManagement = () => {
                     onClose={() => setIsStructureModalOpen(false)}
                     onSave={handleSaveStructure}
                     editData={editingStructure}
+                />
+
+                <LeaveAssignmentModal
+                    isOpen={isAssignmentModalOpen}
+                    onClose={() => {
+                        setIsAssignmentModalOpen(false);
+                        setEditingAssignment(null);
+                    }}
+                    onSave={handleSaveAssignment}
+                    users={users}
+                    structures={structures}
+                    editData={editingAssignment}
+                    assignments={assignments}
                 />
             </div>
         </MainLayout>
@@ -243,7 +293,7 @@ const LeaveStructuresTab = ({ structures, refresh, showToast, onOpenModal }) => 
     );
 };
 
-const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast }) => {
+const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast, onOpenModal }) => {
     const userMap = users.reduce((acc, u) => ({
         ...acc,
         [u.id]: u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || `User ${u.id}`
@@ -273,7 +323,7 @@ const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast
                     <p className={styles.subtitle}>Assign leave policies to specific employees.</p>
                 </div>
                 <div className={styles.actionButtons}>
-                    <button className="btn-primary-action">+ Create Assignment</button>
+                    <button className="btn-primary-action" onClick={() => onOpenModal(null)}>+ Create Assignment</button>
                 </div>
             </div>
 
@@ -286,7 +336,7 @@ const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast
                             <div className={styles.cardRow}>
                                 <span className={styles.userName}>{userMap[assignment.user_id] || `User ${assignment.user_id}`}</span>
                                 <div className={styles.inlineActions}>
-                                    <button className={styles.iconBtn} title="Edit"><EditIcon /></button>
+                                    <button className={styles.iconBtn} title="Edit" onClick={() => onOpenModal(assignment)}><EditIcon /></button>
                                     <button 
                                         className={`${styles.iconBtn} ${styles.delete}`} 
                                         title="Delete"
@@ -479,6 +529,117 @@ const LeaveStructureModal = ({ isOpen, onClose, onSave, editData }) => {
                     <div className={styles.modalActions}>
                         <button type="button" className={styles.secondaryBtn} onClick={onClose}>Cancel</button>
                         <button type="submit" className={styles.primaryBtn}>Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+/* ─────────────────────────────────────────────────────────────
+   LeaveAssignmentModal Component
+   ───────────────────────────────────────────────────────────── */
+
+const LeaveAssignmentModal = ({ isOpen, onClose, onSave, users, structures, editData, assignments }) => {
+    const [userId, setUserId] = useState('');
+    const [structureId, setStructureId] = useState('');
+    const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (editData) {
+            setUserId(editData.user_id);
+            setStructureId(editData.structure_id);
+        } else {
+            setUserId('');
+            setStructureId('');
+        }
+        setErrors({});
+    }, [isOpen, editData]);
+
+    // Only show users who don't have an assignment (except when editing)
+    const availableUsers = useMemo(() => {
+        if (editData) return users; // When editing, we need the current user in list
+        const assignedUserIds = new Set(assignments.map(a => a.user_id));
+        return users.filter(u => !assignedUserIds.has(u.id));
+    }, [users, assignments, editData]);
+
+    const validate = () => {
+        const newErrors = {};
+        if (!userId) newErrors.user_id = true;
+        if (!structureId) newErrors.structure_id = true;
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        onSave({ user_id: userId, structure_id: structureId });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className={styles.modalOverlay} onMouseDown={onClose}>
+            <div className={styles.modalCard} onMouseDown={e => e.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                    <h3>{editData ? 'Update Assignment' : 'Assign Leave Structure'}</h3>
+                    <button className={styles.closeBtn} onClick={onClose}>&times;</button>
+                </div>
+
+                <form className={styles.modalBody} onSubmit={handleSubmit}>
+                    <div className={styles.infoBox}>
+                        Assign a leave policy to an employee. Note: Each employee can only have one active leave structure assignment.
+                    </div>
+
+                    <div className={styles.formGrid}>
+                        <div className={styles.inputGroup}>
+                            <label>Employee</label>
+                            <select
+                                value={userId}
+                                onChange={e => {
+                                    setUserId(e.target.value);
+                                    if (errors.user_id) setErrors(prev => ({ ...prev, user_id: false }));
+                                }}
+                                disabled={!!editData}
+                                className={errors.user_id ? styles.error : ''}
+                                required
+                            >
+                                <option value="">Select Employee</option>
+                                {availableUsers.map(u => (
+                                    <option key={u.id} value={u.id}>
+                                        {u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || `User ${u.id}`}
+                                        {u.email ? ` (${u.email})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className={styles.inputGroup}>
+                            <label>Leave Structure</label>
+                            <select
+                                value={structureId}
+                                onChange={e => {
+                                    setStructureId(e.target.value);
+                                    if (errors.structure_id) setErrors(prev => ({ ...prev, structure_id: false }));
+                                }}
+                                className={errors.structure_id ? styles.error : ''}
+                                required
+                            >
+                                <option value="">Select Structure</option>
+                                {structures.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className={styles.modalActions}>
+                        <button type="button" className={styles.secondaryBtn} onClick={onClose}>Cancel</button>
+                        <button type="submit" className={styles.primaryBtn}>
+                            {editData ? 'Update Assignment' : 'Assign'}
+                        </button>
                     </div>
                 </form>
             </div>
