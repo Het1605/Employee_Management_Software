@@ -1,70 +1,76 @@
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, root_validator, validator
 from typing import Optional
 from datetime import date, datetime
 from decimal import Decimal
+import enum
+
+class LeaveCategory(str, enum.Enum):
+    PL = "PL"
+    CL = "CL"
+    SL = "SL"
+
+class LeaveDurationType(str, enum.Enum):
+    FULL_DAY = "FULL_DAY"
+    HALF_DAY = "HALF_DAY"
 
 class LeaveRequestBase(BaseModel):
     start_date: date
     end_date: date
     reason: Optional[str] = None
-    leave_type: str = "FULL_DAY"
+    leave_category: LeaveCategory
+    leave_duration_type: LeaveDurationType
 
 class LeaveRequestCreate(LeaveRequestBase):
-    pass
+    @validator('start_date')
+    def check_future_date(cls, v):
+        if v < date.today():
+            raise ValueError('Leave cannot be applied for past dates')
+        return v
 
     @root_validator(pre=True)
     def check_dates(cls, values):
         start_date = values.get('start_date')
         end_date = values.get('end_date')
-        leave_type = values.get('leave_type', 'FULL_DAY')
 
         if start_date and end_date:
             if start_date > end_date:
                 raise ValueError('start_date must be less than or equal to end_date')
-            
-            if leave_type == "HALF_DAY" and start_date != end_date:
-                raise ValueError('HALF_DAY leave must be for a single date (start_date must equal end_date)')
         
         return values
 
 class LeaveRequestUpdate(BaseModel):
     status: str
 
-    @root_validator(pre=True)
-    def check_status(cls, values):
-        status = values.get('status')
-        if status not in ['approved', 'rejected']:
+    @validator('status')
+    def check_status(cls, v):
+        if v not in ['approved', 'rejected']:
             raise ValueError('status must be approved or rejected')
-        return values
-
+        return v
 
 class LeaveRequestEdit(BaseModel):
     """Schema for employee editing their own leave request."""
     start_date: date
-    end_date: Optional[date] = None
+    end_date: date
     reason: Optional[str] = None
-    leave_type: str = "FULL_DAY"
+    leave_category: LeaveCategory
+    leave_duration_type: LeaveDurationType
+
+    @validator('start_date')
+    def check_future_date(cls, v):
+        if v < date.today():
+            raise ValueError('Leave cannot be applied for past dates')
+        return v
 
     @root_validator(pre=True)
     def validate_edit(cls, values):
         start_date = values.get('start_date')
         end_date = values.get('end_date')
-        leave_type = values.get('leave_type', 'FULL_DAY')
 
-        if not start_date:
-            raise ValueError('start_date is required')
-
-        if leave_type == "FULL_DAY":
-            if not end_date:
-                raise ValueError('end_date is required for FULL_DAY leave')
+        if start_date and end_date:
             if start_date > end_date:
                 raise ValueError('start_date must be less than or equal to end_date')
 
-        if leave_type == "HALF_DAY" and end_date and start_date != end_date:
-            raise ValueError('HALF_DAY leave must be for a single date')
-
         return values
-
 
 class LeaveRequestOutUser(BaseModel):
     id: int
@@ -80,13 +86,9 @@ class LeaveRequestOut(LeaveRequestBase):
     company_id: int
     total_days: Decimal
     status: str
-    leave_type: str
     applied_at: datetime
     reviewed_by: Optional[int] = None
     reviewed_at: Optional[datetime] = None
-    is_deleted: bool = False
-    deleted_by: Optional[str] = None
-    deleted_at: Optional[datetime] = None
     
     # We optionally include the user for HR view
     user: Optional[LeaveRequestOutUser] = None

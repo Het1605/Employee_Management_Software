@@ -193,6 +193,15 @@ class Attendance(Base):
         Index('idx_user_attendance_date', 'user_id', 'date')
     )
 
+class LeaveCategory(enum.Enum):
+    PL = "PL"
+    CL = "CL"
+    SL = "SL"
+
+class LeaveDurationType(enum.Enum):
+    FULL_DAY = "FULL_DAY"
+    HALF_DAY = "HALF_DAY"
+
 class LeaveRequest(Base):
     __tablename__ = "leave_requests"
 
@@ -204,13 +213,13 @@ class LeaveRequest(Base):
     total_days = Column(Numeric(precision=5, scale=2), nullable=False)
     reason = Column(Text, nullable=True)
     status = Column(String, default="pending", nullable=False)  # pending / approved / rejected
-    leave_type = Column(String, default="FULL_DAY", nullable=False) # FULL_DAY / HALF_DAY
+    
+    leave_category = Column(Enum(LeaveCategory), nullable=False)
+    leave_duration_type = Column(Enum(LeaveDurationType), nullable=False)
+    
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
-    is_deleted = Column(Boolean, default=False, nullable=False)
-    deleted_by = Column(String, nullable=True)  # 'EMPLOYEE' or 'ADMIN'
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", foreign_keys=[user_id])
     reviewer = relationship("User", foreign_keys=[reviewed_by])

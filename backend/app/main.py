@@ -63,10 +63,8 @@ def startup_event():
         conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
 
-        # Add soft-delete columns to leave_requests (safe idempotent migration)
-        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE"))
-        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_by VARCHAR NULL"))
-        conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL"))
+        # Drop and recreate leave_requests (User confirmed no data)
+        conn.execute(text("DROP TABLE IF EXISTS leave_requests CASCADE"))
 
         # Remove is_active from salary_components (no longer used)
         conn.execute(text("ALTER TABLE salary_components DROP COLUMN IF EXISTS is_active"))
