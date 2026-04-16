@@ -18,6 +18,9 @@ const LeaveStructureManagement = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [isStructureModalOpen, setIsStructureModalOpen] = useState(false);
+    const [editingStructure, setEditingStructure] = useState(null);
+
     const fetchData = useCallback(async () => {
         if (!selectedCompanyId) return;
         setLoading(true);
@@ -42,6 +45,40 @@ const LeaveStructureManagement = () => {
             fetchData();
         }
     }, [isAdminOrHR, fetchData, selectedCompanyId]);
+
+    const openStructureModal = (structure = null) => {
+        setEditingStructure(structure);
+        setIsStructureModalOpen(true);
+    };
+
+    const handleSaveStructure = async (formData) => {
+        if (!selectedCompanyId) {
+            showToast('No company selected', 'error');
+            return;
+        }
+
+        try {
+            if (editingStructure) {
+                await API.put(`/leave-structures/${editingStructure.id}`, {
+                    name: formData.name,
+                    details: formData.details
+                });
+                showToast('Leave structure updated successfully', 'success');
+            } else {
+                await API.post('/leave-structures', {
+                    company_id: Number(selectedCompanyId),
+                    name: formData.name,
+                    details: formData.details
+                });
+                showToast('Leave structure created successfully', 'success');
+            }
+            setIsStructureModalOpen(false);
+            setEditingStructure(null);
+            fetchData();
+        } catch (err) {
+            showToast('Save failed: ' + handleApiError(err), 'error');
+        }
+    };
 
     if (!isAdminOrHR) {
         return (
@@ -89,6 +126,7 @@ const LeaveStructureManagement = () => {
                         structures={structures} 
                         refresh={fetchData} 
                         showToast={showToast}
+                        onOpenModal={openStructureModal}
                     />
                 ) : (
                     <LeaveAssignmentTab 
@@ -99,6 +137,13 @@ const LeaveStructureManagement = () => {
                         showToast={showToast}
                     />
                 )}
+
+                <LeaveStructureModal
+                    isOpen={isStructureModalOpen}
+                    onClose={() => setIsStructureModalOpen(false)}
+                    onSave={handleSaveStructure}
+                    editData={editingStructure}
+                />
             </div>
         </MainLayout>
     );
@@ -126,7 +171,7 @@ const TrashIcon = () => (
     </svg>
 );
 
-const LeaveStructuresTab = ({ structures, refresh, showToast }) => {
+const LeaveStructuresTab = ({ structures, refresh, showToast, onOpenModal }) => {
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Are you sure you want to delete leave structure "${name}"?`)) return;
         try {
@@ -146,7 +191,7 @@ const LeaveStructuresTab = ({ structures, refresh, showToast }) => {
                     <p className={styles.subtitle}>Define how many leaves employees get and how they are handled.</p>
                 </div>
                 <div className={styles.actionButtons}>
-                    <button className="btn-primary-action">+ Create Structure</button>
+                    <button className="btn-primary-action" onClick={() => onOpenModal(null)}>+ Create Structure</button>
                 </div>
             </div>
 
@@ -159,7 +204,7 @@ const LeaveStructuresTab = ({ structures, refresh, showToast }) => {
                             <div className={styles.structureHeader}>
                                 <h4 className={styles.structureName}>{structure.name}</h4>
                                 <div className={styles.inlineActions}>
-                                    <button className={styles.iconBtn} title="Edit"><EditIcon /></button>
+                                    <button className={styles.iconBtn} title="Edit" onClick={() => onOpenModal(structure)}><EditIcon /></button>
                                     <button 
                                         className={`${styles.iconBtn} ${styles.delete}`} 
                                         title="Delete"
@@ -260,6 +305,177 @@ const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast
                     ))}
                 </div>
             )}
+        </div>
+    );
+};
+
+/* ─────────────────────────────────────────────────────────────
+   LeaveStructureModal Component
+   ───────────────────────────────────────────────────────────── */
+
+const LeaveStructureModal = ({ isOpen, onClose, onSave, editData }) => {
+    const [name, setName] = useState('');
+    const [details, setDetails] = useState({
+        PL: { total_days: '', allocation_type: 'MONTHLY', reset_policy: 'EXTEND' },
+        CL: { total_days: '', allocation_type: 'MONTHLY', reset_policy: 'VOID' },
+        SL: { total_days: '', allocation_type: 'YEARLY', reset_policy: 'VOID' }
+    });
+    const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (editData) {
+            setName(editData.name || '');
+            const newDetails = {};
+            (editData.details || []).forEach(d => {
+                newDetails[d.leave_type] = {
+                    total_days: d.total_days,
+                    allocation_type: d.allocation_type,
+                    reset_policy: d.reset_policy
+                };
+            });
+            setDetails(prev => ({ ...prev, ...newDetails }));
+        } else {
+            setName('');
+            setDetails({
+                PL: { total_days: '', allocation_type: 'MONTHLY', reset_policy: 'EXTEND' },
+                CL: { total_days: '', allocation_type: 'MONTHLY', reset_policy: 'VOID' },
+                SL: { total_days: '', allocation_type: 'YEARLY', reset_policy: 'VOID' }
+            });
+        }
+        setErrors({});
+    }, [isOpen, editData]);
+
+    const handleDetailChange = (type, field, value) => {
+        setDetails(prev => ({
+            ...prev,
+            [type]: { ...prev[type], [field]: value }
+        }));
+        // Clear error if user starts typing
+        if (errors[`${type}_total_days`]) {
+            setErrors(prev => {
+                const newErrs = { ...prev };
+                delete newErrs[`${type}_total_days`];
+                return newErrs;
+            });
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+        if (!name.trim()) newErrors.name = true;
+        
+        ['PL', 'CL', 'SL'].forEach(type => {
+            if (!details[type].total_days || isNaN(details[type].total_days) || Number(details[type].total_days) <= 0) {
+                newErrors[`${type}_total_days`] = true;
+            }
+        });
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+
+        const detailList = Object.entries(details).map(([type, config]) => ({
+            leave_type: type,
+            total_days: Number(config.total_days),
+            allocation_type: config.allocation_type,
+            reset_policy: config.reset_policy
+        }));
+
+        onSave({ name: name.trim(), details: detailList });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className={styles.modalOverlay} onMouseDown={onClose}>
+            <div className={styles.modalCard} onMouseDown={e => e.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                    <h3>{editData ? 'Edit Leave Structure' : 'Create Leave Structure'}</h3>
+                    <button className={styles.closeBtn} onClick={onClose}>&times;</button>
+                </div>
+
+                <form className={styles.modalBody} onSubmit={handleSubmit}>
+                    <div className={styles.infoBox}>
+                        Define leave policies for PL, CL, and SL including days, allocation type, and reset rules.
+                    </div>
+
+                    <div className={styles.formGrid}>
+                        <div className={styles.inputGroup}>
+                            <label>Structure Name</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={e => {
+                                    setName(e.target.value);
+                                    if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                                }}
+                                placeholder="e.g. Standard Leave Policy"
+                                className={errors.name ? styles.error : ''}
+                                required
+                            />
+                        </div>
+
+                        <div className={styles.configTableContainer}>
+                            <table className={styles.configTable}>
+                                <thead>
+                                    <tr>
+                                        <th>Leave Type</th>
+                                        <th>Days</th>
+                                        <th>Allocation</th>
+                                        <th>Reset Policy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {['PL', 'CL', 'SL'].map(type => (
+                                        <tr key={type}>
+                                            <td data-label="Leave Type"><strong>{type}</strong></td>
+                                            <td data-label="Days">
+                                                <input
+                                                    type="number"
+                                                    value={details[type].total_days}
+                                                    onChange={e => handleDetailChange(type, 'total_days', e.target.value)}
+                                                    placeholder="e.g. 12"
+                                                    className={errors[`${type}_total_days`] ? styles.error : ''}
+                                                    required
+                                                />
+                                            </td>
+                                            <td data-label="Allocation">
+                                                <select
+                                                    value={details[type].allocation_type}
+                                                    onChange={e => handleDetailChange(type, 'allocation_type', e.target.value)}
+                                                >
+                                                    <option value="MONTHLY">Monthly</option>
+                                                    <option value="YEARLY">Yearly</option>
+                                                </select>
+                                            </td>
+                                            <td data-label="Reset Policy">
+                                                <select
+                                                    value={details[type].reset_policy}
+                                                    onChange={e => handleDetailChange(type, 'reset_policy', e.target.value)}
+                                                >
+                                                    <option value="ENCASH">Encash</option>
+                                                    <option value="EXTEND">Extend</option>
+                                                    <option value="VOID">Void</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className={styles.modalActions}>
+                        <button type="button" className={styles.secondaryBtn} onClick={onClose}>Cancel</button>
+                        <button type="submit" className={styles.primaryBtn}>Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
