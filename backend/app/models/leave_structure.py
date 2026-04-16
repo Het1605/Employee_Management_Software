@@ -88,7 +88,7 @@ class LeaveStructureDetail(Base):
     __table_args__ = (
         # Exactly one row per (structure, leave_type)
         UniqueConstraint("structure_id", "leave_type", name="uq_structure_leave_type"),
-        CheckConstraint("total_days > 0", name="chk_total_days_positive"),
+        CheckConstraint("total_days >= 0", name="chk_total_days_non_negative"),
     )
 
 

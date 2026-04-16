@@ -19,7 +19,7 @@ from app.models.leave_structure import LeaveType, AllocationType, ResetPolicy
 class LeaveStructureDetailIn(BaseModel):
     """One detail row supplied when creating a structure."""
     leave_type:      LeaveType
-    total_days:      int = Field(..., gt=0, description="Must be > 0")
+    total_days:      Decimal = Field(..., ge=0, description="Must be >= 0")
     allocation_type: AllocationType
     reset_policy:    ResetPolicy
 
@@ -70,7 +70,7 @@ class LeaveStructureOut(BaseModel):
 class LeaveStructureDetailUpdate(BaseModel):
     """One detail row for an update request. leave_type acts as the key."""
     leave_type:      LeaveType
-    total_days:      Decimal = Field(..., gt=0, description="Must be > 0")
+    total_days:      Decimal = Field(..., ge=0, description="Must be >= 0")
     allocation_type: AllocationType
     reset_policy:    ResetPolicy
 

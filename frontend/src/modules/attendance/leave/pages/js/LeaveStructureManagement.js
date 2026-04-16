@@ -366,7 +366,9 @@ const LeaveStructureModal = ({ isOpen, onClose, onSave, editData }) => {
         if (!name.trim()) newErrors.name = true;
         
         ['PL', 'CL', 'SL'].forEach(type => {
-            if (!details[type].total_days || isNaN(details[type].total_days) || Number(details[type].total_days) <= 0) {
+            const val = details[type].total_days;
+            // Allow 0, but not empty string or negative numbers
+            if (val === '' || isNaN(val) || Number(val) < 0) {
                 newErrors[`${type}_total_days`] = true;
             }
         });
@@ -439,7 +441,11 @@ const LeaveStructureModal = ({ isOpen, onClose, onSave, editData }) => {
                                                     type="number"
                                                     value={details[type].total_days}
                                                     onChange={e => handleDetailChange(type, 'total_days', e.target.value)}
-                                                    placeholder="e.g. 12"
+                                                    onKeyDown={e => {
+                                                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                                    }}
+                                                    placeholder="0"
+                                                    min="0"
                                                     className={errors[`${type}_total_days`] ? styles.error : ''}
                                                     required
                                                 />
