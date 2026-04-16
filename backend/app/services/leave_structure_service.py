@@ -56,15 +56,23 @@ def _now_utc() -> datetime:
 _MIN_LEAVE_UNIT = Decimal("0.5")
 
 
-def _monthly_value(total_days: int) -> Decimal:
+def _get_monthly_allocation(total_days: int, month_index: int) -> Decimal:
     """
-    Compute monthly credit using pure Decimal arithmetic to avoid float drift.
-    Formula: total_days / 12, rounded to 2 decimal places.
-    Examples: 12 days → 1.00 | 15 days → 1.25 | 7 days → 0.58
+    Calculate integer allocation for a specific month (1-12).
+    - base = total // 12
+    - extra = total % 12
+    - If month_index <= extra, return base + 1, else return base.
+    
+    Example: total=15 -> base=1, extra=3. Jan-Mar (1-3) -> 2. Apr-Dec -> 1.
     """
-    return (Decimal(str(total_days)) / Decimal("12")).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
+    base = int(total_days) // 12
+    extra = int(total_days) % 12
+    
+    alloc = base
+    if 1 <= month_index <= extra:
+        alloc += 1
+        
+    return Decimal(str(alloc))
 
 
 def _get_current_year_month() -> tuple[int, int]:
@@ -224,8 +232,8 @@ class LeaveStructureService:
                     balance.remaining = alloc
 
             elif detail.allocation_type == AllocationType.MONTHLY:
-                # Credit the current month's slice
-                monthly = _monthly_value(detail.total_days)
+                # Credit the current month's slice as integer
+                monthly = _get_monthly_allocation(detail.total_days, month)
                 balance = _get_or_create_balance(
                     db, user_id, detail.leave_type, year, month=month
                 )
@@ -503,7 +511,7 @@ class LeaveStructureService:
                 new_alloc    = detail.total_days
             else:  # MONTHLY
                 target_month = month
-                new_alloc    = _monthly_value(detail.total_days)
+                new_alloc    = _get_monthly_allocation(detail.total_days, month)
 
             balance = (
                 db.query(LeaveBalance)
@@ -569,7 +577,7 @@ def run_monthly_leave_allocation() -> None:
             if not structure: continue
             for detail in structure.details:
                 if detail.allocation_type != AllocationType.MONTHLY: continue
-                monthly = _monthly_value(detail.total_days)
+                monthly = _get_monthly_allocation(detail.total_days, month)
                 balance = db.query(LeaveBalance).filter_by(
                     user_id=assignment.user_id,
                     leave_type=detail.leave_type,
