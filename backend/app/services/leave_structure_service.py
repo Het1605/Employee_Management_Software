@@ -258,6 +258,11 @@ class LeaveStructureService:
             .all()
         )
 
+    @staticmethod
+    def get_all_assignments(db: Session) -> List[LeaveAssignment]:
+        """Returns all leave assignments in the system."""
+        return db.query(LeaveAssignment).order_by(LeaveAssignment.assigned_at.desc()).all()
+
     # ──────────────────────────────────────────
     # 5. Leave Deduction
     # ──────────────────────────────────────────

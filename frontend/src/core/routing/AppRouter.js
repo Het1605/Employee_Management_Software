@@ -24,6 +24,7 @@ import DocumentsPage from '../../modules/documents/pages/js/DocumentsPage';
 import AttendancePage from '../../modules/attendance/pages/js/AttendancePage';
 import AttendanceManagement from '../../modules/attendance/pages/js/AttendanceManagement';
 import LeaveManagementPage from '../../modules/attendance/leave/pages/js/LeaveManagementPage';
+import LeaveStructureManagement from '../../modules/attendance/leave/pages/js/LeaveStructureManagement';
 import EmployeeCalendarPage from '../../modules/calendar/pages/js/EmployeeCalendarPage';
 import MyProfile from '../../modules/user/pages/js/MyProfile';
 
@@ -120,6 +121,14 @@ const AppRouter = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/admin/leave-structure" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <LeaveStructureManagement />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* HR Routes */}
         <Route 
@@ -192,6 +201,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['HR', 'ADMIN', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
               <LeaveManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr/leave-structure" 
+          element={
+            <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <LeaveStructureManagement />
             </ProtectedRoute>
           } 
         />

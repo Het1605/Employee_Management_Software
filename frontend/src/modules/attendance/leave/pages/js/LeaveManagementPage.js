@@ -47,3 +47,4 @@ const LeaveManagementPage = () => {
 };
 
 export default LeaveManagementPage;
+

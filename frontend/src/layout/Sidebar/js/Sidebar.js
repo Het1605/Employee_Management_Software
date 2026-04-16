@@ -94,7 +94,13 @@ const Sidebar = ({ isOpen, onClose }) => {
       type: 'group',
       title: 'Leave Management',
       items: [
-        { to: "/attendance/leave", icon: Umbrella, label: 'Manage Leaves' }
+        { to: "/attendance/leave", icon: Umbrella, label: 'Manage Leaves' },
+        { 
+          to: `/${role.toLowerCase()}/leave-structure`, 
+          icon: ClipboardList, 
+          label: 'Leave Structure', 
+          roles: ['ADMIN', 'HR'] 
+        }
       ]
     },
     {

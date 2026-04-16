@@ -201,6 +201,20 @@ def assign_leave_structure(
 
 
 @router.get(
+    "/leave-assignments",
+    response_model=List[LeaveAssignmentOut],
+    summary="List all active leave assignments (Admin / HR only)",
+)
+def list_leave_assignments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can view all assignments.")
+    return LeaveStructureService.get_all_assignments(db)
+
+
+@router.get(
     "/leave-assignments/{user_id}",
     response_model=LeaveAssignmentOut,
     summary="Get the active leave assignment for a user",

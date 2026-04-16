@@ -1,0 +1,213 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #334155;
+}
+
+.pageHeader {
+    margin-bottom: 1.5rem;
+}
+
+.pageTitle {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.pageSubtitle {
+    color: #6b7280;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+}
+
+.tabsWrap {
+    margin-top: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Management Card Styles (Replicated from Salary Module) */
+.managementCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.managementHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.titles h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+    color: #6b7280;
+}
+
+.structuresList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+}
+
+.structureCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.structureCard:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.structureHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.structureName {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.inlineActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.iconBtn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem;
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconBtn:hover {
+    background: #f1f5f9;
+    color: #3b82f6;
+}
+
+.iconBtn.delete:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.structureTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.structureTable th,
+.structureTable td {
+    padding: 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+}
+
+.structureTable th {
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.025em;
+}
+
+/* Assignment Styles */
+.assignmentGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+}
+
+.assignmentCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.assignmentCard:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.cardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.userName {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #111827;
+}
+
+.assignedStructureName {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0.75rem;
+    }
+
+    .pageHeader {
+        margin-bottom: 1.25rem;
+    }
+
+    .pageTitle {
+        font-size: 1.5rem;
+    }
+
+    .managementHeader {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .structuresList, .assignmentGrid {
+        grid-template-columns: 1fr;
+    }
+}
