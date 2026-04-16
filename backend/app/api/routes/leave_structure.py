@@ -71,9 +71,6 @@ def create_leave_structure(
 ):
     """
     Creates a named leave structure that groups PL, CL, and SL rules.
-    - **name** must be unique.
-    - **details** must contain exactly one entry for each of PL, CL, SL.
-    - **total_days** must be > 0.
     """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can create leave structures.")
@@ -92,10 +89,11 @@ def create_leave_structure(
     summary="List all leave structures",
 )
 def list_leave_structures(
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return LeaveStructureService.get_all_structures(db)
+    return LeaveStructureService.get_all_structures(db, company_id=company_id)
 
 
 @router.get(
@@ -125,14 +123,6 @@ def update_leave_structure(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Update a leave structure's **name** and/or **leave-type details**.
-
-    - If `name` is omitted, it is left unchanged.
-    - If `details` is provided it must include all three types: PL, CL, SL.
-    - Existing leave balances are **never modified** by this endpoint;
-      only future cron allocations will use the new `total_days` / `allocation_type`.
-    """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave structures.")
 
@@ -154,12 +144,6 @@ def delete_leave_structure(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Permanently delete a leave structure.
-
-    **Rejected** if the structure is currently assigned to any user.
-    Remove all user assignments first, then retry.
-    """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave structures.")
 
@@ -184,11 +168,6 @@ def assign_leave_structure(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Assigns a leave structure to a user.
-    - Overwrites any previously assigned structure.
-    - Automatically initialises leave_balance rows for the current period.
-    """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can assign leave structures.")
 
@@ -206,12 +185,13 @@ def assign_leave_structure(
     summary="List all active leave assignments (Admin / HR only)",
 )
 def list_leave_assignments(
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can view all assignments.")
-    return LeaveStructureService.get_all_assignments(db)
+    return LeaveStructureService.get_all_assignments(db, company_id=company_id)
 
 
 @router.get(
@@ -241,15 +221,6 @@ def update_leave_assignment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Change the leave structure assigned to a user.
-
-    - The user's **current-period** balance rows are updated in-place:
-      `total_allocated` is set to the new structure's value and
-      `remaining` is recalculated as `max(0, new_allocated - used)`.
-    - **Historical** balance rows (prior months / years) are untouched.
-    - Already-taken leave days (`used`) are always preserved.
-    """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave assignments.")
 
@@ -271,13 +242,6 @@ def delete_leave_assignment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Removes the user's leave structure assignment and **all** their
-    `leave_balances` rows.
-
-    Past `leave_requests` records are **not** affected — leave history
-    is preserved permanently in that table.
-    """
     if current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave assignments.")
 
@@ -298,19 +262,14 @@ def delete_leave_assignment(
 )
 def get_user_leave_balances(
     user_id: int,
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Returns all leave balance rows for the user across all years/months.
-    Accessible by:
-      - The user themselves
-      - ADMIN / HR / MANAGER roles
-    """
     if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to view this user's balances.")
 
-    return LeaveStructureService.get_balances(db, user_id)
+    return LeaveStructureService.get_balances(db, user_id, company_id=company_id)
 
 
 @router.get(
@@ -320,17 +279,14 @@ def get_user_leave_balances(
 )
 def get_user_current_balances(
     user_id: int,
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Returns only the active (current year + current month) balance rows.
-    Useful for leave application forms and dashboards.
-    """
     if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to view this user's balances.")
 
-    return LeaveStructureService.get_current_balances(db, user_id)
+    return LeaveStructureService.get_current_balances(db, user_id, company_id=company_id)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -347,27 +303,6 @@ def deduct_leave_balance(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Deducts approved leave days from the user's active balance.
-    Called internally by the leave approval flow after a leave is approved.
-
-    **Half-day example:**
-    ```json
-    { "user_id": 1, "leave_category": "CL", "leave_day_type": "HALF_DAY", "days": 0.5 }
-    ```
-
-    **Full-day example (3 days):**
-    ```json
-    { "user_id": 1, "leave_category": "PL", "leave_day_type": "FULL_DAY", "days": 3 }
-    ```
-
-    Rejects the request if:
-    - The user has no leave structure assigned.
-    - The remaining balance is below 0.5 (minimum unit).
-    - The remaining balance is less than the requested days.
-
-    Only ADMIN / HR / MANAGER can trigger deductions.
-    """
     if current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to deduct leave balance.")
 
@@ -389,9 +324,6 @@ def reverse_leave_deduction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Adds back previously deducted days (e.g. when a leave is rejected after approval).
-    """
     if current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to reverse leave balance.")
 
@@ -404,8 +336,7 @@ def reverse_leave_deduction(
 
 
 # ─────────────────────────────────────────────────────────────
-# CRON Trigger Endpoints  (Admin-only; designed for manual testing
-#                          or webhook-based schedulers)
+# CRON Trigger Endpoints
 # ─────────────────────────────────────────────────────────────
 
 cron_router = APIRouter(prefix="/leave-cron", tags=["Leave Cron"])
@@ -418,10 +349,6 @@ cron_router = APIRouter(prefix="/leave-cron", tags=["Leave Cron"])
 def trigger_monthly_allocation(
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Manually triggers the monthly leave credit job.
-    Normally scheduled to run on the 1st of each month.
-    """
     if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Only ADMIN can trigger cron jobs.")
 
@@ -441,11 +368,6 @@ def trigger_year_end_reset(
     year: Optional[int] = Query(None, description="Target year to reset (defaults to current year)"),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Manually triggers the year-end leave reset.
-    Handles ENCASH / EXTEND / VOID policies per structure.
-    Returns encashment records that the salary module can consume.
-    """
     if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Only ADMIN can trigger cron jobs.")
 

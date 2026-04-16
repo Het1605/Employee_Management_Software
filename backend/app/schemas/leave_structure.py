@@ -25,8 +25,9 @@ class LeaveStructureDetailIn(BaseModel):
 
 
 class LeaveStructureCreate(BaseModel):
-    name:    str = Field(..., min_length=1, max_length=150)
-    details: List[LeaveStructureDetailIn]
+    company_id: int
+    name:       str = Field(..., min_length=1, max_length=150)
+    details:    List[LeaveStructureDetailIn]
 
     @model_validator(mode="after")
     def validate_all_three_types(self) -> "LeaveStructureCreate":
@@ -43,7 +44,7 @@ class LeaveStructureDetailOut(BaseModel):
     id:              int
     structure_id:    int
     leave_type:      LeaveType
-    total_days:      int
+    total_days:      Decimal
     allocation_type: AllocationType
     reset_policy:    ResetPolicy
 
@@ -53,6 +54,7 @@ class LeaveStructureDetailOut(BaseModel):
 
 class LeaveStructureOut(BaseModel):
     id:         int
+    company_id: int
     name:       str
     created_at: datetime
     details:    List[LeaveStructureDetailOut]
@@ -68,7 +70,7 @@ class LeaveStructureOut(BaseModel):
 class LeaveStructureDetailUpdate(BaseModel):
     """One detail row for an update request. leave_type acts as the key."""
     leave_type:      LeaveType
-    total_days:      int = Field(..., gt=0, description="Must be > 0")
+    total_days:      Decimal = Field(..., gt=0, description="Must be > 0")
     allocation_type: AllocationType
     reset_policy:    ResetPolicy
 
@@ -99,6 +101,7 @@ class LeaveStructureUpdate(BaseModel):
 # ─────────────────────────────────────────────────────────────
 
 class LeaveAssignmentCreate(BaseModel):
+    company_id:   int
     user_id:      int
     structure_id: int
 
@@ -110,6 +113,7 @@ class LeaveAssignmentUpdate(BaseModel):
 
 class LeaveAssignmentOut(BaseModel):
     id:           int
+    company_id:   int
     user_id:      int
     structure_id: int
     assigned_at:  datetime
@@ -124,6 +128,7 @@ class LeaveAssignmentOut(BaseModel):
 
 class LeaveBalanceOut(BaseModel):
     id:              int
+    company_id:      int
     user_id:         int
     leave_type:      LeaveType
     year:            int

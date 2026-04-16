@@ -47,7 +47,8 @@ class LeaveStructure(Base):
     __tablename__ = "leave_structures"
 
     id         = Column(Integer, primary_key=True, index=True)
-    name       = Column(String(150), unique=True, nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    name       = Column(String(150), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -62,6 +63,10 @@ class LeaveStructure(Base):
         cascade="all, delete-orphan",
     )
 
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_leave_structure_name_per_company"),
+    )
+
 
 # ─────────────────────────────────────────
 # leave_structure_details
@@ -73,7 +78,7 @@ class LeaveStructureDetail(Base):
     id              = Column(Integer, primary_key=True, index=True)
     structure_id    = Column(Integer, ForeignKey("leave_structures.id", ondelete="CASCADE"), nullable=False)
     leave_type      = Column(SAEnum(LeaveType,    name="leave_type_enum"),    nullable=False)
-    total_days      = Column(Integer, nullable=False)
+    total_days      = Column(Numeric(precision=8, scale=2), nullable=False)
     allocation_type = Column(SAEnum(AllocationType, name="allocation_type_enum"), nullable=False)
     reset_policy    = Column(SAEnum(ResetPolicy,  name="reset_policy_enum"),  nullable=False)
 
@@ -96,6 +101,7 @@ class LeaveAssignment(Base):
     __tablename__ = "leave_assignments"
 
     id           = Column(Integer, primary_key=True, index=True)
+    company_id   = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id      = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     structure_id = Column(Integer, ForeignKey("leave_structures.id", ondelete="CASCADE"), nullable=False)
     assigned_at  = Column(DateTime(timezone=True), server_default=func.now())
@@ -118,6 +124,7 @@ class LeaveBalance(Base):
     __tablename__ = "leave_balances"
 
     id              = Column(Integer, primary_key=True, index=True)
+    company_id      = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id         = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     leave_type      = Column(SAEnum(LeaveType, name="leave_type_enum", create_type=False), nullable=False)
     year            = Column(Integer, nullable=False)
@@ -133,7 +140,7 @@ class LeaveBalance(Base):
 
     __table_args__ = (
         # Prevent duplicate period rows
-        UniqueConstraint("user_id", "leave_type", "year", "month", name="uq_user_leave_balance_period"),
+        UniqueConstraint("user_id", "leave_type", "year", "month", "company_id", name="uq_user_leave_balance_period"),
         CheckConstraint("used >= 0",      name="chk_used_non_negative"),
         CheckConstraint("remaining >= 0", name="chk_remaining_non_negative"),
     )

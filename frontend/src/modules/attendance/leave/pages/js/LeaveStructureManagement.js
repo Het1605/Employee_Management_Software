@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '../../../../../layout/MainLayout/js/MainLayout';
 import API from '../../../../../core/api/apiClient';
 import { useToast } from '../../../../../contexts/ToastContext';
+import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import { handleApiError } from '../../../../../utils/errorHandler';
 import styles from '../styles/LeaveStructureManagement.module.css';
 
 const LeaveStructureManagement = () => {
     const { showToast } = useToast();
+    const { selectedCompanyId } = useCompanyContext();
     const role = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
     const isAdminOrHR = ['ADMIN', 'HR'].includes(role);
 
@@ -17,11 +19,12 @@ const LeaveStructureManagement = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
+        if (!selectedCompanyId) return;
         setLoading(true);
         try {
             const [structRes, assignRes, userRes] = await Promise.all([
-                API.get('/leave-structures'),
-                API.get('/leave-assignments'),
+                API.get(`/leave-structures?company_id=${selectedCompanyId}`),
+                API.get(`/leave-assignments?company_id=${selectedCompanyId}`),
                 API.get('/users/')
             ]);
             setStructures(structRes.data || []);
@@ -32,13 +35,13 @@ const LeaveStructureManagement = () => {
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, selectedCompanyId]);
 
     useEffect(() => {
-        if (isAdminOrHR) {
+        if (isAdminOrHR && selectedCompanyId) {
             fetchData();
         }
-    }, [isAdminOrHR, fetchData]);
+    }, [isAdminOrHR, fetchData, selectedCompanyId]);
 
     if (!isAdminOrHR) {
         return (
