@@ -131,7 +131,13 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                                 <span className={styles.cardValue}>{formatDate(req.applied_at)}</span>
                             </div>
                             <div className={styles.cardRow}>
-                                <span className={styles.cardLabel}>{req.start_date === req.end_date ? 'Date:' : 'Date Range:'}</span>
+                                <span className={styles.cardLabel}>Leave Type:</span>
+                                <span className={styles.cardValue}>
+                                    <strong>{req.leave_category}</strong> ({req.leave_duration_type === 'FULL_DAY' ? 'Full Day' : 'Half Day'})
+                                </span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <span className={styles.cardLabel}>Date Range:</span>
                                 <span className={styles.cardValue}>
                                     {req.start_date === req.end_date 
                                         ? formatDate(req.start_date) 

@@ -4,7 +4,7 @@ from sqlalchemy import text
 from app.db.database import Base, engine
 from app.db import models
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides # Register Calendar models
-from app.models.leave_structure import LeaveStructure, LeaveStructureDetail, LeaveAssignment, LeaveBalance  # Register leave structure models
+from app.models.leave_structure import LeaveStructure, LeaveStructureDetail, LeaveAssignment  # Register leave structure models
 from app.api.routes.auth import router as auth_router
 from app.api.routes.users import router as users_router
 from app.api.routes.company import router as company_router
@@ -14,7 +14,7 @@ from app.api.routes.salary_structure import router as salary_structure_router, a
 from app.api.routes.document import router as document_router
 from app.api.routes.attendance import router as attendance_router
 from app.api.routes.leave_request import router as leave_request_router
-from app.api.routes.leave_structure import router as leave_structure_router, cron_router as leave_cron_router
+from app.api.routes.leave_structure import router as leave_structure_router
 
 from app.core.config import settings
 from app.db.database import SessionLocal
@@ -65,6 +65,7 @@ def startup_event():
 
         # Drop and recreate leave_requests (User confirmed no data)
         conn.execute(text("DROP TABLE IF EXISTS leave_requests CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS leave_balances CASCADE"))
 
         # Remove is_active from salary_components (no longer used)
         conn.execute(text("ALTER TABLE salary_components DROP COLUMN IF EXISTS is_active"))
@@ -92,7 +93,6 @@ app.include_router(document_router)
 app.include_router(attendance_router, prefix="/attendance", tags=["Attendance"])
 app.include_router(leave_request_router)
 app.include_router(leave_structure_router)
-app.include_router(leave_cron_router)
 
 @app.get("/")
 def home():

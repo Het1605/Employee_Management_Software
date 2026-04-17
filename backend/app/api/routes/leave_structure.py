@@ -33,18 +33,12 @@ from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
     LeaveAssignmentOut,
     LeaveAssignmentUpdate,
-    LeaveBalanceOut,
-    LeaveDeductRequest,
-    LeaveDayType,
+    LeaveBalanceResponse,
     LeaveStructureCreate,
     LeaveStructureOut,
     LeaveStructureUpdate,
 )
-from app.services.leave_structure_service import (
-    LeaveStructureService,
-    run_monthly_leave_allocation,
-    run_year_end_reset,
-)
+from app.services.leave_structure_service import LeaveStructureService
 
 
 # ─────────────────────────────────────────────────────────────
@@ -252,128 +246,30 @@ def delete_leave_assignment(
 
 
 # ─────────────────────────────────────────────────────────────
-# Leave Balances
+# Leave Balances (Dynamic Runtime)
 # ─────────────────────────────────────────────────────────────
 
 @router.get(
-    "/leave-balances/{user_id}",
-    response_model=List[LeaveBalanceOut],
-    summary="Get full leave balance history for a user",
+    "/leave-balance/{user_id}",
+    response_model=LeaveBalanceResponse,
+    summary="Get real-time leave balance for a user",
 )
-def get_user_leave_balances(
+def get_user_leave_balance(
     user_id: int,
-    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Returns real-time leave balance (Allocated, Used, Remaining, Excess) for PL, CL, SL.
+    Calculation is done on-the-fly based on tenure and approved requests.
+    """
+    # Authorization check
     if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
-        raise HTTPException(status_code=403, detail="Not authorized to view this user's balances.")
-
-    return LeaveStructureService.get_balances(db, user_id, company_id=company_id)
-
-
-@router.get(
-    "/leave-balances/{user_id}/current",
-    response_model=List[LeaveBalanceOut],
-    summary="Get current-period leave balances for a user",
-)
-def get_user_current_balances(
-    user_id: int,
-    company_id: int = Query(..., description="ID of the company to filter by"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
-        raise HTTPException(status_code=403, detail="Not authorized to view this user's balances.")
-
-    return LeaveStructureService.get_current_balances(db, user_id, company_id=company_id)
-
-
-# ─────────────────────────────────────────────────────────────
-# Internal / Integration: Leave Deduction
-# ─────────────────────────────────────────────────────────────
-
-@router.post(
-    "/leave-balances/deduct",
-    response_model=LeaveBalanceOut,
-    summary="Deduct leave days from a user's balance (used by Leave Management module)",
-)
-def deduct_leave_balance(
-    payload: LeaveDeductRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role not in ("ADMIN", "HR", "MANAGER"):
-        raise HTTPException(status_code=403, detail="Not authorized to deduct leave balance.")
+        raise HTTPException(status_code=403, detail="Not authorized to view this user's balance.")
 
     try:
-        balance = LeaveStructureService.deduct_leave(db, payload)
+        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
     return balance
-
-
-@router.post(
-    "/leave-balances/reverse",
-    response_model=LeaveBalanceOut,
-    summary="Reverse a leave deduction (on rejection / cancellation)",
-)
-def reverse_leave_deduction(
-    payload: LeaveDeductRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role not in ("ADMIN", "HR", "MANAGER"):
-        raise HTTPException(status_code=403, detail="Not authorized to reverse leave balance.")
-
-    try:
-        balance = LeaveStructureService.reverse_deduction(db, payload)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    return balance
-
-
-# ─────────────────────────────────────────────────────────────
-# CRON Trigger Endpoints
-# ─────────────────────────────────────────────────────────────
-
-cron_router = APIRouter(prefix="/leave-cron", tags=["Leave Cron"])
-
-
-@cron_router.post(
-    "/monthly-allocation",
-    summary="Trigger monthly leave allocation (Admin only)",
-)
-def trigger_monthly_allocation(
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Only ADMIN can trigger cron jobs.")
-
-    try:
-        run_monthly_leave_allocation()
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Cron job failed: {exc}")
-
-    return {"message": "Monthly leave allocation completed successfully."}
-
-
-@cron_router.post(
-    "/year-end-reset",
-    summary="Trigger year-end leave reset (Admin only)",
-)
-def trigger_year_end_reset(
-    year: Optional[int] = Query(None, description="Target year to reset (defaults to current year)"),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Only ADMIN can trigger cron jobs.")
-
-    try:
-        result = run_year_end_reset(target_year=year)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Year-end reset failed: {exc}")
-
-    return result

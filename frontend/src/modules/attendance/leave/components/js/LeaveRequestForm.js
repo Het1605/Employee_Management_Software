@@ -3,9 +3,12 @@ import API from '../../../../../core/api/apiClient';
 import styles from '../styles/LeaveRequestForm.module.css';
 
 const LeaveRequestForm = ({ onLeaveCreated }) => {
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [leaveType, setLeaveType] = useState('FULL_DAY'); // FULL_DAY / HALF_DAY
+    const today = new Date().toISOString().split('T')[0];
+    
+    const [startDate, setStartDate] = useState(today);
+    const [endDate, setEndDate] = useState(today);
+    const [leaveCategory, setLeaveCategory] = useState('PL'); // PL / CL / SL
+    const [leaveDurationType, setLeaveDurationType] = useState('FULL_DAY'); // FULL_DAY / HALF_DAY
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
@@ -13,24 +16,20 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!startDate || (leaveType === 'FULL_DAY' && !endDate)) {
+        if (!startDate || !endDate) {
             setMessage({ text: 'Please select required dates', type: 'error' });
             return;
         }
  
-        if (leaveType === 'FULL_DAY' && new Date(startDate) > new Date(endDate)) {
+        if (new Date(startDate) > new Date(endDate)) {
             setMessage({ text: 'Start date cannot be after end date', type: 'error' });
             return;
         }
 
-        const userId = localStorage.getItem('userId');
-        
-        // Ensure we retrieve company safely. For now, fetch from an endpoint or local storage if mapped.
-        // Assuming user's company is inherently passed or fetched. 
-        // In this system's paradigm, we can pass standard company_id 1 if not tightly coupled, 
-        // but standard paradigm is to fetch it from local storage, or the API ignores it if single tenant.
-        // Let's use localStorage if available, else fallback to 1 logic.
-        const companyId = localStorage.getItem('companyId') || 1;
+        if (new Date(startDate) < new Date(today)) {
+            setMessage({ text: 'Leave cannot be applied for past dates', type: 'error' });
+            return;
+        }
 
         setLoading(true);
         setMessage({ text: '', type: '' });
@@ -38,14 +37,15 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
         try {
             await API.post('/leave-requests', {
                 start_date: startDate,
-                end_date: leaveType === 'HALF_DAY' ? startDate : endDate,
+                end_date: endDate,
                 reason: reason,
-                leave_type: leaveType
+                leave_category: leaveCategory,
+                leave_duration_type: leaveDurationType
             });
 
             setMessage({ text: 'Leave request submitted successfully!', type: 'success' });
-            setStartDate('');
-            setEndDate('');
+            setStartDate(today);
+            setEndDate(today);
             setReason('');
             
             if (onLeaveCreated) {
@@ -79,15 +79,15 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
                 <div className={styles.typeToggleContainer}>
                     <button 
                         type="button"
-                        className={`${styles.typeBtn} ${leaveType === 'FULL_DAY' ? styles.activeType : ''}`}
-                        onClick={() => setLeaveType('FULL_DAY')}
+                        className={`${styles.typeBtn} ${leaveDurationType === 'FULL_DAY' ? styles.activeType : ''}`}
+                        onClick={() => setLeaveDurationType('FULL_DAY')}
                     >
                         Full Day
                     </button>
                     <button 
                         type="button"
-                        className={`${styles.typeBtn} ${leaveType === 'HALF_DAY' ? styles.activeType : ''}`}
-                        onClick={() => setLeaveType('HALF_DAY')}
+                        className={`${styles.typeBtn} ${leaveDurationType === 'HALF_DAY' ? styles.activeType : ''}`}
+                        onClick={() => setLeaveDurationType('HALF_DAY')}
                     >
                         Half Day
                     </button>
@@ -95,28 +95,46 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
 
                 <div className={styles.formGrid}>
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>{leaveType === 'HALF_DAY' ? 'Date' : 'Start Date'}</label>
+                        <label className={styles.label}>Leave Type (Category)</label>
+                        <select 
+                            className={styles.input}
+                            value={leaveCategory}
+                            onChange={(e) => setLeaveCategory(e.target.value)}
+                            required
+                        >
+                            <option value="PL">Privilege Leave (PL)</option>
+                            <option value="CL">Casual Leave (CL)</option>
+                            <option value="SL">Sick Leave (SL)</option>
+                        </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        {/* Empty spacer for alignment if needed, or put something else */}
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Start Date</label>
                         <input 
                             type="date" 
                             className={styles.input}
                             value={startDate}
+                            min={today}
                             onChange={(e) => setStartDate(e.target.value)}
                             required
                         />
                     </div>
                     
-                    {leaveType === 'FULL_DAY' && (
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>End Date</label>
-                            <input 
-                                type="date" 
-                                className={styles.input}
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                required
-                            />
-                        </div>
-                    )}
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>End Date</label>
+                        <input 
+                            type="date" 
+                            className={styles.input}
+                            value={endDate}
+                            min={startDate || today}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            required
+                        />
+                    </div>
 
                     <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                         <label className={styles.label}>Reason (Optional)</label>

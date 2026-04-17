@@ -29,7 +29,6 @@ from app.db.models import User
 from app.models.leave_structure import (
     AllocationType,
     LeaveAssignment,
-    LeaveBalance,
     LeaveStructure,
     LeaveStructureDetail,
     LeaveType,
@@ -38,7 +37,6 @@ from app.models.leave_structure import (
 from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
     LeaveAssignmentUpdate,
-    LeaveDeductRequest,
     LeaveStructureCreate,
     LeaveStructureUpdate,
 )
@@ -80,31 +78,7 @@ def _get_current_year_month() -> tuple[int, int]:
     return now.year, now.month
 
 
-def _get_or_create_balance(
-    db: Session,
-    user_id: int,
-    leave_type: LeaveType,
-    year: int,
-    month: Optional[int],
-) -> LeaveBalance:
-    """Fetch existing balance row, creating one (un-committed) if absent."""
-    balance = (
-        db.query(LeaveBalance)
-        .filter_by(user_id=user_id, leave_type=leave_type, year=year, month=month)
-        .first()
-    )
-    if not balance:
-        balance = LeaveBalance(
-            user_id=user_id,
-            leave_type=leave_type,
-            year=year,
-            month=month,
-            total_allocated=Decimal("0"),
-            used=Decimal("0"),
-            remaining=Decimal("0"),
-        )
-        db.add(balance)
-    return balance
+# _get_or_create_balance removed as balance table is no longer used
 
 
 # ─────────────────────────────────────────────────────────────
@@ -201,89 +175,86 @@ class LeaveStructureService:
         db.add(assignment)
         db.flush()
 
-        # Initialise balances
-        LeaveStructureService._initialize_balances(db, payload.company_id, payload.user_id, structure)
+        # Assignment created; balances are now calculated at runtime.
 
         db.commit()
         db.refresh(assignment)
         return assignment
 
     # ──────────────────────────────────────────
-    # Internal: balance initialisation
+    # 4. Get Runtime Leave Balance (DYNAMIC)
     # ──────────────────────────────────────────
 
     @staticmethod
-    def _initialize_balances(
-        db: Session, company_id: int, user_id: int, structure: LeaveStructure
-    ) -> None:
-        year, month = _get_current_year_month()
-
-        for detail in structure.details:
-            if detail.allocation_type == AllocationType.YEARLY:
-                # Single row per year; month = NULL
-                balance = _get_or_create_balance(
-                    db, user_id, detail.leave_type, year, month=None
-                )
-                balance.company_id = company_id
-                alloc = detail.total_days
-                # Only set if not already allocated (idempotent re-assignment)
-                if balance.total_allocated == Decimal("0"):
-                    balance.total_allocated = alloc
-                    balance.remaining = alloc
-
-            elif detail.allocation_type == AllocationType.MONTHLY:
-                # Credit the current month's slice as integer
-                monthly = _get_monthly_allocation(detail.total_days, month)
-                balance = _get_or_create_balance(
-                    db, user_id, detail.leave_type, year, month=month
-                )
-                balance.company_id = company_id
-                if balance.total_allocated == Decimal("0"):
-                    balance.total_allocated = monthly
-                    balance.remaining = monthly
-
-    # ──────────────────────────────────────────
-    # 4. Get User Leave Balances
-    # ──────────────────────────────────────────
-
-    @staticmethod
-    def get_balances(db: Session, user_id: int, company_id: Optional[int] = None) -> List[LeaveBalance]:
+    def get_runtime_leave_balance(db: Session, user_id: int) -> dict:
         """
-        Returns ALL balance rows for the user.
+        Calculates leave balance in real-time without using a balance table.
+        1. Find assignment to get assigned_at and structure_id.
+        2. Determine eligible_months (assigned_at to today).
+        3. Pro-rata allocation: int((yearly_total / 12) * eligible_months).
+        4. Aggregate used: sum of approved leave_requests for each type.
         """
-        query = db.query(LeaveBalance).filter_by(user_id=user_id)
-        if company_id is not None:
-            query = query.filter_by(company_id=company_id)
+        from app.db.models import LeaveRequest
+        from sqlalchemy import func
+
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        if not assignment:
+            # Fallback if unassigned: return 0 balances
+            empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
+            return {"PL": empty, "CL": empty, "SL": empty}
+
+        # Structure details
+        structure = db.query(LeaveStructure).filter_by(id=assignment.structure_id).first()
+        if not structure:
+             empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
+             return {"PL": empty, "CL": empty, "SL": empty}
+
+        # Calculate Tenure (Eligible Months)
+        now = _now_utc()
+        start = assignment.assigned_at
         
-        return (
-            query
-            .order_by(LeaveBalance.leave_type, LeaveBalance.year, LeaveBalance.month)
-            .all()
-        )
+        # Months difference (inclusive)
+        # e.g. Jan to Jan = 1 month. Jan to Feb = 2 months.
+        eligible_months = (now.year - start.year) * 12 + (now.month - start.month) + 1
+        
+        # Aggregate used leaves from live requests
+        used_summary = db.query(
+            LeaveRequest.leave_category,
+            func.sum(LeaveRequest.total_days).label("total_used")
+        ).filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.status == "approved"
+        ).group_by(LeaveRequest.leave_category).all()
+        
+        used_map = {item.leave_category.value: float(item.total_used or 0) for item in used_summary}
 
-    @staticmethod
-    def get_current_balances(db: Session, user_id: int, company_id: Optional[int] = None) -> List[LeaveBalance]:
-        """Returns only the current year/month balances."""
-        year, month = _get_current_year_month()
+        # Calculate per-category details
+        response = {}
+        for detail in structure.details:
+            category = detail.leave_type.value
+            
+            # Allocation pro-rata (as specified in logic B)
+            # Both MONTHLY and YEARLY follow the pro-rata tenure rule for calculation.
+            yearly_total = float(detail.total_days)
+            allocated = int((yearly_total / 12) * eligible_months)
+            
+            used = used_map.get(category, 0.0)
+            
+            remaining = float(allocated - used)
+            excess = 0.0
+            
+            if remaining < 0:
+                excess = abs(remaining)
+                remaining = 0.0
+                
+            response[category] = {
+                "allocated": allocated,
+                "used": used,
+                "remaining": remaining,
+                "excess": excess
+            }
 
-        from sqlalchemy import or_
-
-        query = db.query(LeaveBalance).filter(
-            LeaveBalance.user_id == user_id,
-            LeaveBalance.year == year,
-            or_(
-                LeaveBalance.month.is_(None),
-                LeaveBalance.month == month,
-            ),
-        )
-        if company_id is not None:
-            query = query.filter_by(company_id=company_id)
-
-        return (
-            query
-            .order_by(LeaveBalance.leave_type)
-            .all()
-        )
+        return response
 
     @staticmethod
     def get_all_assignments(db: Session, company_id: Optional[int] = None) -> List[LeaveAssignment]:
@@ -294,117 +265,41 @@ class LeaveStructureService:
         return query.order_by(LeaveAssignment.assigned_at.desc()).all()
 
     # ──────────────────────────────────────────
-    # 5. Leave Deduction
+    # 5. Update Assignment
     # ──────────────────────────────────────────
 
     @staticmethod
-    def deduct_leave(db: Session, request: LeaveDeductRequest) -> LeaveBalance:
-        """
-        Deduct `days` from the user's active balance.
-        """
-        year, month = _get_current_year_month()
-
-        # Determine which row to deduct from
-        assignment = db.query(LeaveAssignment).filter_by(user_id=request.user_id).first()
+    def update_assignment(
+        db: Session, user_id: int, payload: LeaveAssignmentUpdate
+    ) -> LeaveAssignment:
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
         if not assignment:
-            raise ValueError(f"User {request.user_id} has no leave structure assigned.")
+            raise ValueError(f"No leave assignment found for user {user_id}.")
 
-        detail = (
-            db.query(LeaveStructureDetail)
-            .filter_by(
-                structure_id=assignment.structure_id,
-                leave_type=request.leave_category,
-            )
-            .first()
-        )
-        if not detail:
-            raise ValueError(
-                f"Leave type {request.leave_category.value} not found in assigned structure."
-            )
+        new_structure = db.query(LeaveStructure).filter_by(
+            id=payload.structure_id,
+            company_id=assignment.company_id
+        ).first()
+        if not new_structure:
+            raise ValueError(f"Leave structure {payload.structure_id} not found.")
 
-        target_month = month if detail.allocation_type == AllocationType.MONTHLY else None
-
-        balance = (
-            db.query(LeaveBalance)
-            .filter_by(
-                user_id=request.user_id,
-                leave_type=request.leave_category,
-                year=year,
-                month=target_month,
-                company_id=assignment.company_id
-            )
-            .first()
-        )
-        if not balance:
-            raise ValueError(
-                f"No balance record found for user {request.user_id} period."
-            )
-
-        # Guard 1: user must hold at least the minimum leave unit (0.5)
-        if balance.remaining < _MIN_LEAVE_UNIT:
-            raise ValueError(f"No {request.leave_category.value} balance remaining.")
-
-        # Guard 2: remaining must cover the full requested amount
-        if balance.remaining < request.days:
-            raise ValueError(f"Insufficient {request.leave_category.value} balance.")
-
-        days = request.days.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        balance.used      = (balance.used + days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        balance.remaining = (balance.remaining - days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        assignment.structure_id = payload.structure_id
         db.commit()
-        db.refresh(balance)
-        return balance
+        db.refresh(assignment)
+        return assignment
 
     # ──────────────────────────────────────────
-    # 6. Reverse Deduction
+    # 6. Delete Assignment
     # ──────────────────────────────────────────
 
     @staticmethod
-    def reverse_deduction(db: Session, request: LeaveDeductRequest) -> LeaveBalance:
-        year, month = _get_current_year_month()
-
-        assignment = db.query(LeaveAssignment).filter_by(user_id=request.user_id).first()
+    def delete_assignment(db: Session, user_id: int) -> None:
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
         if not assignment:
-            raise ValueError(f"User {request.user_id} has no leave structure assigned.")
+            raise ValueError(f"No assignment found for user {user_id}.")
 
-        detail = (
-            db.query(LeaveStructureDetail)
-            .filter_by(
-                structure_id=assignment.structure_id,
-                leave_type=request.leave_category,
-            )
-            .first()
-        )
-        if not detail:
-            raise ValueError(f"Leave type {request.leave_category.value} not found.")
-
-        target_month = month if detail.allocation_type == AllocationType.MONTHLY else None
-
-        balance = (
-            db.query(LeaveBalance)
-            .filter_by(
-                user_id=request.user_id,
-                leave_type=request.leave_category,
-                year=year,
-                month=target_month,
-                company_id=assignment.company_id
-            )
-            .first()
-        )
-        if not balance:
-            raise ValueError("Balance record not found for reversal.")
-
-        days = request.days.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        balance.used = max(
-            Decimal("0"),
-            (balance.used - days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
-        )
-        balance.remaining = (balance.remaining + days).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
+        db.delete(assignment)
         db.commit()
-        db.refresh(balance)
-        return balance
 
     # ──────────────────────────────────────────
     # 7. Update Leave Structure
@@ -467,172 +362,3 @@ class LeaveStructureService:
 
         db.delete(structure)
         db.commit()
-
-    # ──────────────────────────────────────────
-    # 9. Update Assignment
-    # ──────────────────────────────────────────
-
-    @staticmethod
-    def update_assignment(
-        db: Session, user_id: int, payload: LeaveAssignmentUpdate
-    ) -> LeaveAssignment:
-        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
-        if not assignment:
-            raise ValueError(f"No leave assignment found for user {user_id}.")
-
-        new_structure = db.query(LeaveStructure).filter_by(
-            id=payload.structure_id,
-            company_id=assignment.company_id
-        ).first()
-        if not new_structure:
-            raise ValueError(f"Leave structure {payload.structure_id} not found.")
-
-        assignment.structure_id = payload.structure_id
-        db.flush()
-
-        # Update current-period balances
-        LeaveStructureService._reinitialize_current_balances(
-            db, assignment.company_id, user_id, new_structure
-        )
-
-        db.commit()
-        db.refresh(assignment)
-        return assignment
-
-    @staticmethod
-    def _reinitialize_current_balances(
-        db: Session, company_id: int, user_id: int, structure: LeaveStructure
-    ) -> None:
-        year, month = _get_current_year_month()
-
-        for detail in structure.details:
-            if detail.allocation_type == AllocationType.YEARLY:
-                target_month = None
-                new_alloc    = detail.total_days
-            else:  # MONTHLY
-                target_month = month
-                new_alloc    = _get_monthly_allocation(detail.total_days, month)
-
-            balance = (
-                db.query(LeaveBalance)
-                .filter_by(
-                    user_id=user_id,
-                    leave_type=detail.leave_type,
-                    year=year,
-                    month=target_month,
-                    company_id=company_id
-                )
-                .first()
-            )
-            if balance:
-                balance.total_allocated = new_alloc
-                balance.remaining = max(
-                    Decimal("0"),
-                    (new_alloc - balance.used).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
-                )
-            else:
-                db.add(
-                    LeaveBalance(
-                        company_id=company_id,
-                        user_id=user_id,
-                        leave_type=detail.leave_type,
-                        year=year,
-                        month=target_month,
-                        total_allocated=new_alloc,
-                        used=Decimal("0"),
-                        remaining=new_alloc,
-                    )
-                )
-
-    # ──────────────────────────────────────────
-    # 10. Delete Assignment
-    # ──────────────────────────────────────────
-
-    @staticmethod
-    def delete_assignment(db: Session, user_id: int) -> None:
-        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
-        if not assignment:
-            raise ValueError(f"No assignment found for user {user_id}.")
-
-        db.query(LeaveBalance).filter_by(
-            user_id=user_id, 
-            company_id=assignment.company_id
-        ).delete(synchronize_session=False)
-
-        db.delete(assignment)
-        db.commit()
-
-
-# ─────────────────────────────────────────────────────────────
-# CRON Trigger Helpers
-# ─────────────────────────────────────────────────────────────
-
-def run_monthly_leave_allocation() -> None:
-    db: Session = SessionLocal()
-    try:
-        year, month = _get_current_year_month()
-        assignments = db.query(LeaveAssignment).all()
-        for assignment in assignments:
-            structure = db.query(LeaveStructure).filter_by(id=assignment.structure_id).first()
-            if not structure: continue
-            for detail in structure.details:
-                if detail.allocation_type != AllocationType.MONTHLY: continue
-                monthly = _get_monthly_allocation(detail.total_days, month)
-                balance = db.query(LeaveBalance).filter_by(
-                    user_id=assignment.user_id,
-                    leave_type=detail.leave_type,
-                    year=year,
-                    month=month,
-                    company_id=assignment.company_id
-                ).first()
-                if not balance:
-                    db.add(LeaveBalance(
-                        user_id=assignment.user_id,
-                        company_id=assignment.company_id,
-                        leave_type=detail.leave_type,
-                        year=year,
-                        month=month,
-                        total_allocated=monthly,
-                        used=Decimal("0"),
-                        remaining=monthly,
-                    ))
-        db.commit()
-    finally:
-        db.close()
-
-def run_year_end_reset(target_year: Optional[int] = None) -> dict:
-    db: Session = SessionLocal()
-    encashment_records = []
-    try:
-        year = target_year or _now_utc().year
-        new_year = year + 1
-        assignments = db.query(LeaveAssignment).all()
-        for assignment in assignments:
-            structure = db.query(LeaveStructure).filter_by(id=assignment.structure_id).first()
-            if not structure: continue
-            for detail in structure.details:
-                if detail.allocation_type != AllocationType.YEARLY: continue
-                balance = db.query(LeaveBalance).filter_by(
-                    user_id=assignment.user_id,
-                    leave_type=detail.leave_type,
-                    year=year,
-                    month=None,
-                    company_id=assignment.company_id
-                ).first()
-                if not balance: continue
-                remaining = balance.remaining
-                if detail.reset_policy == ResetPolicy.ENCASH:
-                    encashment_records.append({"user_id": assignment.user_id, "company_id": assignment.company_id, "leave_type": detail.leave_type.value, "year": year, "days": round(float(remaining), 2)})
-                    balance.remaining = Decimal("0")
-                elif detail.reset_policy == ResetPolicy.EXTEND:
-                    new_balance = _get_or_create_balance(db, assignment.user_id, detail.leave_type, new_year, month=None)
-                    new_balance.company_id = assignment.company_id
-                    new_balance.total_allocated += remaining
-                    new_balance.remaining       += remaining
-                    balance.remaining = Decimal("0")
-                elif detail.reset_policy == ResetPolicy.VOID:
-                    balance.remaining = Decimal("0")
-        db.commit()
-        return {"status": "ok", "year": year, "encashments": encashment_records}
-    finally:
-        db.close()

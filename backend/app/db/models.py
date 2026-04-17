@@ -227,7 +227,8 @@ class LeaveRequest(Base):
 
     __table_args__ = (
         Index('idx_leave_company_dates', 'company_id', 'start_date', 'end_date'),
-        Index('idx_leave_user_dates', 'user_id', 'start_date', 'end_date')
+        Index('idx_leave_user_dates', 'user_id', 'start_date', 'end_date'),
+        Index('idx_leave_balance_aggregation', 'user_id', 'leave_category', 'status')
     )
 
 class SalarySlipDispatchLog(Base):

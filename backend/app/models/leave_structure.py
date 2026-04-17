@@ -111,36 +111,4 @@ class LeaveAssignment(Base):
     structure = relationship("LeaveStructure", back_populates="assignments")
 
 
-# ─────────────────────────────────────────
-# leave_balances
-# ─────────────────────────────────────────
-
-class LeaveBalance(Base):
-    """
-    Tracks per-user leave balance.
-    - YEARLY  allocation: month = NULL  (one row per year)
-    - MONTHLY allocation: month = 1-12  (one row per month)
-    """
-    __tablename__ = "leave_balances"
-
-    id              = Column(Integer, primary_key=True, index=True)
-    company_id      = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id         = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    leave_type      = Column(SAEnum(LeaveType, name="leave_type_enum", create_type=False), nullable=False)
-    year            = Column(Integer, nullable=False)
-    month           = Column(Integer, nullable=True)   # NULL for YEARLY allocation
-    total_allocated = Column(Numeric(precision=8, scale=2), nullable=False, default=0)
-    used            = Column(Numeric(precision=8, scale=2), nullable=False, default=0)
-    remaining       = Column(Numeric(precision=8, scale=2), nullable=False, default=0)
-    created_at      = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    user = relationship("User")
-
-    __table_args__ = (
-        # Prevent duplicate period rows
-        UniqueConstraint("user_id", "leave_type", "year", "month", "company_id", name="uq_user_leave_balance_period"),
-        CheckConstraint("used >= 0",      name="chk_used_non_negative"),
-        CheckConstraint("remaining >= 0", name="chk_remaining_non_negative"),
-    )
+# leave_balances table removed as per runtime calculation objective
