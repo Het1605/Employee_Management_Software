@@ -18,6 +18,8 @@ Design principles:
 from __future__ import annotations
 
 import math
+import logging
+import calendar
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
@@ -40,6 +42,8 @@ from app.schemas.leave_structure import (
     LeaveStructureCreate,
     LeaveStructureUpdate,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -209,37 +213,82 @@ class LeaveStructureService:
              empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
              return {"PL": empty, "CL": empty, "SL": empty}
 
-        # Calculate Tenure (Eligible Months)
         now = _now_utc()
         start = assignment.assigned_at
         
-        # Months difference (inclusive)
-        # e.g. Jan to Jan = 1 month. Jan to Feb = 2 months.
+        # Calculate Tenure (Eligible Months for Logging)
         eligible_months = (now.year - start.year) * 12 + (now.month - start.month) + 1
-        
-        # Aggregate used leaves from live requests
-        used_summary = db.query(
-            LeaveRequest.leave_category,
-            func.sum(LeaveRequest.total_days).label("total_used")
-        ).filter(
-            LeaveRequest.user_id == user_id,
-            LeaveRequest.status == "approved"
-        ).group_by(LeaveRequest.leave_category).all()
-        
-        used_map = {item.leave_category.value: float(item.total_used or 0) for item in used_summary}
 
         # Calculate per-category details
         response = {}
         for detail in structure.details:
             category = detail.leave_type.value
             
-            # Allocation pro-rata (as specified in logic B)
-            # Both MONTHLY and YEARLY follow the pro-rata tenure rule for calculation.
-            yearly_total = float(detail.total_days)
-            allocated = int((yearly_total / 12) * eligible_months)
+            # 1. Log Entry Point
+            logger.info(
+                f"[LeaveBalance] user={user_id} company={assignment.company_id} type={category} "
+                f"allocation={detail.allocation_type.value} total_days={detail.total_days} "
+                f"assigned={start.strftime('%Y-%m-%d')} current={now.strftime('%Y-%m-%d')}"
+            )
+
+            # 2. Log Eligible Months
+            logger.info(
+                f"[LeaveBalance] assigned_month={start.month} current_month={now.month} "
+                f"eligible_months={eligible_months}"
+            )
+
+            # 3. Allocation Logic
+            yearly_total = int(detail.total_days)
+            if detail.allocation_type == AllocationType.YEARLY:
+                allocated = yearly_total
+                # 4. YEARLY Calculation Logs
+                logger.info(f"[LeaveBalance] type={category} allocated={allocated} Note: Full yearly allocation applied (no distribution)")
+            else:
+                # MONTHLY: Sum integer-based allocation for each month of tenure
+                allocated = 0
+                base = yearly_total // 12
+                extra = yearly_total % 12
+
+                # 3A. Log Distribution Setup
+                logger.info(f"[LeaveBalance] type={category} yearly_total={yearly_total} base={base} extra={extra}")
+                
+                # Start from assignment month/year up to current month/year
+                curr_y, curr_m = start.year, start.month
+                while (curr_y < now.year) or (curr_y == now.year and curr_m <= now.month):
+                    # 3B. Log Month-wise Allocation
+                    month_alloc = int(_get_monthly_allocation(yearly_total, curr_m))
+                    month_name = calendar.month_name[curr_m][:3]
+                    logger.info(f"[LeaveBalance] type={category} month={month_name} index={curr_m} allocated_this_month={month_alloc}")
+                    
+                    allocated += month_alloc
+                    
+                    # Increment month
+                    curr_m += 1
+                    if curr_m > 12:
+                        curr_m = 1
+                        curr_y += 1
+                
+                # 3C. Log Final Allocated
+                logger.info(f"[LeaveBalance] type={category} total_allocated={allocated} (after summing months)")
+
+            # 5. Used Leaves Logs
+            # Aggregate used leaves from live requests with count
+            from app.db.models import LeaveCategory
+            used_data = db.query(
+                func.sum(LeaveRequest.total_days).label("total_used"),
+                func.count(LeaveRequest.id).label("request_count")
+            ).filter(
+                LeaveRequest.user_id == user_id,
+                LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
+                LeaveRequest.status == "approved"
+            ).first()
             
-            used = used_map.get(category, 0.0)
-            
+            used = float(used_data.total_used or 0)
+            count = int(used_data.request_count or 0)
+
+            logger.info(f"[LeaveBalance] type={category} total_used={used} number_of_requests_considered={count}")
+
+            # 6. Final Calculation Logs
             remaining = float(allocated - used)
             excess = 0.0
             
@@ -247,6 +296,11 @@ class LeaveStructureService:
                 excess = abs(remaining)
                 remaining = 0.0
                 
+            logger.info(
+                f"[LeaveBalance] Final values: type={category} allocated={allocated} used={used} "
+                f"remaining={remaining} excess={excess}"
+            )
+
             response[category] = {
                 "allocated": allocated,
                 "used": used,
