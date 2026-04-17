@@ -28,7 +28,9 @@ export const SalarySlipPreview1 = ({
   const designation = form_data?.designation || '____________';
   const totalWorkingDays = form_data?.total_working_days || '0';
   const effectiveDays = form_data?.effective_days || '0';
-  const totalLeaves = form_data?.total_leaves || '0';
+  const leavesTaken = form_data?.leaves_taken || '0';
+  const paidLeaves = form_data?.paid_leaves || '0';
+  const unpaidLeaves = form_data?.unpaid_leaves || '0';
   const companyName = form_data?.company_name || '____________';
 
   const earnings = form_data?.earnings || [];
@@ -44,8 +46,9 @@ export const SalarySlipPreview1 = ({
   };
 
   const fDays = (val) => {
+    if (val === undefined || val === null || val === '') return '0';
     const num = Number(val);
-    return Number.isInteger(num) ? num : num;
+    return Number.isInteger(num) ? num : num.toFixed(1);
   };
 
   return (
@@ -65,19 +68,23 @@ export const SalarySlipPreview1 = ({
             <div className={styles.salaryTitle}><h2>SALARY SLIP</h2></div>
 
             <div className={styles.salaryInfoSection}>
-              <table className={styles.salaryInfoTable}>
+              <table className={styles.salaryInfoTable} style={{ tableLayout: 'fixed' }}>
                 <tbody>
                   <tr>
-                    <td className={styles.salaryInfoCell}><strong>Employee Name:</strong> {name}</td>
-                    <td className={styles.salaryInfoCell}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Employee Name:</strong> {name}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Pay Period:</strong> {displayMonth} {displayYear}</td>
                   </tr>
                   <tr>
-                    <td className={styles.salaryInfoCell}><strong>Designation:</strong> {designation}</td>
-                    <td className={styles.salaryInfoCell}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Designation:</strong> {designation}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
                   </tr>
                   <tr>
-                    <td className={styles.salaryInfoCell}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
-                    <td className={styles.salaryInfoCell}><strong>Total Leaves:</strong> {fDays(totalLeaves)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Leaves Taken:</strong> {fDays(leavesTaken)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Paid Leaves:</strong> {fDays(paidLeaves)}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Unpaid Leaves:</strong> {fDays(unpaidLeaves)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '50%' }}><strong>Effective Paid Days:</strong> {fDays(effectiveDays)}</td>
                   </tr>
                 </tbody>
               </table>

@@ -139,18 +139,114 @@ class DocumentService:
 
         # 3. Attendance
         att_summary = get_my_attendance(db, user.id, int(month), int(year))
-        total_working_days = sum(1 for d in att_summary['attendance'] if d['day_type'] in ['working', 'half'])
+        
+        # 4. Payable Days Reconciliation
+        from app.db.models import LeaveRequest, LeaveDurationType
+        from app.services.leave_structure_service import LeaveStructureService
+        from datetime import date, timedelta
+        import calendar as pycal
+        
+        _, last_day = pycal.monthrange(int(year), int(month))
+        month_start = date(int(year), int(month), 1)
+        month_end = date(int(year), int(month), last_day)
+
+        # A. Get Approved Leaves for this month
+        leaves = db.query(LeaveRequest).filter(
+            LeaveRequest.user_id == user.id,
+            LeaveRequest.status == "approved",
+            LeaveRequest.start_date <= month_end,
+            LeaveRequest.end_date >= month_start
+        ).all()
+        
+        leave_map = {} # date -> LeaveRequest
+        for l in leaves:
+            curr = l.start_date
+            while curr <= l.end_date:
+                if month_start <= curr <= month_end:
+                    leave_map[curr] = l
+                curr += timedelta(days=1)
+
+        # B. Get Starting Balances (as of end of previous month)
+        prev_month_end = month_start - timedelta(days=1)
+        start_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=prev_month_end)
+        
+        # C. Get This Month's Allocation (Compare month_end vs month_start-1)
+        full_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=month_end)
+        
+        # Track virtual remaining balance for this specific month's reconciliation
+        # available = (prev balance) + (this month's new allocation) - (leaves already taken BEFORE this month but in same year?)
+        # Actually, get_runtime_leave_balance(month_end) already gives (Total Allocated up to month_end) - (Total Used up to month_end).
+        # To get "Available for this month's reconciliation", we need:
+        # (Total Allocated up to month_end) - (Total Used BEFORE this month).
+        
+        virtual_balances = {}
+        for cat in ["PL", "CL", "SL"]:
+            allocated_up_to_end = Decimal(str(full_balances[cat]["allocated"]))
+            used_before_this_month = Decimal(str(start_balances[cat]["used"]))
+            virtual_balances[cat] = allocated_up_to_end - used_before_this_month
+
+        total_payable_days = Decimal('0')
+        total_working_days = 0
+        leaves_taken = Decimal('0')
+        paid_leaves = Decimal('0')
+        unpaid_leaves = Decimal('0')
+
+        for day in att_summary['attendance']:
+            dt = day['date']
+            status = day['status']
+            day_type = day['day_type']
+            
+            if day_type not in ['working', 'half']:
+                continue
+                
+            total_working_days += 1
+            
+            if status == 'present':
+                total_payable_days += Decimal('1.0')
+            elif status == 'half_day':
+                # Worked half-day is always 0.5 payable
+                total_payable_days += Decimal('0.5')
+                leaves_taken += Decimal('0.5')
+                
+                # Check for half-day leave to cover the other half
+                leave = leave_map.get(dt)
+                if leave and leave.leave_duration_type == LeaveDurationType.HALF_DAY:
+                    cat = leave.leave_category.value
+                    if virtual_balances.get(cat, Decimal('0')) >= Decimal('0.5'):
+                        total_payable_days += Decimal('0.5')
+                        paid_leaves += Decimal('0.5')
+                        virtual_balances[cat] -= Decimal('0.5')
+                    else:
+                        unpaid_leaves += Decimal('0.5')
+                else:
+                    unpaid_leaves += Decimal('0.5')
+            elif status == 'absent':
+                leaves_taken += Decimal('1.0')
+                # Check for full-day leave
+                leave = leave_map.get(dt)
+                if leave and leave.leave_duration_type == LeaveDurationType.FULL_DAY:
+                    cat = leave.leave_category.value
+                    if virtual_balances.get(cat, Decimal('0')) >= Decimal('1.0'):
+                        total_payable_days += Decimal('1.0')
+                        paid_leaves += Decimal('1.0')
+                        virtual_balances[cat] -= Decimal('1.0')
+                    else:
+                        unpaid_leaves += Decimal('1.0')
+                else:
+                    unpaid_leaves += Decimal('1.0')
+
         if total_working_days == 0:
-            import calendar as pycal
-            total_working_days = pycal.monthrange(int(year), int(month))[1]
-        
-        effective_days = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
-        
-        # 4. Calculation (Mathematical Leave Deduction)
-        # Leave Days = Total Working Days - Effective Days
-        total_leaves = Decimal(str(total_working_days)) - effective_days
+            total_working_days = last_day
+
+        # 5. Calculation
+        # Effective Paid Days = Total Working Days - Unpaid Leaves
+        effective_days_val = float(Decimal(str(total_working_days)) - unpaid_leaves)
         per_day_salary = monthly_base / Decimal(str(total_working_days))
-        leave_deduction = per_day_salary * total_leaves
+        leave_deduction = per_day_salary * unpaid_leaves
+
+        # Ensure deduction is not negative
+        if leave_deduction < 0:
+            leave_deduction = Decimal('0')
 
         # 5. Breakdown
         earnings_list = []
@@ -165,12 +261,15 @@ class DocumentService:
                 deductions_list.append(comp)
 
         if leave_deduction > 0:
-            deductions_list.append({"name": "Leave Deduction", "amount": round(float(leave_deduction), 2)})
+            deductions_list.append({
+                "name": f"Unpaid Leave Deduction ({float(unpaid_leaves)} Days)", 
+                "amount": round(float(leave_deduction), 2)
+            })
         
         total_earnings = sum(e['amount'] for e in earnings_list)
         total_deductions = sum(d['amount'] for d in deductions_list)
         net_salary = total_earnings - total_deductions
-        total_leaves_val = float(total_leaves)
+        total_leaves_val = float(unpaid_leaves) # Legacy support
 
         month_names = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         display_month = month_names[int(month)]
@@ -185,8 +284,11 @@ class DocumentService:
             "present_days": att_summary['present_days'],
             "half_days": att_summary['half_days'],
             "absent_days": att_summary['absent_days'],
-            "effective_days": float(effective_days),
+            "effective_days": effective_days_val,
             "total_leaves": total_leaves_val,
+            "leaves_taken": float(leaves_taken),
+            "paid_leaves": float(paid_leaves),
+            "unpaid_leaves": float(unpaid_leaves),
             "earnings": earnings_list,
             "deductions": deductions_list,
             "total_earnings": round(float(total_earnings), 2),
@@ -224,24 +326,104 @@ class DocumentService:
         month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
         import calendar as pycal
+        from datetime import date, timedelta
 
         for month_idx in range(1, 13):
-            # 3. Attendance for the month
-            att_summary = get_my_attendance(db, user.id, month_idx, int(year))
-            total_working_days_month = sum(1 for d in att_summary['attendance'] if d['day_type'] in ['working', 'half'])
-            if total_working_days_month == 0:
-                total_working_days_month = pycal.monthrange(int(year), month_idx)[1]
-            
-            total_working_days_month_dec = Decimal(str(total_working_days_month))
-            effective_days_month = Decimal(str(att_summary['present_days'])) + (Decimal(str(att_summary['half_days'])) * Decimal('0.5'))
-            
-            # 4. Calculation (Mathematical Leave Deduction)
-            # Leave Days = Total Working Days - Effective Days
-            total_leaves_month = total_working_days_month_dec - effective_days_month
-            per_day_salary = monthly_base / total_working_days_month_dec
-            leave_deduction_month = per_day_salary * total_leaves_month
+            # A. Month Dates
+            _, last_day = pycal.monthrange(int(year), month_idx)
+            month_start = date(int(year), month_idx, 1)
+            month_end = date(int(year), month_idx, last_day)
 
-            # 5. Earnings & Components based on FULL monthly salary
+            # B. Attendance
+            att_summary = get_my_attendance(db, user.id, month_idx, int(year))
+            
+            # C. Reconciliation Setup
+            from app.db.models import LeaveRequest, LeaveDurationType
+            from app.services.leave_structure_service import LeaveStructureService
+            
+            # Approved leaves for this month
+            leaves = db.query(LeaveRequest).filter(
+                LeaveRequest.user_id == user.id,
+                LeaveRequest.status == "approved",
+                LeaveRequest.start_date <= month_end,
+                LeaveRequest.end_date >= month_start
+            ).all()
+            
+            leave_map = {}
+            for l in leaves:
+                curr_l = l.start_date
+                while curr_l <= l.end_date:
+                    if month_start <= curr_l <= month_end:
+                        leave_map[curr_l] = l
+                    curr_l += timedelta(days=1)
+
+            # Starting balances as of previous month's end
+            prev_m_end = month_start - timedelta(days=1)
+            start_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=prev_m_end)
+            full_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=month_end)
+            
+            virt_balances = {}
+            for ct in ["PL", "CL", "SL"]:
+                alloc_up = Decimal(str(full_balances[ct]["allocated"]))
+                used_bef = Decimal(str(start_balances[ct]["used"]))
+                virt_balances[ct] = alloc_up - used_bef
+
+            total_payable_month = Decimal('0')
+            total_working_month = 0
+            leaves_taken_month = Decimal('0')
+            paid_leaves_month = Decimal('0')
+            unpaid_leaves_month = Decimal('0')
+
+            for day in att_summary['attendance']:
+                dt = day['date']
+                status = day['status']
+                day_type = day['day_type']
+                
+                if day_type not in ['working', 'half']:
+                    continue
+                    
+                total_working_month += 1
+                
+                if status == 'present':
+                    total_payable_month += Decimal('1.0')
+                elif status == 'half_day':
+                    total_payable_month += Decimal('0.5')
+                    leaves_taken_month += Decimal('0.5')
+                    leave = leave_map.get(dt)
+                    if leave and leave.leave_duration_type == LeaveDurationType.HALF_DAY:
+                        cat = leave.leave_category.value
+                        if virt_balances.get(cat, Decimal('0')) >= Decimal('0.5'):
+                            total_payable_month += Decimal('0.5')
+                            paid_leaves_month += Decimal('0.5')
+                            virt_balances[cat] -= Decimal('0.5')
+                        else:
+                            unpaid_leaves_month += Decimal('0.5')
+                    else:
+                        unpaid_leaves_month += Decimal('0.5')
+                elif status == 'absent':
+                    leaves_taken_month += Decimal('1.0')
+                    leave = leave_map.get(dt)
+                    if leave and leave.leave_duration_type == LeaveDurationType.FULL_DAY:
+                        cat = leave.leave_category.value
+                        if virt_balances.get(cat, Decimal('0')) >= Decimal('1.0'):
+                            total_payable_month += Decimal('1.0')
+                            paid_leaves_month += Decimal('1.0')
+                            virt_balances[cat] -= Decimal('1.0')
+                        else:
+                            unpaid_leaves_month += Decimal('1.0')
+                    else:
+                        unpaid_leaves_month += Decimal('1.0')
+
+            if total_working_month == 0:
+                total_working_month = last_day
+
+            # D. Deduction for the month
+            effective_days_month = float(Decimal(str(total_working_month)) - unpaid_leaves_month)
+            per_day_sal = monthly_base / Decimal(str(total_working_month))
+            leave_deduction_month = per_day_sal * unpaid_leaves_month
+            if leave_deduction_month < 0: leave_deduction_month = Decimal('0')
+
+            # E. Components & Accumulation
             components_dict = {}
             for detail in structure.details:
                 amount = (detail.percentage / Decimal('100')) * monthly_base
@@ -251,19 +433,22 @@ class DocumentService:
                 else:
                     total_deductions_year += amount
 
-            # 6. Store month data
+            # F. Monthly Snapshot
             monthly_data.append({
                 "month": f"{month_names[month_idx]} {year}",
                 "components": components_dict,
                 "leave_deduction": round(float(leave_deduction_month), 2),
-                "total_working_days": total_working_days_month,
-                "effective_days": float(effective_days_month),
-                "total_leaves": float(total_leaves_month)
+                "total_working_days": total_working_month,
+                "effective_days": effective_days_month,
+                "total_leaves": float(unpaid_leaves_month),
+                "leaves_taken": float(leaves_taken_month),
+                "paid_leaves": float(paid_leaves_month),
+                "unpaid_leaves": float(unpaid_leaves_month)
             })
 
-            total_working_days_year += total_working_days_month
-            effective_days_year += effective_days_month
-            total_leaves_year += total_leaves_month
+            total_working_days_year += total_working_month
+            effective_days_year += Decimal(str(effective_days_month))
+            total_leaves_year += unpaid_leaves_month
             total_deductions_year += leave_deduction_month
 
         # 7. Final Net Pay

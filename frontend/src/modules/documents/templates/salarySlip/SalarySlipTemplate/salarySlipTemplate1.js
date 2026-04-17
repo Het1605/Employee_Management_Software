@@ -13,8 +13,10 @@ export function generateSalarySlipTemplate1(payload) {
     const displayMonth = safe(form_data.display_month);
     const year = safe(form_data.year);
     const totalWorkingDays = safe(form_data.total_working_days);
-    const effectiveDays = safe(form_data.effective_days);
-    const leaves = safe(form_data.total_leaves);
+    const effectiveDays = safe(form_data.effective_days); // Now "Effective Paid Days"
+    const leavesTaken = safe(form_data.leaves_taken);
+    const paidLeaves = safe(form_data.paid_leaves);
+    const unpaidLeaves = safe(form_data.unpaid_leaves);
     const companyName = safe(form_data.company_name);
 
     const earnings = form_data.earnings || [];
@@ -31,8 +33,9 @@ export function generateSalarySlipTemplate1(payload) {
     };
 
     const fDays = (val) => {
+        if (val === undefined || val === null || val === '') return '0';
         const num = Number(val);
-        return Number.isInteger(num) ? num : num;
+        return Number.isInteger(num) ? num : num.toFixed(1);
     };
 
     return `
@@ -50,31 +53,31 @@ export function generateSalarySlipTemplate1(payload) {
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; }
           
-          .salary-title { text-align: center; margin-bottom: 24px; }
+          .salary-title { text-align: center; margin-bottom: 15px; }
           .salary-title h2 { margin: 0; }
           
-          .info-section { margin: 10px 0; border-bottom: 2px solid #333; padding-bottom: 10px; }
-          .info-table { width: 100%; font-size: 14px; border-collapse: collapse; }
-          .info-table td { padding: 4px 0; }
+          .info-section { margin: 5px 0; border-bottom: 2px solid #333; padding-bottom: 5px; }
+          .info-table { width: 100%; font-size: 13px; border-collapse: collapse; table-layout: fixed; }
+          .info-table td { padding: 3px 0; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
           
-          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
           .ledger-header { background-color: #f2f2f2; }
-          .ledger-header th { padding: 10px; text-align: left; border: 1px solid #ddd; }
+          .ledger-header th { padding: 8px; text-align: left; border: 1px solid #ddd; }
           .ledger-header th.right { text-align: right; }
           
-          .ledger-cell { padding: 10px; border: 1px solid #ddd; }
+          .ledger-cell { padding: 8px; border: 1px solid #ddd; }
           .ledger-cell.right { text-align: right; }
           .ledger-cell.center { text-align: center; }
           
           .total-row { background-color: #f9f9f9; font-weight: bold; }
           .net-row { background-color: #eeefff; font-weight: bold; font-size: 15px; }
-          .net-row td { padding: 12px; border: 1px solid #ddd; }
+          .net-row td { padding: 10px; border: 1px solid #ddd; }
           
-          .signature-section { margin-top: 40px; text-align: left; }
+          .signature-section { margin-top: 30px; text-align: left; }
           .signature-section p { margin: 0; }
-          .signature-section .company { margin: 5px 0; font-weight: bold; }
-          .stamp-img { max-height: 120px; max-width: 200px; margin: 5px 0; }
-          .authorized { margin: 5px 0 0 0; }
+          .signature-section .company { margin: 3px 0; font-weight: bold; }
+          .stamp-img { max-height: 100px; max-width: 180px; margin: 3px 0; }
+          .authorized { margin: 3px 0 0 0; }
         </style>
       </head>
       <body>
@@ -85,16 +88,20 @@ export function generateSalarySlipTemplate1(payload) {
               <div class="info-section">
                   <table class="info-table">
                       <tr>
-                          <td><strong>Employee Name:</strong> ${name}</td>
-                          <td><strong>Pay Period:</strong> ${displayMonth} ${year}</td>
+                          <td style="width: 50%;"><strong>Employee Name:</strong> ${name}</td>
+                          <td style="width: 50%;"><strong>Pay Period:</strong> ${displayMonth} ${year}</td>
                       </tr>
                       <tr>
-                          <td><strong>Designation:</strong> ${designation}</td>
-                          <td><strong>Total Working Days:</strong> ${totalWorkingDays}</td>
+                          <td style="width: 50%;"><strong>Designation:</strong> ${designation}</td>
+                          <td style="width: 50%;"><strong>Total Working Days:</strong> ${totalWorkingDays}</td>
                       </tr>
                       <tr>
-                          <td><strong>Effective Days:</strong> ${fDays(effectiveDays)}</td>
-                          <td><strong>Total Leaves:</strong> ${fDays(leaves)}</td>
+                          <td style="width: 50%;"><strong>Leaves Taken:</strong> ${fDays(leavesTaken)}</td>
+                          <td style="width: 50%;"><strong>Paid Leaves:</strong> ${fDays(paidLeaves)}</td>
+                      </tr>
+                      <tr>
+                          <td style="width: 50%;"><strong>Unpaid Leaves:</strong> ${fDays(unpaidLeaves)}</td>
+                          <td style="width: 50%;"><strong>Effective Paid Days:</strong> ${fDays(effectiveDays)}</td>
                       </tr>
                   </table>
               </div>

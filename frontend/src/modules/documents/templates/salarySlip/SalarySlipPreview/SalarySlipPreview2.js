@@ -13,7 +13,9 @@ export const SalarySlipPreview2 = ({
   const year = form_data?.year || '____________';
   const totalWorkingDays = form_data?.total_working_days || '0';
   const effectiveDays = form_data?.effective_days || '0';
-  const leaves = form_data?.total_leaves || '0';
+  const leavesTaken = form_data?.leaves_taken || '0';
+  const paidLeaves = form_data?.paid_leaves || '0';
+  const unpaidLeaves = form_data?.unpaid_leaves || '0';
   const companyName = form_data?.company_name || '____________';
 
   const monthly_data = form_data?.monthly_data || [];
@@ -28,8 +30,9 @@ export const SalarySlipPreview2 = ({
   };
 
   const fDays = (val) => {
+    if (val === undefined || val === null || val === '') return '0';
     const num = Number(val);
-    return Number.isInteger(num) ? num : num;
+    return Number.isInteger(num) ? num : num.toFixed(1);
   };
 
   let compNames = [];
@@ -50,17 +53,19 @@ export const SalarySlipPreview2 = ({
             </div>
 
             <div className={styles.salaryInfoSection} style={{ marginBottom: '8px', borderBottom: 'none' }}>
-              <table className={styles.salaryInfoTable} style={{ fontSize: '12px', width: '100%' }}>
+              <table className={styles.salaryInfoTable} style={{ fontSize: '11px', width: '100%' }}>
                 <tbody>
                   <tr>
-                    <td className={styles.salaryInfoCell} style={{ width: '33%', padding: '2px 0' }}><strong>Employee Name:</strong> {name}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '33%', padding: '2px 0' }}><strong>Designation:</strong> {designation}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '33%', padding: '2px 0' }}><strong>Year:</strong> {year}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Employee Name:</strong> {name}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Designation:</strong> {designation}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Year:</strong> {year}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
                   </tr>
                   <tr>
-                    <td className={styles.salaryInfoCell} style={{ padding: '2px 0' }}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
-                    <td className={styles.salaryInfoCell} style={{ padding: '2px 0' }}><strong>Effective Days:</strong> {fDays(effectiveDays)}</td>
-                    <td className={styles.salaryInfoCell} style={{ padding: '2px 0' }}><strong>Total Leaves:</strong> {fDays(leaves)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Leaves Taken:</strong> {fDays(leavesTaken)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Paid Leaves:</strong> {fDays(paidLeaves)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Unpaid Leaves:</strong> {fDays(unpaidLeaves)}</td>
+                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Effective Paid Days:</strong> {fDays(effectiveDays)}</td>
                   </tr>
                 </tbody>
               </table>

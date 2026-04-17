@@ -194,13 +194,13 @@ class LeaveStructureService:
     # ──────────────────────────────────────────
 
     @staticmethod
-    def get_runtime_leave_balance(db: Session, user_id: int) -> dict:
+    def get_runtime_leave_balance(db: Session, user_id: int, as_of_date: Optional[date] = None) -> dict:
         """
         Calculates leave balance in real-time without using a balance table.
         1. Find assignment to get assigned_at and structure_id.
-        2. Determine eligible_months (assigned_at to today).
-        3. Pro-rata allocation: int((yearly_total / 12) * eligible_months).
-        4. Aggregate used: sum of approved leave_requests for each type.
+        2. Determine eligible_months (assigned_at to target_date).
+        3. Pro-rata allocation: sum allocation for each month up to target_month.
+        4. Aggregate used: sum of approved leave_requests where start_date <= target_date.
         """
         from app.db.models import LeaveRequest
         from sqlalchemy import func
@@ -217,11 +217,11 @@ class LeaveStructureService:
              empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
              return {"PL": empty, "CL": empty, "SL": empty}
 
-        now = _now_utc()
+        target_date = as_of_date if as_of_date else date.today()
         start = assignment.assigned_at
         
         # Calculate Tenure (Eligible Months for Logging)
-        eligible_months = (now.year - start.year) * 12 + (now.month - start.month) + 1
+        eligible_months = (target_date.year - start.year) * 12 + (target_date.month - start.month) + 1
 
         # Calculate per-category details
         response = {}
@@ -232,38 +232,35 @@ class LeaveStructureService:
             logger.info(
                 f"[LeaveBalance] user={user_id} company={assignment.company_id} type={category} "
                 f"allocation={detail.allocation_type.value} total_days={detail.total_days} "
-                f"assigned={start.strftime('%Y-%m-%d')} current={now.strftime('%Y-%m-%d')}"
+                f"assigned={start.strftime('%Y-%m-%d')} target={target_date.strftime('%Y-%m-%d')}"
             )
 
             # 2. Log Eligible Months
             logger.info(
-                f"[LeaveBalance] assigned_month={start.month} current_month={now.month} "
+                f"[LeaveBalance] assigned_month={start.month} target_month={target_date.month} "
                 f"eligible_months={eligible_months}"
             )
 
             # 3. Allocation Logic
             yearly_total = float(detail.total_days)
             if detail.allocation_type == AllocationType.YEARLY:
+                # For yearly, we give full allocation if target_date is in the same year or later
+                # (Assuming reset occurs at the start of the calendar year)
                 allocated = yearly_total
-                # 4. YEARLY Calculation Logs
-                logger.info(f"[LeaveBalance] type={category} allocated={allocated} Note: Full yearly allocation applied (no distribution)")
+                logger.info(f"[LeaveBalance] type={category} allocated={allocated} Note: Full yearly allocation applied")
             else:
-                # MONTHLY: Sum allocation for each month of tenure
+                # MONTHLY: Sum allocation for each month from tenure up to target_date
                 allocated = 0.0
                 base = yearly_total // 12
                 extra = yearly_total % 12
 
-                # 3A. Log Distribution Setup
+                # Distribution Logic Setup
                 logger.info(f"[LeaveBalance] type={category} yearly_total={yearly_total} base={base} extra={extra}")
                 
-                # Start from assignment month/year up to current month/year
+                # Start from assignment month/year up to target month/year
                 curr_y, curr_m = start.year, start.month
-                while (curr_y < now.year) or (curr_y == now.year and curr_m <= now.month):
-                    # 3B. Log Month-wise Allocation
+                while (curr_y < target_date.year) or (curr_y == target_date.year and curr_m <= target_date.month):
                     month_alloc = float(_get_monthly_allocation(yearly_total, curr_m))
-                    month_name = calendar.month_name[curr_m][:3]
-                    logger.info(f"[LeaveBalance] type={category} month={month_name} index={curr_m} allocated_this_month={month_alloc}")
-                    
                     allocated += month_alloc
                     
                     # Increment month
@@ -272,8 +269,7 @@ class LeaveStructureService:
                         curr_m = 1
                         curr_y += 1
                 
-                # 3C. Log Final Allocated
-                logger.info(f"[LeaveBalance] type={category} total_allocated={allocated} (after summing months)")
+                logger.info(f"[LeaveBalance] type={category} total_allocated_until_target={allocated}")
 
             # 5. Used Leaves Logs
             # Fetch approved requests to calculate used days with duration-aware logic
@@ -282,7 +278,8 @@ class LeaveStructureService:
             approved_requests = db.query(LeaveRequest).filter(
                 LeaveRequest.user_id == user_id,
                 LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
-                LeaveRequest.status == "approved"
+                LeaveRequest.status == "approved",
+                LeaveRequest.start_date <= target_date # ONLY include leaves up to target date
             ).all()
 
             used = 0.0

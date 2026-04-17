@@ -12,8 +12,10 @@ export function generateSalarySlipTemplate2(payload) {
     const designation = safe(form_data.designation);
     const year = safe(form_data.year);
     const totalWorkingDays = safe(form_data.total_working_days);
-    const effectiveDays = safe(form_data.effective_days);
-    const leaves = safe(form_data.total_leaves);
+    const effectiveDays = safe(form_data.effective_days); // Now "Effective Paid Days"
+    const leavesTaken = safe(form_data.leaves_taken);
+    const paidLeaves = safe(form_data.paid_leaves);
+    const unpaidLeaves = safe(form_data.unpaid_leaves);
     const companyName = safe(form_data.company_name);
 
     const monthly_data = form_data.monthly_data || [];
@@ -28,8 +30,9 @@ export function generateSalarySlipTemplate2(payload) {
     };
 
     const fDays = (val) => {
+        if (val === undefined || val === null || val === '') return '0';
         const num = Number(val);
-        return Number.isInteger(num) ? num : num;
+        return Number.isInteger(num) ? num : num.toFixed(1);
     };
 
     let compNames = [];
@@ -50,11 +53,11 @@ export function generateSalarySlipTemplate2(payload) {
           
           .salary-summary-title { text-align: center; margin-bottom: 18px; font-size: 15px; font-weight: bold; }
           
-          .info-section { margin-bottom: 18px; }
-          .info-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-          .info-table td { padding: 2px 0; }
+          .info-section { margin-bottom: 15px; }
+          .info-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+          .info-table td { padding: 2px 0; vertical-align: top; }
           
-          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 12px; }
+          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; }
           .ledger-header { background-color: #f2f2f2; }
           .ledger-header th { padding: 4px; text-align: left; border: 1px solid #ddd; }
           .ledger-header th.right { text-align: right; }
@@ -66,10 +69,10 @@ export function generateSalarySlipTemplate2(payload) {
           .total-row { background-color: #f9f9f9; font-weight: bold; }
           .net-row { background-color: #eeefff; font-weight: bold; font-size: 13px; }
           
-          .signature-section { margin-top: 18px; text-align: left; }
-          .signature-section p { margin: 0; font-size: 12px; }
+          .signature-section { margin-top: 15px; text-align: left; }
+          .signature-section p { margin: 0; font-size: 11px; }
           .signature-section .company { margin: 2px 0; font-weight: bold; }
-          .stamp-img { max-height: 120px; max-width: 180px; margin: 2px 0; }
+          .stamp-img { max-height: 100px; max-width: 180px; margin: 2px 0; }
           .authorized { margin: 2px 0 0 0; }
         </style>
       </head>
@@ -81,14 +84,16 @@ export function generateSalarySlipTemplate2(payload) {
               <div class="info-section">
                   <table class="info-table">
                       <tr>
-                          <td style="width: 33%;"><strong>Employee Name:</strong> ${name}</td>
-                          <td style="width: 33%;"><strong>Designation:</strong> ${designation}</td>
-                          <td style="width: 33%;"><strong>Year:</strong> ${year}</td>
+                          <td style="width: 25%;"><strong>Employee Name:</strong> ${name}</td>
+                          <td style="width: 25%;"><strong>Designation:</strong> ${designation}</td>
+                          <td style="width: 25%;"><strong>Year:</strong> ${year}</td>
+                          <td style="width: 25%;"><strong>Total Working Days:</strong> ${totalWorkingDays}</td>
                       </tr>
                       <tr>
-                          <td><strong>Total Working Days:</strong> ${totalWorkingDays}</td>
-                          <td><strong>Effective Days:</strong> ${fDays(effectiveDays)}</td>
-                          <td><strong>Total Leaves:</strong> ${fDays(leaves)}</td>
+                          <td style="width: 25%;"><strong>Leaves Taken:</strong> ${fDays(leavesTaken)}</td>
+                          <td style="width: 25%;"><strong>Paid Leaves:</strong> ${fDays(paidLeaves)}</td>
+                          <td style="width: 25%;"><strong>Unpaid Leaves:</strong> ${fDays(unpaidLeaves)}</td>
+                          <td style="width: 25%;"><strong>Effective Paid Days:</strong> ${fDays(effectiveDays)}</td>
                       </tr>
                   </table>
               </div>
