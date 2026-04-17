@@ -58,21 +58,25 @@ def _now_utc() -> datetime:
 _MIN_LEAVE_UNIT = Decimal("0.5")
 
 
-def _get_monthly_allocation(total_days: int, month_index: int) -> Decimal:
+def _get_monthly_allocation(total_days: float, month_index: int) -> Decimal:
     """
-    Calculate integer allocation for a specific month (1-12).
+    Calculate allocation for a specific month (1-12).
     - base = total // 12
     - extra = total % 12
     - If month_index <= extra, return base + 1, else return base.
     
-    Example: total=15 -> base=1, extra=3. Jan-Mar (1-3) -> 2. Apr-Dec -> 1.
+    If total_days is not an integer (e.g., 15.5), the remainder is accounted for
+    in the month_index logic if possible, or we maintain float precision.
     """
-    base = int(total_days) // 12
-    extra = int(total_days) % 12
+    base = float(total_days) // 12
+    extra = float(total_days) % 12
     
     alloc = base
     if 1 <= month_index <= extra:
         alloc += 1
+    elif month_index == 12 and extra > 0 and extra < 1:
+        # Special case: if there's a fractional remainder < 1, add it to the last month
+        alloc += extra
         
     return Decimal(str(alloc))
 
@@ -238,14 +242,14 @@ class LeaveStructureService:
             )
 
             # 3. Allocation Logic
-            yearly_total = int(detail.total_days)
+            yearly_total = float(detail.total_days)
             if detail.allocation_type == AllocationType.YEARLY:
                 allocated = yearly_total
                 # 4. YEARLY Calculation Logs
                 logger.info(f"[LeaveBalance] type={category} allocated={allocated} Note: Full yearly allocation applied (no distribution)")
             else:
-                # MONTHLY: Sum integer-based allocation for each month of tenure
-                allocated = 0
+                # MONTHLY: Sum allocation for each month of tenure
+                allocated = 0.0
                 base = yearly_total // 12
                 extra = yearly_total % 12
 
@@ -256,7 +260,7 @@ class LeaveStructureService:
                 curr_y, curr_m = start.year, start.month
                 while (curr_y < now.year) or (curr_y == now.year and curr_m <= now.month):
                     # 3B. Log Month-wise Allocation
-                    month_alloc = int(_get_monthly_allocation(yearly_total, curr_m))
+                    month_alloc = float(_get_monthly_allocation(yearly_total, curr_m))
                     month_name = calendar.month_name[curr_m][:3]
                     logger.info(f"[LeaveBalance] type={category} month={month_name} index={curr_m} allocated_this_month={month_alloc}")
                     
@@ -272,20 +276,27 @@ class LeaveStructureService:
                 logger.info(f"[LeaveBalance] type={category} total_allocated={allocated} (after summing months)")
 
             # 5. Used Leaves Logs
-            # Aggregate used leaves from live requests with count
-            from app.db.models import LeaveCategory
-            used_data = db.query(
-                func.sum(LeaveRequest.total_days).label("total_used"),
-                func.count(LeaveRequest.id).label("request_count")
-            ).filter(
+            # Fetch approved requests to calculate used days with duration-aware logic
+            from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory
+            
+            approved_requests = db.query(LeaveRequest).filter(
                 LeaveRequest.user_id == user_id,
                 LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
                 LeaveRequest.status == "approved"
-            ).first()
-            
-            used = float(used_data.total_used or 0)
-            count = int(used_data.request_count or 0)
+            ).all()
 
+            used = 0.0
+            for l in approved_requests:
+                # If it's a half-day request, we ensure it counts as 0.5 per day
+                # We use the stored total_days as the base count (handling potential integer rounding in DB)
+                if l.leave_duration_type == LeaveDurationType.HALF_DAY:
+                    # If DB rounded 0.5 to 1, this forces it back to 0.5
+                    # If it's a multi-day range (e.g. 4 days), it correctly handles it (e.g. 4 * 0.5 = 2.0)
+                    used += float(l.total_days) * 0.5
+                else:
+                    used += float(l.total_days)
+
+            count = len(approved_requests)
             logger.info(f"[LeaveBalance] type={category} total_used={used} number_of_requests_considered={count}")
 
             # 6. Final Calculation Logs

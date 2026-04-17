@@ -57,19 +57,6 @@ def startup_event():
     # Ensure database is ready
     wait_for_db()
 
-    # Drop legacy salary structure tables if they still exist
-    with engine.begin() as conn:
-        conn.execute(text("DROP TABLE IF EXISTS structure_components CASCADE"))
-        conn.execute(text("DROP TABLE IF EXISTS salary_structures CASCADE"))
-        conn.execute(text("DROP TABLE IF EXISTS document_templates CASCADE"))
-
-        # Drop and recreate leave_requests (User confirmed no data)
-        conn.execute(text("DROP TABLE IF EXISTS leave_requests CASCADE"))
-        conn.execute(text("DROP TABLE IF EXISTS leave_balances CASCADE"))
-
-        # Remove is_active from salary_components (no longer used)
-        conn.execute(text("ALTER TABLE salary_components DROP COLUMN IF EXISTS is_active"))
-
     #  Create tables in DB
     Base.metadata.create_all(bind=engine)
 

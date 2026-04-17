@@ -6,11 +6,13 @@ import styles from '../styles/AttendancePage.module.css';
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 const AttendancePage = () => {
-    const [status, setStatus] = useState('');
+    const [status, setStatus] = useState('present');
     const [todayStatus, setTodayStatus] = useState(null);
     const [dayType, setDayType] = useState('working');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [isLocked, setIsLocked] = useState(false);
+    const [lockMessage, setLockMessage] = useState('');
 
     const todayDate = new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -24,14 +26,18 @@ const AttendancePage = () => {
 
     const fetchTodayStatus = async () => {
         setLoading(true);
+        setStatus('present'); // Default to present for employee marking
         try {
-            const userId = localStorage.getItem('userId') || 1; // Fallback for dev mode
+            const userId = localStorage.getItem('userId') || 1;
             const response = await axios.get(`${API_BASE_URL}/attendance/today`, {
                 params: { user_id: userId }
             });
             setTodayStatus(response.data.status);
             setDayType(response.data.day_type);
-            if (response.data.status !== 'absent' || response.data.day_type === 'off') {
+            setIsLocked(response.data.is_locked);
+            setLockMessage(response.data.lock_message);
+            
+            if (response.data.status !== 'absent') {
                 setStatus(response.data.status);
             }
         } catch (error) {
@@ -42,18 +48,16 @@ const AttendancePage = () => {
     };
 
     const handleMarkAttendance = async () => {
-        if (!status) {
-            setMessage({ text: 'Please select attendance status', type: 'error' });
-            return;
-        }
+        if (isLocked) return;
 
         try {
-            const userId = localStorage.getItem('userId') || 1; // Fallback for dev mode
+            const userId = localStorage.getItem('userId') || 1;
             await axios.post(`${API_BASE_URL}/attendance/mark`, 
-                { status: status, user_id: userId, actor_id: userId }
+                { status: 'present', user_id: userId, actor_id: userId }
             );
             setMessage({ text: 'Attendance marked successfully', type: 'success' });
-            setTodayStatus(status);
+            setTodayStatus('present');
+            setStatus('present');
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Error marking attendance";
             setMessage({ text: errorMsg, type: 'error' });
@@ -62,7 +66,7 @@ const AttendancePage = () => {
 
     if (loading) return <div className={styles.loader}>Loading...</div>;
 
-    const isMarked = todayStatus && todayStatus !== 'absent';
+    const isMarked = todayStatus === 'present';
     const isOffDay = dayType === 'off';
 
     return (
@@ -83,43 +87,18 @@ const AttendancePage = () => {
                     ) : (
                         <>
                             <div className={styles.statusSection}>
-                                <p className={styles.sectionTitle}>Select Status</p>
-                                <p className={styles.helperText}>You can update your attendance multiple times for today.</p>
-                                <div className={styles.radioGroup}>
-                                    <label className={`${styles.radioLabel} ${status === 'present' ? styles.selected : ''}`}>
-                                        <input 
-                                            type="radio" 
-                                            name="status" 
-                                            value="present" 
-                                            checked={status === 'present'}
-                                            onChange={(e) => setStatus(e.target.value)}
-                                        />
-                                        <span className={styles.radioText}>Present</span>
-                                    </label>
-
-                                    <label className={`${styles.radioLabel} ${status === 'half_day' ? styles.selected : ''}`}>
-                                        <input 
-                                            type="radio" 
-                                            name="status" 
-                                            value="half_day" 
-                                            checked={status === 'half_day'}
-                                            onChange={(e) => setStatus(e.target.value)}
-                                        />
-                                        <span className={styles.radioText}>Half Day</span>
-                                    </label>
-
-                                    <label className={`${styles.radioLabel} ${status === 'absent' ? styles.selected : ''}`}>
-                                        <input 
-                                            type="radio" 
-                                            name="status" 
-                                            value="absent" 
-                                            checked={status === 'absent'}
-                                            onChange={(e) => setStatus(e.target.value)}
-                                        />
-                                        <span className={styles.radioText}>Absent</span>
-                                    </label>
-                                </div>
+                                <p className={styles.sectionTitle}>Mark Present</p>
+                                <p className={styles.helperText}>
+                                    Note: You only need to mark your presence here. 
+                                    Absences are handled through the Leave management system.
+                                </p>
                             </div>
+
+                            {isLocked && (
+                                <div className={styles.lockMessage}>
+                                    <span className={styles.lockIcon}>🔒</span> {lockMessage}
+                                </div>
+                            )}
 
                             {message.text && (
                                 <div className={`${styles.message} ${styles[message.type]}`}>
@@ -128,10 +107,11 @@ const AttendancePage = () => {
                             )}
 
                             <button 
-                                className={styles.submitButton} 
+                                className={`${styles.submitButton} ${isLocked ? styles.disabled : ''}`} 
                                 onClick={handleMarkAttendance}
+                                disabled={isLocked}
                             >
-                                {isMarked ? 'Update Attendance' : 'Mark Attendance'}
+                                {isLocked ? 'Attendance Locked' : (isMarked ? 'Already Marked Present' : 'Mark Present Today')}
                             </button>
                         </>
                     )}

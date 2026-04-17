@@ -9,6 +9,7 @@ from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, 
 from app.api.dependencies.auth import get_current_user
 from app.schemas.leave_request import LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, LeaveRequestOut, LeaveCalendarSummary
 from app.services.calendar_service import CalendarService
+from app.services import attendance_service
 
 router = APIRouter(prefix="/leave-requests", tags=["Leave Management"])
 
@@ -19,10 +20,9 @@ def _calculate_total_days(db: Session, company_id: int, start_date: date, end_da
         status_info = CalendarService.get_day_status(db, company_id, curr)
         # Exclude holidays and "off" (weekly off) days
         if status_info.status not in ["holiday", "off"]:
-            if duration_type == LeaveDurationType.HALF_DAY:
-                total += 0.5
-            else:
-                total += 1.0
+            # We store the raw count of working days.
+            # The 0.5 multiplier for HALF_DAY is handled during balance calculation.
+            total += 1.0
         curr += timedelta(days=1)
     return total
 
@@ -95,10 +95,34 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
+    old_status = db_request.status
     db_request.status = request.status
     db_request.reviewed_by = current_user.id
     db_request.reviewed_at = datetime.utcnow()
     
+    # SYNC ATTENDANCE
+    if request.status == "approved":
+        attendance_service.sync_leave_to_attendance(
+            db,
+            db_request.user_id,
+            db_request.company_id,
+            db_request.start_date,
+            db_request.end_date,
+            db_request.leave_duration_type.value,
+            is_approved=True
+        )
+    elif old_status == "approved" and request.status != "approved":
+        # If it was approved and now it's not, cleanup attendance
+        attendance_service.sync_leave_to_attendance(
+            db,
+            db_request.user_id,
+            db_request.company_id,
+            db_request.start_date,
+            db_request.end_date,
+            db_request.leave_duration_type.value,
+            is_approved=False
+        )
+
     db.commit()
     db.refresh(db_request)
     return db_request
@@ -121,8 +145,17 @@ def employee_edit_leave(
     if db_request.status == "rejected":
         raise HTTPException(status_code=400, detail="Cannot edit a rejected leave request")
 
-    # If currently approved, reset to pending for re-review
+    # If currently approved, reset to pending for re-review and cleanup attendance
     if db_request.status == "approved":
+        attendance_service.sync_leave_to_attendance(
+            db,
+            db_request.user_id,
+            db_request.company_id,
+            db_request.start_date,
+            db_request.end_date,
+            db_request.leave_duration_type.value,
+            is_approved=False
+        )
         db_request.status = "pending"
         db_request.reviewed_by = None
         db_request.reviewed_at = None
@@ -186,6 +219,18 @@ def delete_leave(
     else:
         # Owner restriction: can only delete their own
         pass
+
+    # If it was approved, cleanup attendance before deleting
+    if db_request.status == "approved":
+        attendance_service.sync_leave_to_attendance(
+            db,
+            db_request.user_id,
+            db_request.company_id,
+            db_request.start_date,
+            db_request.end_date,
+            db_request.leave_duration_type.value,
+            is_approved=False
+        )
 
     db.delete(db_request)
     db.commit()

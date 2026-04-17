@@ -135,10 +135,29 @@
     box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
 }
 
-.submitButton:disabled {
+.submitButton:disabled, .submitButton.disabled {
     background-color: #94a3b8;
     cursor: not-allowed;
     box-shadow: none;
+}
+
+.lockMessage {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e0f2fe;
+    margin-bottom: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.lockIcon {
+    font-size: 18px;
 }
 
 .offDayMessage {

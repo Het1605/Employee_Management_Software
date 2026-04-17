@@ -58,6 +58,12 @@ const AttendanceManagement = () => {
         const calStatus = getDayStatus(record.date);
         if (calStatus === 'off' || record.day_type === 'off') return;
 
+        // Prevent modal if Locked by Approved Leave
+        if (record.is_locked) {
+            alert("Attendance for this day is locked due to an approved leave request. You must reject or delete the leave request to modify this record.");
+            return;
+        }
+
         setSelectedRecord({
             userId: emp.user_id,
             name: emp.name,
@@ -114,18 +120,20 @@ const AttendanceManagement = () => {
         return 'working';
     };
 
-    const getStatusClass = (status, dayType, dateStr) => {
+    const getStatusClass = (status, dayType, dateStr, isLocked) => {
         const calStatus = getDayStatus(dateStr);
         if (calStatus === 'off') return styles.offDay;
+        if (isLocked) return `${styles.lockedCell} ${status === 'half_day' ? styles.halfDay : styles.absent}`;
         if (status === 'present') return styles.present;
         if (status === 'half_day') return styles.halfDay;
         if (status === 'absent') return styles.absent;
         return '';
     };
 
-    const getStatusInitial = (status, dayType, dateStr) => {
+    const getStatusInitial = (status, dayType, dateStr, isLocked) => {
         const calStatus = getDayStatus(dateStr);
         if (calStatus === 'off') return 'OFF';
+        if (isLocked) return status === 'half_day' ? 'H (L)' : 'A (L)';
         if (status === 'present') return 'P';
         if (status === 'half_day') return 'H';
         if (status === 'absent') return 'A';
@@ -191,11 +199,11 @@ const AttendanceManagement = () => {
                                             {emp.attendance.map((rec, idx) => (
                                                 <td 
                                                     key={idx} 
-                                                    className={`${styles.attendanceCell} ${getStatusClass(rec.status, rec.day_type, rec.date)}`}
+                                                    className={`${styles.attendanceCell} ${getStatusClass(rec.status, rec.day_type, rec.date, rec.is_locked)}`}
                                                     onClick={() => handleCellClick(emp, rec)}
-                                                    title={`${rec.date}: ${rec.status}`}
+                                                    title={rec.is_locked ? `Locked by Leave: ${rec.status}` : `${rec.date}: ${rec.status}`}
                                                 >
-                                                    {getStatusInitial(rec.status, rec.day_type, rec.date)}
+                                                    {getStatusInitial(rec.status, rec.day_type, rec.date, rec.is_locked)}
                                                 </td>
                                             ))}
                                             <td className={styles.statVal}>{emp.present_days}</td>

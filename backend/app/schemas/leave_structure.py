@@ -127,7 +127,7 @@ class LeaveAssignmentOut(BaseModel):
 # ─────────────────────────────────────────────────────────────
 
 class LeaveBalanceSummaryOut(BaseModel):
-    allocated: int
+    allocated: float
     used:      float
     remaining: float
     excess:    float
