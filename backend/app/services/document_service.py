@@ -260,6 +260,20 @@ class DocumentService:
             else:
                 deductions_list.append(comp)
 
+        # 5a. Leave Encashment (January Integration)
+        if int(month) == 1:
+            from app.models.leave_structure import LeaveReset
+            encash_records = db.query(LeaveReset).filter(
+                LeaveReset.user_id == user_id,
+                LeaveReset.reset_year == int(year) - 1,
+                LeaveReset.payout_amount > 0
+            ).all()
+            for rec in encash_records:
+                earnings_list.append({
+                    "name": f"Leave Encashment ({float(rec.affected_days)} Days)",
+                    "amount": round(float(rec.payout_amount), 2)
+                })
+
         if leave_deduction > 0:
             deductions_list.append({
                 "name": f"Unpaid Leave Deduction ({float(unpaid_leaves)} Days)", 

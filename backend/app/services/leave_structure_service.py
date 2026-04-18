@@ -20,7 +20,7 @@ from __future__ import annotations
 import math
 import logging
 import calendar
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
 
@@ -196,119 +196,92 @@ class LeaveStructureService:
     @staticmethod
     def get_runtime_leave_balance(db: Session, user_id: int, as_of_date: Optional[date] = None) -> dict:
         """
-        Calculates leave balance in real-time without using a balance table.
-        1. Find assignment to get assigned_at and structure_id.
-        2. Determine eligible_months (assigned_at to target_date).
-        3. Pro-rata allocation: sum allocation for each month up to target_month.
-        4. Aggregate used: sum of approved leave_requests where start_date <= target_date.
+        Calculates leave balance in real-time, respecting Year-End Resets.
+        1. Find assignment.
+        2. For each category, find the LATEST LeaveReset record.
+        3. If reset exists, calculation start = Jan 1 of (reset_year + 1), 
+           initial balance = reset.carried_forward_amount.
+        4. Else, start = assignment.assigned_at, initial = 0.
+        5. Sum allocation from start to target_date.
+        6. Sum usage where start_date >= start and start_date <= target_date.
         """
         from app.db.models import LeaveRequest
-        from sqlalchemy import func
+        from app.models.leave_structure import LeaveReset
+        from sqlalchemy import desc
 
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
         if not assignment:
-            # Fallback if unassigned: return 0 balances
             empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
             return {"PL": empty, "CL": empty, "SL": empty}
 
-        # Structure details
         structure = db.query(LeaveStructure).filter_by(id=assignment.structure_id).first()
         if not structure:
              empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0}
              return {"PL": empty, "CL": empty, "SL": empty}
 
         target_date = as_of_date if as_of_date else date.today()
-        start = assignment.assigned_at
         
-        # Calculate Tenure (Eligible Months for Logging)
-        eligible_months = (target_date.year - start.year) * 12 + (target_date.month - start.month) + 1
-
-        # Calculate per-category details
         response = {}
         for detail in structure.details:
             category = detail.leave_type.value
             
-            # 1. Log Entry Point
-            logger.info(
-                f"[LeaveBalance] user={user_id} company={assignment.company_id} type={category} "
-                f"allocation={detail.allocation_type.value} total_days={detail.total_days} "
-                f"assigned={start.strftime('%Y-%m-%d')} target={target_date.strftime('%Y-%m-%d')}"
-            )
+            # --- Reset Boundary Logic ---
+            latest_reset = db.query(LeaveReset).filter(
+                LeaveReset.user_id == user_id,
+                LeaveReset.leave_type == detail.leave_type
+            ).order_by(desc(LeaveReset.reset_year)).first()
 
-            # 2. Log Eligible Months
-            logger.info(
-                f"[LeaveBalance] assigned_month={start.month} target_month={target_date.month} "
-                f"eligible_months={eligible_months}"
-            )
-
-            # 3. Allocation Logic
-            yearly_total = float(detail.total_days)
-            if detail.allocation_type == AllocationType.YEARLY:
-                # For yearly, we give full allocation if target_date is in the same year or later
-                # (Assuming reset occurs at the start of the calendar year)
-                allocated = yearly_total
-                logger.info(f"[LeaveBalance] type={category} allocated={allocated} Note: Full yearly allocation applied")
+            if latest_reset:
+                calc_start = date(latest_reset.reset_year + 1, 1, 1)
+                # Only EXTEND policy results in an initial carried-forward balance
+                initial_balance = float(latest_reset.affected_days) if latest_reset.policy_action == ResetPolicy.EXTEND else 0.0
             else:
-                # MONTHLY: Sum allocation for each month from tenure up to target_date
-                allocated = 0.0
-                base = yearly_total // 12
-                extra = yearly_total % 12
+                calc_start = assignment.assigned_at
+                initial_balance = 0.0
 
-                # Distribution Logic Setup
-                logger.info(f"[LeaveBalance] type={category} yearly_total={yearly_total} base={base} extra={extra}")
-                
-                # Start from assignment month/year up to target month/year
-                curr_y, curr_m = start.year, start.month
-                while (curr_y < target_date.year) or (curr_y == target_date.year and curr_m <= target_date.month):
-                    month_alloc = float(_get_monthly_allocation(yearly_total, curr_m))
-                    allocated += month_alloc
-                    
-                    # Increment month
-                    curr_m += 1
-                    if curr_m > 12:
-                        curr_m = 1
-                        curr_y += 1
-                
-                logger.info(f"[LeaveBalance] type={category} total_allocated_until_target={allocated}")
+            # 3. Allocation Logic (since calc_start)
+            yearly_total = float(detail.total_days)
+            allocated = initial_balance
 
-            # 5. Used Leaves Logs
-            # Fetch approved requests to calculate used days with duration-aware logic
+            if target_date >= calc_start:
+                if detail.allocation_type == AllocationType.YEARLY:
+                    # Full allocation if within the same year as target_date or later
+                    allocated += yearly_total
+                else:
+                    # MONTHLY: Sum from calc_start to target_date
+                    curr_y, curr_m = calc_start.year, calc_start.month
+                    while (curr_y < target_date.year) or (curr_y == target_date.year and curr_m <= target_date.month):
+                        month_alloc = float(_get_monthly_allocation(yearly_total, curr_m))
+                        allocated += month_alloc
+                        curr_m += 1
+                        if curr_m > 12:
+                            curr_m = 1
+                            curr_y += 1
+
+            # 5. Used Leaves (since calc_start)
             from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory
             
             approved_requests = db.query(LeaveRequest).filter(
                 LeaveRequest.user_id == user_id,
                 LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
                 LeaveRequest.status == "approved",
-                LeaveRequest.start_date <= target_date # ONLY include leaves up to target date
+                LeaveRequest.start_date >= calc_start,
+                LeaveRequest.start_date <= target_date
             ).all()
 
             used = 0.0
             for l in approved_requests:
-                # If it's a half-day request, we ensure it counts as 0.5 per day
-                # We use the stored total_days as the base count (handling potential integer rounding in DB)
                 if l.leave_duration_type == LeaveDurationType.HALF_DAY:
-                    # If DB rounded 0.5 to 1, this forces it back to 0.5
-                    # If it's a multi-day range (e.g. 4 days), it correctly handles it (e.g. 4 * 0.5 = 2.0)
                     used += float(l.total_days) * 0.5
                 else:
                     used += float(l.total_days)
 
-            count = len(approved_requests)
-            logger.info(f"[LeaveBalance] type={category} total_used={used} number_of_requests_considered={count}")
-
-            # 6. Final Calculation Logs
             remaining = float(allocated - used)
             excess = 0.0
-            
             if remaining < 0:
                 excess = abs(remaining)
                 remaining = 0.0
                 
-            logger.info(
-                f"[LeaveBalance] Final values: type={category} allocated={allocated} used={used} "
-                f"remaining={remaining} excess={excess}"
-            )
-
             response[category] = {
                 "allocated": allocated,
                 "used": used,
@@ -317,6 +290,78 @@ class LeaveStructureService:
             }
 
         return response
+
+    @staticmethod
+    def run_year_end_reset(db: Session, year: int) -> dict:
+        """
+        Finalizes the year for all assigned users.
+        Triggered on Dec 31st.
+        1. Fetch all users with LeaveAssignment.
+        2. For each user/category, get balance as of Dec 31st.
+        3. Apply ResetPolicy:
+           - EXTEND: carried_forward = remaining
+           - VOID: voided = remaining, carried_forward = 0
+           - ENCASH: encashed = remaining, carried_forward = 0, calc payout
+        4. Save LeaveReset record.
+        """
+        from app.models.leave_structure import LeaveReset, ResetPolicy, LeaveType
+        from app.db.models import UserSalaryStructure, SalaryStructureDetail, ComponentType
+        from app.services.document_service import DocumentService
+
+        target_date = date(year, 12, 31)
+        assignments = db.query(LeaveAssignment).all()
+        results = {"total_processed": 0, "encashments_created": 0}
+
+        for ass in assignments:
+            user_id = ass.user_id
+            balances = LeaveStructureService.get_runtime_leave_balance(db, user_id, target_date)
+            structure = ass.structure
+            
+            # Find Basic Salary for encashment formula
+            basic_monthly = Decimal('0')
+            salary_ass = db.query(UserSalaryStructure).filter_by(user_id=user_id).first()
+            if salary_ass:
+                for d in salary_ass.structure.details:
+                    if "basic" in d.component.name.lower():
+                        basic_monthly = (d.percentage / Decimal('100')) * salary_ass.ctc / Decimal('12')
+                        break
+
+            # Calculate December Working Days (Denominator for encashment)
+            from app.services.calendar_service import CalendarService
+            dec_working_days = CalendarService.get_working_days_count(db, ass.company_id, year, 12)
+            if dec_working_days == 0:
+                dec_working_days = 30 # absolute safety fallback
+
+            for category_str, bal in balances.items():
+                cat_enum = LeaveType[category_str]
+                # Find policy for this category
+                detail = next((d for d in structure.details if d.leave_type == cat_enum), None)
+                if not detail: continue
+
+                policy = detail.reset_policy
+                rem = Decimal(str(bal["remaining"]))
+                
+                reset_rec = LeaveReset(
+                    user_id=user_id,
+                    company_id=ass.company_id,
+                    leave_type=cat_enum,
+                    reset_year=year,
+                    reset_date=target_date,
+                    policy_action=policy,
+                    affected_days=rem
+                )
+
+                if policy == ResetPolicy.ENCASH and rem > 0 and basic_monthly > 0:
+                    per_day_basic = basic_monthly / Decimal(str(dec_working_days))
+                    reset_rec.payout_amount = rem * per_day_basic
+                    results["encashments_created"] += 1
+
+                db.add(reset_rec)
+            
+            results["total_processed"] += 1
+
+        db.commit()
+        return results
 
     @staticmethod
     def get_all_assignments(db: Session, company_id: Optional[int] = None) -> List[LeaveAssignment]:

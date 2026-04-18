@@ -11,7 +11,8 @@ Tables:
 import enum
 from sqlalchemy import (
     Column, Integer, String, DateTime, ForeignKey,
-    Enum as SAEnum, UniqueConstraint, Numeric, CheckConstraint
+    Enum as SAEnum, UniqueConstraint, Numeric, CheckConstraint,
+    Date, Boolean
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -111,4 +112,32 @@ class LeaveAssignment(Base):
     structure = relationship("LeaveStructure", back_populates="assignments")
 
 
-# leave_balances table removed as per runtime calculation objective
+# ─────────────────────────────────────────
+# leave_resets
+# ─────────────────────────────────────────
+
+class LeaveReset(Base):
+    """Stores history of year-end reset actions for tracking and January payroll."""
+    __tablename__ = "leave_resets"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    user_id        = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id     = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    leave_type     = Column(SAEnum(LeaveType, name="leave_type_enum"), nullable=False)
+    reset_year     = Column(Integer, nullable=False)
+    reset_date     = Column(Date, nullable=False)
+    policy_action  = Column(SAEnum(ResetPolicy, name="reset_policy_enum"), nullable=False)
+    
+    affected_days  = Column(Numeric(precision=8, scale=2), default=0)
+    payout_amount  = Column(Numeric(precision=15, scale=2), default=0) # currency
+    
+    is_paid    = Column(Boolean, default=False) # For January payroll sync
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user    = relationship("User")
+    company = relationship("Company")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "leave_type", "reset_year", name="uq_user_reset_per_type_per_year"),
+    )

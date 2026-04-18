@@ -373,3 +373,24 @@ class CalendarService:
                 status="holiday",  # Off-day treated as holiday equivalent
                 source="rule"
             )
+
+    @staticmethod
+    def get_working_days_count(db: Session, company_id: int, year: int, month: int) -> float:
+        """
+        Calculate total working days in a month based on company calendar rules.
+        - Working day = 1.0
+        - Half day = 0.5
+        - Holiday/Off day = 0.0
+        """
+        import calendar
+        _, num_days = calendar.monthrange(year, month)
+        
+        total_working = 0.0
+        for d in range(1, num_days + 1):
+            day_service = CalendarService.get_day_status(db, company_id, date(year, month, d))
+            if day_service.status == "working":
+                total_working += 1.0
+            elif day_service.status == "half_day":
+                total_working += 0.5
+                
+        return total_working
