@@ -196,7 +196,7 @@ class DocumentService:
             status = day['status']
             day_type = day['day_type']
             
-            if day_type not in ['working', 'half']:
+            if day_type not in ['working', 'half_day']:
                 continue
                 
             total_working_days += 1

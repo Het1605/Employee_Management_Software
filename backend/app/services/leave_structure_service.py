@@ -228,7 +228,8 @@ class LeaveStructureService:
             # --- Reset Boundary Logic ---
             latest_reset = db.query(LeaveReset).filter(
                 LeaveReset.user_id == user_id,
-                LeaveReset.leave_type == detail.leave_type
+                LeaveReset.leave_type == detail.leave_type,
+                LeaveReset.reset_year < target_date.year
             ).order_by(desc(LeaveReset.reset_year)).first()
 
             if latest_reset:
@@ -236,7 +237,8 @@ class LeaveStructureService:
                 # Only EXTEND policy results in an initial carried-forward balance
                 initial_balance = float(latest_reset.affected_days) if latest_reset.policy_action == ResetPolicy.EXTEND else 0.0
             else:
-                calc_start = assignment.assigned_at
+                # Normalize to date to avoid TypeError when comparing with target_date
+                calc_start = assignment.assigned_at.date() if hasattr(assignment.assigned_at, 'date') else assignment.assigned_at
                 initial_balance = 0.0
 
             # 3. Allocation Logic (since calc_start)
@@ -292,7 +294,7 @@ class LeaveStructureService:
         return response
 
     @staticmethod
-    def run_year_end_reset(db: Session, year: int) -> dict:
+    def run_year_end_reset(db: Session, year: int, company_id: Optional[int] = None) -> dict:
         """
         Finalizes the year for all assigned users.
         Triggered on Dec 31st.
@@ -309,7 +311,10 @@ class LeaveStructureService:
         from app.services.document_service import DocumentService
 
         target_date = date(year, 12, 31)
-        assignments = db.query(LeaveAssignment).all()
+        query = db.query(LeaveAssignment)
+        if company_id:
+            query = query.filter_by(company_id=company_id)
+        assignments = query.all()
         results = {"total_processed": 0, "encashments_created": 0}
 
         for ass in assignments:

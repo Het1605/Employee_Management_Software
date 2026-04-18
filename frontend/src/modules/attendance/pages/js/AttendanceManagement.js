@@ -158,7 +158,7 @@ const AttendanceManagement = () => {
                         <div className={styles.inputItem}>
                             <label>Year</label>
                             <select value={year} onChange={(e) => setYear(parseInt(e.target.value))}>
-                                {[2024, 2025, 2026].map(y => (
+                                {Array.from({ length: 9 }, (_, i) => new Date().getFullYear() - 3 + i).map(y => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>

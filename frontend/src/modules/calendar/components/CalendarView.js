@@ -119,7 +119,9 @@ const CalendarView = () => {
                         value={year}
                         onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}
                     >
-                        {Array.from({ length: 10 }, (_, i) => year - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                        {Array.from({ length: 9 }, (_, i) => new Date().getFullYear() - 3 + i).map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
                     </select>
 
                     <button onClick={handleNextMonth} className="nav-btn flex-shrink-0">›</button>

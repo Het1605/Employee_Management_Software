@@ -52,7 +52,7 @@ export const SalarySlipForm1 = ({
 
         <DocumentInputField label="Year" required error={errors.year}>
           <select value={year} onChange={(e) => onYearChange(e.target.value)}>
-            {[2024, 2025, 2026].map((y) => (
+            {Array.from({ length: 9 }, (_, i) => new Date().getFullYear() - 3 + i).map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
