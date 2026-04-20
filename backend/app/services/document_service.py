@@ -173,6 +173,13 @@ class DocumentService:
         # C. Get This Month's Allocation (Compare month_end vs month_start-1)
         full_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=month_end)
         
+        # Initialize Reconciliation Variables (Fix for UnboundLocalError)
+        total_payable_days = Decimal('0')
+        total_working_days = 0
+        leaves_taken = Decimal('0')
+        paid_leaves = Decimal('0')
+        unpaid_leaves = Decimal('0')
+
         # Track virtual remaining balance for this specific month's reconciliation
         # available = (prev balance) + (this month's new allocation) - (leaves already taken BEFORE this month but in same year?)
         # Actually, get_runtime_leave_balance(month_end) already gives (Total Allocated up to month_end) - (Total Used up to month_end).
@@ -180,16 +187,22 @@ class DocumentService:
         # (Total Allocated up to month_end) - (Total Used BEFORE this month).
         
         virtual_balances = {}
+        # is_january_slip: The actual Month 1 slip (for January work).
+        # is_december_slip: The Month 12 slip (often called 'January Salary' if paid in Jan).
+        is_january_slip = int(month) == 1
+        is_december_slip = int(month) == 12
+        
         for cat in ["PL", "CL", "SL"]:
             allocated_up_to_end = Decimal(str(full_balances[cat]["allocated"]))
-            used_before_this_month = Decimal(str(start_balances[cat]["used"]))
+            
+            if is_january_slip:
+                # In January, 'allocated' already includes the Carry Forward (EXTEND).
+                # Usage from previous year must be ignored to allow CF leaves to be paid.
+                used_before_this_month = Decimal('0')
+            else:
+                used_before_this_month = Decimal(str(start_balances[cat]["used"]))
+                
             virtual_balances[cat] = allocated_up_to_end - used_before_this_month
-
-        total_payable_days = Decimal('0')
-        total_working_days = 0
-        leaves_taken = Decimal('0')
-        paid_leaves = Decimal('0')
-        unpaid_leaves = Decimal('0')
 
         for day in att_summary['attendance']:
             dt = day['date']
@@ -232,8 +245,12 @@ class DocumentService:
                         virtual_balances[cat] -= Decimal('1.0')
                     else:
                         unpaid_leaves += Decimal('1.0')
-                else:
-                    unpaid_leaves += Decimal('1.0')
+
+        # Final Debug Logs for User (moved after reconciliation to show correct values)
+        print(f"DEBUG - Month {month} Year {year} for User {user_id}:")
+        print(f"  Paid Leaves: {paid_leaves}")
+        print(f"  Unpaid Leaves: {unpaid_leaves}")
+        print(f"  Encash Status: {is_january_slip or is_december_slip}")
 
         if total_working_days == 0:
             total_working_days = last_day
@@ -260,12 +277,18 @@ class DocumentService:
             else:
                 deductions_list.append(comp)
 
-        # 5a. Leave Encashment (January Integration)
-        if int(month) == 1:
+        # 5a. Leave Encashment (Year-End Integration)
+        # Pull payout records for ENCASH policies.
+        if is_january_slip or is_december_slip:
             from app.models.leave_structure import LeaveReset
+            
+            # If generating Dec slip, we look for this year's reset. 
+            # If generating Jan slip, we look for last year's reset.
+            res_year_to_match = int(year) if is_december_slip else int(year) - 1
+            
             encash_records = db.query(LeaveReset).filter(
                 LeaveReset.user_id == user_id,
-                LeaveReset.reset_year == int(year) - 1,
+                LeaveReset.reset_year == res_year_to_match,
                 LeaveReset.payout_amount > 0
             ).all()
             for rec in encash_records:
@@ -298,7 +321,7 @@ class DocumentService:
             "present_days": att_summary['present_days'],
             "half_days": att_summary['half_days'],
             "absent_days": att_summary['absent_days'],
-            "effective_days": effective_days_val,
+            "effective_paid_days": effective_days_val,
             "total_leaves": total_leaves_val,
             "leaves_taken": float(leaves_taken),
             "paid_leaves": float(paid_leaves),
@@ -379,7 +402,13 @@ class DocumentService:
             virt_balances = {}
             for ct in ["PL", "CL", "SL"]:
                 alloc_up = Decimal(str(full_balances[ct]["allocated"]))
-                used_bef = Decimal(str(start_balances[ct]["used"]))
+                
+                # Apply January Reset awareness to the Yearly/PDF loop
+                if month_idx == 1:
+                    used_bef = Decimal('0')
+                else:
+                    used_bef = Decimal(str(start_balances[ct]["used"]))
+                    
                 virt_balances[ct] = alloc_up - used_bef
 
             total_payable_month = Decimal('0')

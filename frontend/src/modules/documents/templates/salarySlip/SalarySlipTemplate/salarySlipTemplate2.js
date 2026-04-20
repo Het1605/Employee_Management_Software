@@ -12,7 +12,7 @@ export function generateSalarySlipTemplate2(payload) {
     const designation = safe(form_data.designation);
     const year = safe(form_data.year);
     const totalWorkingDays = safe(form_data.total_working_days);
-    const effectiveDays = safe(form_data.effective_days); // Now "Effective Paid Days"
+    const effectiveDays = safe(form_data.effective_paid_days); // Now "Effective Paid Days"
     const leavesTaken = safe(form_data.leaves_taken);
     const paidLeaves = safe(form_data.paid_leaves);
     const unpaidLeaves = safe(form_data.unpaid_leaves);

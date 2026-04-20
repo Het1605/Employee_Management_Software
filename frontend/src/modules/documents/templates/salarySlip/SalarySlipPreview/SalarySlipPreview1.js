@@ -27,7 +27,7 @@ export const SalarySlipPreview1 = ({
   const displayYear = form_data?.year || year || '____________';
   const designation = form_data?.designation || '____________';
   const totalWorkingDays = form_data?.total_working_days || '0';
-  const effectiveDays = form_data?.effective_days || '0';
+  const effectiveDays = form_data?.effective_paid_days || '0';
   const leavesTaken = form_data?.leaves_taken || '0';
   const paidLeaves = form_data?.paid_leaves || '0';
   const unpaidLeaves = form_data?.unpaid_leaves || '0';
@@ -99,13 +99,16 @@ export const SalarySlipPreview1 = ({
                 </tr>
               </thead>
               <tbody>
-                {earnings.map((e, idx) => (
-                  <tr key={`earn-${idx}`}>
-                    <td className={styles.salaryLedgerCell}>{e.name}</td>
-                    <td className={styles.salaryLedgerCellRight}>{fAmt(e.amount)}</td>
-                    <td className={styles.salaryLedgerCell}></td>
-                  </tr>
-                ))}
+                {earnings.map((e, idx) => {
+                  const isEncash = e.name && e.name.toLowerCase().includes('encashment');
+                  return (
+                    <tr key={`earn-${idx}`} style={isEncash ? { backgroundColor: '#fcfcfc', fontWeight: '500' } : {}}>
+                      <td className={styles.salaryLedgerCell}>{e.name}</td>
+                      <td className={styles.salaryLedgerCellRight}>{fAmt(e.amount)}</td>
+                      <td className={styles.salaryLedgerCell}></td>
+                    </tr>
+                  );
+                })}
                 {deductions.map((d, idx) => (
                   <tr key={`deduct-${idx}`}>
                     <td className={styles.salaryLedgerCell}>{d.name}</td>

@@ -13,7 +13,7 @@ export function generateSalarySlipTemplate1(payload) {
     const displayMonth = safe(form_data.display_month);
     const year = safe(form_data.year);
     const totalWorkingDays = safe(form_data.total_working_days);
-    const effectiveDays = safe(form_data.effective_days); // Now "Effective Paid Days"
+    const effectiveDays = safe(form_data.effective_paid_days); // Now "Effective Paid Days"
     const leavesTaken = safe(form_data.leaves_taken);
     const paidLeaves = safe(form_data.paid_leaves);
     const unpaidLeaves = safe(form_data.unpaid_leaves);
@@ -48,7 +48,7 @@ export function generateSalarySlipTemplate1(payload) {
           .page { width: 794px; height: 1123px; margin: 0 auto; position: relative; box-sizing: border-box; overflow: hidden; }
           .header { width: 100%; margin: 0; padding: 0; }
           .header img { width: 100%; display: block; margin: 0; padding: 0; }
-          .content-area { padding: 40px; padding-bottom: 50px; }
+          .content-area { padding: 30px 40px; padding-bottom: 30px; }
           .footer { position: absolute; bottom: 0; left: 0; width: 100%; }
           .footer img { width: 100%; display: block; }
           img { max-width: 100%; height: auto; display: block; }
@@ -60,7 +60,7 @@ export function generateSalarySlipTemplate1(payload) {
           .info-table { width: 100%; font-size: 13px; border-collapse: collapse; table-layout: fixed; }
           .info-table td { padding: 3px 0; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
           
-          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+          .ledger-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
           .ledger-header { background-color: #f2f2f2; }
           .ledger-header th { padding: 8px; text-align: left; border: 1px solid #ddd; }
           .ledger-header th.right { text-align: right; }
@@ -71,9 +71,9 @@ export function generateSalarySlipTemplate1(payload) {
           
           .total-row { background-color: #f9f9f9; font-weight: bold; }
           .net-row { background-color: #eeefff; font-weight: bold; font-size: 15px; }
-          .net-row td { padding: 10px; border: 1px solid #ddd; }
+          .net-row td { padding: 8px; border: 1px solid #ddd; }
           
-          .signature-section { margin-top: 30px; text-align: left; }
+          .signature-section { margin-top: 20px; text-align: left; }
           .signature-section p { margin: 0; }
           .signature-section .company { margin: 3px 0; font-weight: bold; }
           .stamp-img { max-height: 100px; max-width: 180px; margin: 3px 0; }
@@ -114,13 +114,15 @@ export function generateSalarySlipTemplate1(payload) {
                       </tr>
                   </thead>
                   <tbody>
-                      ${earnings.map(e => `
-                        <tr>
+                      ${earnings.map(e => {
+                        const isEncash = e.name && e.name.toLowerCase().includes('encashment');
+                        return `
+                        <tr style="${isEncash ? 'background-color: #fcfcfc; font-weight: 500;' : ''}">
                           <td class="ledger-cell">${e.name}</td>
                           <td class="ledger-cell right">${fAmt(e.amount)}</td>
                           <td class="ledger-cell"></td>
                         </tr>
-                      `).join('')}
+                      `}).join('')}
                       ${deductions.map(d => `
                         <tr>
                           <td class="ledger-cell">${d.name}</td>

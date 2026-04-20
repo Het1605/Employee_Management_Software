@@ -21,6 +21,8 @@ Cron trigger endpoints (Admin-only):
   POST   /leave-cron/year-end-reset         — Trigger year-end reset
 """
 
+from datetime import date, datetime
+import calendar
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -256,19 +258,31 @@ def delete_leave_assignment(
 )
 def get_user_leave_balance(
     user_id: int,
+    month: Optional[int] = Query(None, ge=1, le=12),
+    year: Optional[int] = Query(None, ge=2000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
     Returns real-time leave balance (Allocated, Used, Remaining, Excess) for PL, CL, SL.
     Calculation is done on-the-fly based on tenure and approved requests.
+    Supports optional month and year for point-in-time calculation.
     """
     # Authorization check
     if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to view this user's balance.")
 
+    # Determine as_of_date
+    today = date.today()
+    target_year = year if year else today.year
+    target_month = month if month else today.month
+    
+    # Get the last day of that month
+    _, last_day = calendar.monthrange(target_year, target_month)
+    as_of_date = date(target_year, target_month, last_day)
+
     try:
-        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id)
+        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id, as_of_date)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

@@ -327,7 +327,8 @@ class LeaveStructureService:
             salary_ass = db.query(UserSalaryStructure).filter_by(user_id=user_id).first()
             if salary_ass:
                 for d in salary_ass.structure.details:
-                    if "basic" in d.component.name.lower():
+                    name_lower = d.component.name.lower()
+                    if "basic" in name_lower or "base" in name_lower:
                         basic_monthly = (d.percentage / Decimal('100')) * salary_ass.ctc / Decimal('12')
                         break
 
