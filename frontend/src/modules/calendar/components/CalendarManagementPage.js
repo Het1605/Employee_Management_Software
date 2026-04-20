@@ -4,9 +4,9 @@ import CalendarDashboard from '../pages/js/CalendarDashboard';
 
 const CalendarManagementPage = () => {
   return (
-    <MainLayout>
+    <>
       <CalendarDashboard />
-    </MainLayout>
+    </>
   );
 };
 

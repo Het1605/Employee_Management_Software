@@ -100,13 +100,13 @@ const CompanyManagement = () => {
     };
 
     if (loading && companies.length === 0) return (
-        <MainLayout>
+        <>
             <div className={styles.container}>Loading...</div>
-        </MainLayout>
+        </>
     );
 
     return (
-        <MainLayout>
+        <>
             <div className={styles.container}>
                 <div className={styles.actionRow}>
                     <button className="btn-primary-action" onClick={handleAdd}>
@@ -187,7 +187,7 @@ const CompanyManagement = () => {
                     onCancel={() => setIsConfirmOpen(false)}
                 />
             </div>
-        </MainLayout>
+        </>
     );
 };
 

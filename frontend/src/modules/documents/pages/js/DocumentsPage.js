@@ -17,7 +17,7 @@ const DocumentsPage = () => {
   const { selectedCompanyId } = useCompanyContext();
 
   return (
-    <MainLayout>
+    <>
       <div className={styles.container}>
 
         {!selectedCompanyId ? (
@@ -49,7 +49,7 @@ const DocumentsPage = () => {
           </>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 };
 

@@ -18,7 +18,7 @@ const LeaveManagementPage = () => {
     };
 
     return (
-        <MainLayout title="Leave Management">
+        <>
             <div className={styles.container}>
                 <div className={styles.pageHeader}>
                     <h1 className={styles.pageTitle}>Leave Management</h1>
@@ -42,7 +42,7 @@ const LeaveManagementPage = () => {
                     <LeaveApprovalPanel refreshTrigger={refreshTrigger} onActionComplete={handleRefresh} />
                 )}
             </div>
-        </MainLayout>
+        </>
     );
 };
 

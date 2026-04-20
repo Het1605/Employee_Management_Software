@@ -11,7 +11,7 @@ const ManagerDashboard = () => {
   ];
 
   return (
-    <MainLayout title="Manager Dashboard">
+    <>
       <h1 className={styles.welcome}>Welcome, Manager</h1>
       <p className={styles.subtitle}>Lead and support your team towards success.</p>
       
@@ -26,7 +26,7 @@ const ManagerDashboard = () => {
           </div>
         ))}
       </div>
-    </MainLayout>
+    </>
   );
 };
 

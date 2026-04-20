@@ -127,7 +127,7 @@ const CompanyAssignment = () => {
     );
 
     return (
-        <MainLayout>
+        <>
             <div className={styles.container}>
                 <div className={styles.assignmentLayout}>
                     <div className={styles.topControls}>
@@ -325,7 +325,7 @@ const CompanyAssignment = () => {
                     )}
                 </div>
             </div>
-        </MainLayout>
+        </>
     );
 };
 

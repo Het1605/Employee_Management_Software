@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import Header from '../../Header/js/Header';
 import Sidebar from '../../Sidebar/js/Sidebar';
 import styles from '../style/Layout.module.css';
@@ -22,7 +23,7 @@ const MainLayout = ({ children }) => {
         <Header onToggleSidebar={toggleSidebar} />
         
         <main className={styles.mainContent}>
-          {children}
+          {children || <Outlet />}
         </main>
       </div>
     </div>

@@ -5,7 +5,7 @@ import '../../pages/styles/CalendarModule.css';
 
 const EmployeeCalendarPage = () => {
     return (
-        <MainLayout title="My Calendar">
+        <>
             <div className="calendar-management-page">
                 <header className="page-header">
                     <div>
@@ -18,7 +18,7 @@ const EmployeeCalendarPage = () => {
                     <EmployeeCalendarView />
                 </main>
             </div>
-        </MainLayout>
+        </>
     );
 };
 

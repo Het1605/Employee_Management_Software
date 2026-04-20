@@ -141,7 +141,7 @@ const AttendanceManagement = () => {
     };
 
     return (
-        <MainLayout title="Attendance Management">
+        <>
             <div className={styles.container}>
                 <div className={styles.filterCard}>
                     <div className={styles.filterGroup}>
@@ -243,7 +243,7 @@ const AttendanceManagement = () => {
                     </div>
                 )}
             </div>
-        </MainLayout>
+        </>
     );
 };
 

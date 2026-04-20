@@ -7,7 +7,7 @@ const ModuleDashboard = ({ title, welcomeTitle, subtitle, sections }) => {
   const navigate = useNavigate();
 
   return (
-    <MainLayout title={title}>
+    <>
       <h1 className={styles.welcome}>{welcomeTitle}</h1>
       <p className={styles.subtitle}>{subtitle}</p>
 
@@ -30,7 +30,7 @@ const ModuleDashboard = ({ title, welcomeTitle, subtitle, sections }) => {
           </div>
         ))}
       </div>
-    </MainLayout>
+    </>
   );
 };
 

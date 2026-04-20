@@ -70,7 +70,7 @@ const AttendancePage = () => {
     const isOffDay = dayType === 'off';
 
     return (
-        <MainLayout title="Daily Attendance">
+        <>
             <div className={styles.attendanceContainer}>
                 <div className={styles.card}>
                     <h1 className={styles.title}>Mark Your Attendance</h1>
@@ -117,7 +117,7 @@ const AttendancePage = () => {
                     )}
                 </div>
             </div>
-        </MainLayout>
+        </>
     );
 };
 

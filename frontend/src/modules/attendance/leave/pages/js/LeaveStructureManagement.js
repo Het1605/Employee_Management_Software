@@ -118,18 +118,18 @@ const LeaveStructureManagement = () => {
 
     if (!isAdminOrHR) {
         return (
-            <MainLayout title="Unauthorized">
+            <>
                 <div className={styles.container}>
                     <div className={styles.placeholderCard}>
                         You do not have permission to access this page.
                     </div>
                 </div>
-            </MainLayout>
+            </>
         );
     }
 
     return (
-        <MainLayout title="Leave Structure">
+        <>
             <div className={styles.container}>
                 <div className={styles.pageHeader}>
                     <h1 className={styles.pageTitle}>Leave Structure</h1>
@@ -195,7 +195,7 @@ const LeaveStructureManagement = () => {
                     assignments={assignments}
                 />
             </div>
-        </MainLayout>
+        </>
     );
 };
 

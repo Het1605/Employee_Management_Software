@@ -68,7 +68,7 @@ const UserManagement = () => {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className={styles.actionRow}>
         <button
           className="btn-primary-action"
@@ -88,11 +88,11 @@ const UserManagement = () => {
             onDelete={async () => {
               if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
                 try {
-                  await deleteUser(user.id);
-                  showToast("User deleted successfully", 'success');
-                  fetchUsers();
+                   await deleteUser(user.id);
+                   showToast("User deleted successfully", 'success');
+                   fetchUsers();
                 } catch (err) {
-                  showToast("Unable to delete user. " + handleApiError(err), 'error');
+                   showToast("Unable to delete user. " + handleApiError(err), 'error');
                 }
               }
             }}
@@ -112,7 +112,7 @@ const UserManagement = () => {
           onClose={() => setIsPasswordModalOpen(false)}
         />
       )}
-    </MainLayout>
+    </>
   );
 };
 

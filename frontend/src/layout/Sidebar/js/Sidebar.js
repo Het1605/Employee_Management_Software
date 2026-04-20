@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -17,6 +17,18 @@ import styles from '../style/Sidebar.module.css';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const role = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    // Small timeout to ensure the active class is applied and DOM is ready
+    const timeoutId = setTimeout(() => {
+        const activeItem = document.querySelector(`.${styles.active}`);
+        if (activeItem) {
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [location.pathname]);
 
   const handleLinkClick = () => {
     if (window.innerWidth <= 768) {

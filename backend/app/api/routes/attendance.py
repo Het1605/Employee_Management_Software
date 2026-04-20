@@ -19,9 +19,7 @@ def mark_attendance(
     attendance: AttendanceMark,
     db: Session = Depends(get_db)
 ):
-    # Determine who is performing the action (actor)
-    # In auth-free dev mode, we use actor_id from body
-    # Fallback to user_id if actor_id is not provided
+    
     initiator_id = attendance.actor_id or attendance.user_id
     actor = get_user_by_id(db, initiator_id) if initiator_id else None
     

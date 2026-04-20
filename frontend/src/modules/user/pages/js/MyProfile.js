@@ -25,10 +25,10 @@ const MyProfile = () => {
         }
     };
 
-    if (loading) return <MainLayout title="My Profile"><p>Loading profile...</p></MainLayout>;
+    if (loading) return <p>Loading profile...</p>;
 
     return (
-        <MainLayout title="My Profile">
+        <>
             <div className={styles.profileContainer}>
                 <div className={styles.profileHeader}>
                     <h1 className={styles.title}>Account Settings</h1>
@@ -48,7 +48,7 @@ const MyProfile = () => {
 
                 {error && <p style={{ color: '#991b1b', marginTop: '1rem', fontWeight: '500' }}>❌ {error}</p>}
             </div>
-        </MainLayout>
+        </>
     );
 };
 
