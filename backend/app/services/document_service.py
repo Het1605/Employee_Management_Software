@@ -166,46 +166,20 @@ class DocumentService:
                     leave_map[curr] = l
                 curr += timedelta(days=1)
 
-        # B. Get Starting Balances (as of end of previous month)
-        prev_month_end = month_start - timedelta(days=1)
-        start_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=prev_month_end)
+        # B. Get Dynamic Runtime Balances
+        # Note: get_runtime_leave_balance now returns the cumulative/dynamic state for the year.
+        balance_summary = LeaveStructureService.get_runtime_leave_balance(db, user.id, month=int(month), year=int(year))
         
-        # C. Get This Month's Allocation (Compare month_end vs month_start-1)
-        full_balances = LeaveStructureService.get_runtime_leave_balance(db, user.id, as_of_date=month_end)
-        
-        # Initialize Reconciliation Variables (Fix for UnboundLocalError)
+        # C. Re-calculate Reconciliation based on Runtime Balance
+        # available_balance in the context of this month's salary logic
         total_payable_days = Decimal('0')
         total_working_days = 0
-        leaves_taken = Decimal('0')
-        paid_leaves = Decimal('0')
-        unpaid_leaves = Decimal('0')
+        total_leaves_taken = Decimal('0')
+        total_paid_leaves = Decimal('0')
+        total_unpaid_leaves = Decimal('0')
 
-        # Track virtual remaining balance for this specific month's reconciliation
-        # available = (prev balance) + (this month's new allocation) - (leaves already taken BEFORE this month but in same year?)
-        # Actually, get_runtime_leave_balance(month_end) already gives (Total Allocated up to month_end) - (Total Used up to month_end).
-        # To get "Available for this month's reconciliation", we need:
-        # (Total Allocated up to month_end) - (Total Used BEFORE this month).
-        
-        virtual_balances = {}
-        # is_january_slip: The actual Month 1 slip (for January work).
-        # is_december_slip: The Month 12 slip (often called 'January Salary' if paid in Jan).
-        is_january_slip = int(month) == 1
-        is_december_slip = int(month) == 12
-        
-        for cat in ["PL", "CL", "SL"]:
-            allocated_up_to_end = Decimal(str(full_balances[cat]["allocated"]))
-            
-            if is_january_slip:
-                # In January, 'allocated' already includes the Carry Forward (EXTEND).
-                # Usage from previous year must be ignored to allow CF leaves to be paid.
-                used_before_this_month = Decimal('0')
-            else:
-                used_before_this_month = Decimal(str(start_balances[cat]["used"]))
-                
-            virtual_balances[cat] = allocated_up_to_end - used_before_this_month
-
+        # D. Process Attendance Days
         for day in att_summary['attendance']:
-            dt = day['date']
             status = day['status']
             day_type = day['day_type']
             
@@ -217,96 +191,88 @@ class DocumentService:
             if status == 'present':
                 total_payable_days += Decimal('1.0')
             elif status == 'half_day':
-                # Worked half-day is always 0.5 payable
                 total_payable_days += Decimal('0.5')
-                leaves_taken += Decimal('0.5')
-                
-                # Check for half-day leave to cover the other half
-                leave = leave_map.get(dt)
-                if leave and leave.leave_duration_type == LeaveDurationType.HALF_DAY:
-                    cat = leave.leave_category.value
-                    if virtual_balances.get(cat, Decimal('0')) >= Decimal('0.5'):
-                        total_payable_days += Decimal('0.5')
-                        paid_leaves += Decimal('0.5')
-                        virtual_balances[cat] -= Decimal('0.5')
-                    else:
-                        unpaid_leaves += Decimal('0.5')
-                else:
-                    unpaid_leaves += Decimal('0.5')
+                total_leaves_taken += Decimal('0.5')
             elif status == 'absent':
-                leaves_taken += Decimal('1.0')
-                # Check for full-day leave
-                leave = leave_map.get(dt)
-                if leave and leave.leave_duration_type == LeaveDurationType.FULL_DAY:
-                    cat = leave.leave_category.value
-                    if virtual_balances.get(cat, Decimal('0')) >= Decimal('1.0'):
-                        total_payable_days += Decimal('1.0')
-                        paid_leaves += Decimal('1.0')
-                        virtual_balances[cat] -= Decimal('1.0')
-                    else:
-                        unpaid_leaves += Decimal('1.0')
+                total_leaves_taken += Decimal('1.0')
 
-        # Final Debug Logs for User (moved after reconciliation to show correct values)
-        print(f"DEBUG - Month {month} Year {year} for User {user_id}:")
-        print(f"  Paid Leaves: {paid_leaves}")
-        print(f"  Unpaid Leaves: {unpaid_leaves}")
-        print(f"  Encash Status: {is_january_slip or is_december_slip}")
+        # E. Apply Dynamic Paid/Unpaid logic (Aggregate per User request)
+        # Note: We sum all allocated across PL, CL, SL for the 'Available' bucket
+        total_available = sum(Decimal(str(v["allocated"])) for v in balance_summary.values())
+        
+        total_paid_leaves = min(total_available, total_leaves_taken)
+        total_unpaid_leaves = total_leaves_taken - total_paid_leaves
+        
+        # Add back total_paid_leaves to payable_days
+        total_payable_days += total_paid_leaves
+
+        # MANDATORY DEBUG LOGS
+        print(f"[SALARY DEBUG] User:{user.id} Month:{month} Year:{year}")
+        print(f"  Total Leaves Taken (Attendance): {total_leaves_taken}")
+        print(f"  Total Available (Runtime): {total_available}")
+        print(f"  Paid Leaves: {total_paid_leaves}")
+        print(f"  Unpaid Leaves: {total_unpaid_leaves}")
 
         if total_working_days == 0:
             total_working_days = last_day
 
         # 5. Calculation
         # Effective Paid Days = Total Working Days - Unpaid Leaves
-        effective_days_val = float(Decimal(str(total_working_days)) - unpaid_leaves)
+        effective_days_val = float(Decimal(str(total_working_days)) - total_unpaid_leaves)
         per_day_salary = monthly_base / Decimal(str(total_working_days))
-        leave_deduction = per_day_salary * unpaid_leaves
+        leave_deduction = per_day_salary * total_unpaid_leaves
 
-        # Ensure deduction is not negative
         if leave_deduction < 0:
             leave_deduction = Decimal('0')
 
-        # 5. Breakdown
+        # 6. Breakdown & Basic Salary Search
         earnings_list = []
         deductions_list = []
+        basic_monthly_amount = Decimal('0')
+        
         for detail in structure.details:
-            # Earned amounts are based on FULL monthly base
+            # Percentage-based component calculation
             amount = (detail.percentage / Decimal('100')) * monthly_base
             comp = {"name": detail.component.name, "amount": round(float(amount), 2)}
+            
+            # Identify "Basic" component for encashment base
+            if "basic" in detail.component.name.lower():
+                basic_monthly_amount = amount
+                
             if detail.component.type == ComponentType.EARNING:
                 earnings_list.append(comp)
             else:
                 deductions_list.append(comp)
 
-        # 5a. Leave Encashment (Year-End Integration)
-        # Pull payout records for ENCASH policies.
-        if is_january_slip or is_december_slip:
-            from app.models.leave_structure import LeaveReset
-            
-            # If generating Dec slip, we look for this year's reset. 
-            # If generating Jan slip, we look for last year's reset.
-            res_year_to_match = int(year) if is_december_slip else int(year) - 1
-            
-            encash_records = db.query(LeaveReset).filter(
-                LeaveReset.user_id == user_id,
-                LeaveReset.reset_year == res_year_to_match,
-                LeaveReset.payout_amount > 0
-            ).all()
-            for rec in encash_records:
-                earnings_list.append({
-                    "name": f"Leave Encashment ({float(rec.affected_days)} Days)",
-                    "amount": round(float(rec.payout_amount), 2)
-                })
+        # 7. Dynamic Encashment Injection (Runtime-based)
+        # Use Basic component for rate calculation if found; fallback to Monthly CTC
+        encash_base_monthly = basic_monthly_amount if basic_monthly_amount > 0 else monthly_base
+        per_day_encash_rate = encash_base_monthly / Decimal(str(total_working_days))
+        
+        is_payroll_trigger_month = int(month) == 1 or int(month) == 12 # Common encashment months
+        
+        if is_payroll_trigger_month:
+            for cat, vals in balance_summary.items():
+                enc_days = Decimal(str(vals.get("encashable", 0)))
+                if enc_days > 0:
+                    enc_amount = enc_days * per_day_encash_rate
+                    earnings_list.append({
+                        "name": f"Leave Encashment ({float(enc_days)} Days)",
+                        "label": f"Leave Encashment ({float(enc_days)} Days)", # User requested 'label' key
+                        "amount": round(float(enc_amount), 2)
+                    })
+                    print(f"  [ENCASH DETECTED] Type:{cat} Days:{enc_days} Amount:{enc_amount}")
 
         if leave_deduction > 0:
             deductions_list.append({
-                "name": f"Unpaid Leave Deduction ({float(unpaid_leaves)} Days)", 
+                "name": f"Unpaid Leave Deduction ({float(total_unpaid_leaves)} Days)", 
                 "amount": round(float(leave_deduction), 2)
             })
         
         total_earnings = sum(e['amount'] for e in earnings_list)
         total_deductions = sum(d['amount'] for d in deductions_list)
         net_salary = total_earnings - total_deductions
-        total_leaves_val = float(unpaid_leaves) # Legacy support
+        total_leaves_val = float(total_unpaid_leaves) # Legacy support
 
         month_names = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         display_month = month_names[int(month)]
@@ -323,9 +289,9 @@ class DocumentService:
             "absent_days": att_summary['absent_days'],
             "effective_paid_days": effective_days_val,
             "total_leaves": total_leaves_val,
-            "leaves_taken": float(leaves_taken),
-            "paid_leaves": float(paid_leaves),
-            "unpaid_leaves": float(unpaid_leaves),
+            "leaves_taken": float(total_leaves_taken),
+            "paid_leaves": float(total_paid_leaves),
+            "unpaid_leaves": float(total_unpaid_leaves),
             "earnings": earnings_list,
             "deductions": deductions_list,
             "total_earnings": round(float(total_earnings), 2),

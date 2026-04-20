@@ -282,7 +282,7 @@ def get_user_leave_balance(
     as_of_date = date(target_year, target_month, last_day)
 
     try:
-        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id, as_of_date)
+        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id, month=target_month, year=target_year)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
