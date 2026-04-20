@@ -8,6 +8,31 @@ export const SalarySlipPreview2 = ({
   includeFooter,
   form_data,
 }) => {
+  const containerRef = React.useRef(null);
+  const [scale, setScale] = React.useState(1);
+
+  React.useLayoutEffect(() => {
+    const handleResize = () => {
+      // Apply scaling ONLY on desktop (>= 1024px)
+      if (window.innerWidth >= 1024 && containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const targetWidth = 1123; // Landscape A4 width
+        if (containerWidth < targetWidth) {
+          const newScale = containerWidth / targetWidth;
+          setScale(newScale);
+        } else {
+          setScale(1);
+        }
+      } else {
+        setScale(1); // Standard CSS handles mobile scaling
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const name = form_data?.employee_name || '____________';
   const designation = form_data?.designation || '____________';
   const year = form_data?.year || '____________';
@@ -41,80 +66,90 @@ export const SalarySlipPreview2 = ({
   }
 
   return (
-    <div className={styles.previewColumn}>
-      <div
+    <div className={styles.previewColumn} ref={containerRef}>
+      <div 
         className={styles.previewViewport}
-        style={{ '--preview-width': '1123px', '--preview-height': '794px' }}
+        style={(window.innerWidth >= 1024 && scale < 1) ? { 
+          overflow: 'hidden', 
+          height: `${794 * scale}px`, 
+          minHeight: 'auto'
+        } : {}}
       >
-        <div className={styles.a4PreviewLandscape}>
+        <div 
+          className={styles.a4PreviewLandscape}
+          style={(window.innerWidth >= 1024 && scale < 1) ? { 
+            transform: `scale(${scale})`, 
+            transformOrigin: 'top center',
+            margin: '0 auto'
+          } : {}}
+        >
           <div className={styles.salaryPreviewBody}>
-            <div className={styles.salaryTitle} style={{ textAlign: 'center', marginBottom: '8px', fontSize: '15px', fontWeight: 'bold' }}>
+            <div className={styles.salaryTitle}>
               SALARY SUMMARY (YEARLY)
             </div>
 
-            <div className={styles.salaryInfoSection} style={{ marginBottom: '8px', borderBottom: 'none' }}>
-              <table className={styles.salaryInfoTable} style={{ fontSize: '11px', width: '100%' }}>
+            <div className={styles.salaryInfoSection} style={{ borderBottom: 'none' }}>
+              <table className={styles.salaryInfoTable}>
                 <tbody>
                   <tr>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Employee Name:</strong> {name}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Designation:</strong> {designation}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Year:</strong> {year}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
+                    <td className={styles.salaryInfoCell}><strong>Employee Name:</strong> {name}</td>
+                    <td className={styles.salaryInfoCell}><strong>Designation:</strong> {designation}</td>
+                    <td className={styles.salaryInfoCell}><strong>Year:</strong> {year}</td>
+                    <td className={styles.salaryInfoCell}><strong>Total Working Days:</strong> {totalWorkingDays}</td>
                   </tr>
                   <tr>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Leaves Taken:</strong> {fDays(leavesTaken)}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Paid Leaves:</strong> {fDays(paidLeaves)}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Unpaid Leaves:</strong> {fDays(unpaidLeaves)}</td>
-                    <td className={styles.salaryInfoCell} style={{ width: '25%', padding: '2px 0' }}><strong>Effective Paid Days:</strong> {fDays(effectiveDays)}</td>
+                    <td className={styles.salaryInfoCell}><strong>Leaves Taken:</strong> {fDays(leavesTaken)}</td>
+                    <td className={styles.salaryInfoCell}><strong>Paid Leaves:</strong> {fDays(paidLeaves)}</td>
+                    <td className={styles.salaryInfoCell}><strong>Unpaid Leaves:</strong> {fDays(unpaidLeaves)}</td>
+                    <td className={styles.salaryInfoCell}><strong>Effective Paid Days:</strong> {fDays(effectiveDays)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <table className={styles.salaryLedgerTable} style={{ fontSize: '12px' }}>
+            <table className={styles.salaryLedgerTable}>
               <thead>
                 <tr className={styles.salaryLedgerHeader}>
-                  <th style={{ padding: '4px', border: '1px solid #ddd' }}>Month</th>
-                  {compNames.map((c) => <th key={c} style={{ padding: '4px', border: '1px solid #ddd', textAlign: 'right' }}>{c}</th>)}
-                  <th style={{ padding: '4px', border: '1px solid #ddd', textAlign: 'right' }}>Leave Deduction</th>
+                  <th>Month</th>
+                  {compNames.map((c) => <th key={c} className={styles.salaryLedgerCellRight}>{c}</th>)}
+                  <th className={styles.salaryLedgerCellRight}>Leave Deduction</th>
                 </tr>
               </thead>
               <tbody>
                 {monthly_data.map((m, idx) => (
                   <tr key={`month-${idx}`}>
-                    <td className={styles.salaryLedgerCell} style={{ padding: '3px 4px' }}>{m.month}</td>
+                    <td className={styles.salaryLedgerCell}>{m.month}</td>
                     {compNames.map((c) => (
-                      <td key={`comp-${c}`} className={styles.salaryLedgerCellRight} style={{ padding: '3px 4px' }}>
+                      <td key={`comp-${c}`} className={styles.salaryLedgerCellRight}>
                         {fAmt(m.components[c] || 0)}
                       </td>
                     ))}
-                    <td className={styles.salaryLedgerCellRight} style={{ padding: '3px 4px' }}>{fAmt(m.leave_deduction)}</td>
+                    <td className={styles.salaryLedgerCellRight}>{fAmt(m.leave_deduction)}</td>
                   </tr>
                 ))}
                 <tr className={styles.salaryTotalRow}>
-                  <td className={styles.salaryLedgerCell} style={{ padding: '3px 4px' }}>TOTAL</td>
-                  <td className={styles.salaryLedgerCellCenter} style={{ padding: '3px 4px' }} colSpan={compNames.length}>{fAmt(totalEarnings)}</td>
-                  <td className={styles.salaryLedgerCellRight} style={{ padding: '3px 4px' }}>{fAmt(totalDeductions)}</td>
+                  <td className={styles.salaryLedgerCell}>TOTAL</td>
+                  <td className={styles.salaryLedgerCellCenter} colSpan={compNames.length}>{fAmt(totalEarnings)}</td>
+                  <td className={styles.salaryLedgerCellRight}>{fAmt(totalDeductions)}</td>
                 </tr>
-                <tr className={styles.salaryNetPayRow} style={{ fontSize: '13px' }}>
-                  <td className={styles.salaryLedgerCell} style={{ padding: '3px 4px' }}>NET PAY</td>
-                  <td className={styles.salaryLedgerCellCenter} style={{ padding: '3px 4px' }} colSpan={compNames.length + 1}>₹{fAmt(netSalary)}</td>
+                <tr className={styles.salaryNetPayRow}>
+                  <td className={styles.salaryLedgerCell}>NET PAY</td>
+                  <td className={styles.salaryLedgerCellCenter} colSpan={compNames.length + 1}>₹{fAmt(netSalary)}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div className={styles.salarySignatureSection} style={{ marginTop: '10px' }}>
-              <p style={{ fontSize: '12px', margin: 0 }}>For</p>
-              <p style={{ margin: '2px 0' }}><strong>{companyName}</strong></p>
+            <div className={styles.salarySignatureSection}>
+              <p className={styles.salarySignatureLabel}>For</p>
+              <p className={styles.salarySignatureCompany}><strong>{companyName}</strong></p>
               {stampData && (
                 <img
                   src={stampData}
                   alt="Company Stamp"
                   className={styles.salaryStampImg}
-                  style={{ maxHeight: '70px', maxWidth: '180px', margin: '2px 0' }}
                 />
               )}
-              <p style={{ fontSize: '12px', margin: '2px 0 0 0' }}>Authorized Signatory</p>
+              <p className={styles.salarySignatureLabel}>Authorized Signatory</p>
             </div>
           </div>
         </div>
