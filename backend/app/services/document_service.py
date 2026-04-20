@@ -172,46 +172,62 @@ class DocumentService:
         
         # C. Re-calculate Reconciliation based on Runtime Balance
         # available_balance in the context of this month's salary logic
-        total_payable_days = Decimal('0')
+        raw_absences = Decimal('0')
         total_working_days = 0
         total_leaves_taken = Decimal('0')
         total_paid_leaves = Decimal('0')
         total_unpaid_leaves = Decimal('0')
 
-        # D. Process Attendance Days
+        # D. Process Attendance Days & Raw Absences
+        # Rule: Absence where NO leave was applied is a "raw absence" (Unpaid).
+        raw_absences = Decimal('0')
+        total_working_days = 0
+        
         for day in att_summary['attendance']:
             status = day['status']
             day_type = day['day_type']
+            dt = day['date']
             
             if day_type not in ['working', 'half_day']:
                 continue
                 
             total_working_days += 1
             
-            if status == 'present':
-                total_payable_days += Decimal('1.0')
+            # Check if a leave was applied for this date
+            has_leave = dt in leave_map
+            
+            if status == 'absent':
+                if not has_leave:
+                    raw_absences += Decimal('1.0')
             elif status == 'half_day':
-                total_payable_days += Decimal('0.5')
-                total_leaves_taken += Decimal('0.5')
-            elif status == 'absent':
-                total_leaves_taken += Decimal('1.0')
+                # For half days, if no leave was applied for the remaining half, it counts as 0.5 unpaid.
+                if not has_leave:
+                    raw_absences += Decimal('0.5')
 
-        # E. Apply Dynamic Paid/Unpaid logic (Aggregate per User request)
-        # Note: We sum all allocated across PL, CL, SL for the 'Available' bucket
-        total_available = sum(Decimal(str(v["allocated"])) for v in balance_summary.values())
+        # E. Finalize Leave Metrics from API Balance (Single Source of Truth)
+        # CRITICAL FIX: Calculate per-category to prevent quota-leaking
+        total_paid_leaves = Decimal('0')
+        total_excess_from_api = Decimal('0')
         
-        total_paid_leaves = min(total_available, total_leaves_taken)
-        total_unpaid_leaves = total_leaves_taken - total_paid_leaves
-        
-        # Add back total_paid_leaves to payable_days
-        total_payable_days += total_paid_leaves
+        for cat, vals in balance_summary.items():
+            alloc_c = Decimal(str(vals.get('allocated', 0)))
+            used_c = Decimal(str(vals.get('used', 0)))
+            excess_c = Decimal(str(vals.get('excess', 0)))
+            
+            # Paid for this category is bounded by its own allocation
+            paid_c = min(alloc_c, used_c)
+            total_paid_leaves += paid_c
+            total_excess_from_api += excess_c
+
+        # Calculation Logic per User Guidelines:
+        total_unpaid_leaves = total_excess_from_api + raw_absences
+        total_leaves_taken = total_paid_leaves + total_unpaid_leaves
 
         # MANDATORY DEBUG LOGS
         print(f"[SALARY DEBUG] User:{user.id} Month:{month} Year:{year}")
-        print(f"  Total Leaves Taken (Attendance): {total_leaves_taken}")
-        print(f"  Total Available (Runtime): {total_available}")
-        print(f"  Paid Leaves: {total_paid_leaves}")
-        print(f"  Unpaid Leaves: {total_unpaid_leaves}")
+        print(f"  API Paid: {total_paid_leaves} | API Excess: {total_excess_from_api}")
+        print(f"  Raw Absences (Internal): {raw_absences}")
+        print(f"  Final Paid: {total_paid_leaves} | Final Unpaid: {total_unpaid_leaves}")
 
         if total_working_days == 0:
             total_working_days = last_day
