@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.db.database import SessionLocal
 from app.services.document_service import DocumentService
 from app.services.dispatch_service import start_dispatch_scheduler
+from app.services.seed_service import seed_admin_user
 from fastapi.staticfiles import StaticFiles
 import os
 import time
@@ -62,6 +63,7 @@ def startup_event():
     
 
     with SessionLocal() as db:
+        seed_admin_user(db)
         DocumentService.seed_document_types(db)
         # Start the automated salary slip dispatch scheduler
         start_dispatch_scheduler()

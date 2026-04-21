@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     
+    # Default Admin
+    DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"
+    
     model_config = SettingsConfigDict(
         env_file=None,  # Rely primarily on environment variables
         extra="ignore"
