@@ -24,6 +24,10 @@ const LeaveStructureManagement = () => {
     const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
     const [editingAssignment, setEditingAssignment] = useState(null);
 
+    // Set Balance Hook state
+    const [isSetBalanceModalOpen, setIsSetBalanceModalOpen] = useState(false);
+    const [selectedUserForBalance, setSelectedUserForBalance] = useState(null);
+
     const fetchData = useCallback(async () => {
         if (!selectedCompanyId) return;
         setLoading(true);
@@ -86,6 +90,18 @@ const LeaveStructureManagement = () => {
     const openAssignmentModal = (assignment = null) => {
         setEditingAssignment(assignment);
         setIsAssignmentModalOpen(true);
+    };
+
+    const openSetBalanceModal = (assignment) => {
+        const userObj = users.find(u => u.id === assignment.user_id);
+        const structureObj = structures.find(s => s.id === assignment.structure_id);
+        
+        setSelectedUserForBalance({
+            id: assignment.user_id,
+            name: userObj ? (userObj.full_name || `${userObj.first_name || ''} ${userObj.last_name || ''}`.trim() || `User ${userObj.id}`) : `User ${assignment.user_id}`,
+            structureName: structureObj ? structureObj.name : 'Unknown Structure'
+        });
+        setIsSetBalanceModalOpen(true);
     };
 
     const handleSaveAssignment = async (formData) => {
@@ -172,6 +188,7 @@ const LeaveStructureManagement = () => {
                         refresh={fetchData} 
                         showToast={showToast}
                         onOpenModal={openAssignmentModal}
+                        onOpenSetBalance={openSetBalanceModal}
                     />
                 )}
 
@@ -194,6 +211,15 @@ const LeaveStructureManagement = () => {
                     editData={editingAssignment}
                     assignments={assignments}
                 />
+                
+                <SetLeaveBalanceModal
+                    isOpen={isSetBalanceModalOpen}
+                    onClose={() => setIsSetBalanceModalOpen(false)}
+                    user={selectedUserForBalance}
+                    structureName={selectedUserForBalance?.structureName}
+                    showToast={showToast}
+                    refresh={fetchData}
+                />
             </div>
         </>
     );
@@ -204,6 +230,17 @@ export default LeaveStructureManagement;
 /* ─────────────────────────────────────────────────────────────
    Sub-components (Matches Salary Pattern)
    ───────────────────────────────────────────────────────────── */
+
+const BalanceIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="3" x2="12" y2="21"></line>
+        <path d="M3 12h18"></path>
+        <path d="M3 12a5 5 0 0 0 5 5"></path>
+        <path d="M21 12a5 5 0 0 1-5 5"></path>
+        <path d="M8 12v4"></path>
+        <path d="M16 12v4"></path>
+    </svg>
+);
 
 const EditIcon = () => (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -293,7 +330,7 @@ const LeaveStructuresTab = ({ structures, refresh, showToast, onOpenModal }) => 
     );
 };
 
-const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast, onOpenModal }) => {
+const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast, onOpenModal, onOpenSetBalance }) => {
     const userMap = users.reduce((acc, u) => ({
         ...acc,
         [u.id]: u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || `User ${u.id}`
@@ -336,6 +373,14 @@ const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast
                             <div className={styles.cardRow}>
                                 <span className={styles.userName}>{userMap[assignment.user_id] || `User ${assignment.user_id}`}</span>
                                 <div className={styles.inlineActions}>
+                                    <button 
+                                        className={styles.iconBtn} 
+                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', width: 'auto', padding: '0 8px', fontSize: '0.85rem' }} 
+                                        title="Set Balance" 
+                                        onClick={() => onOpenSetBalance(assignment)}
+                                    >
+                                        <BalanceIcon /> Set Balance
+                                    </button>
                                     <button className={styles.iconBtn} title="Edit" onClick={() => onOpenModal(assignment)}><EditIcon /></button>
                                     <button 
                                         className={`${styles.iconBtn} ${styles.delete}`} 
@@ -647,3 +692,170 @@ const LeaveAssignmentModal = ({ isOpen, onClose, onSave, users, structures, edit
     );
 };
 
+/* ─────────────────────────────────────────────────────────────
+   SetLeaveBalanceModal Component
+   ───────────────────────────────────────────────────────────── */
+
+const SetLeaveBalanceModal = ({ isOpen, onClose, user, structureName, showToast, refresh }) => {
+    const [currentBalances, setCurrentBalances] = useState({ PL: 0, CL: 0, SL: 0 });
+    const [newBalances, setNewBalances] = useState({ PL: '', CL: '', SL: '' });
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !user) return;
+        
+        // 1. Reset state immediately on open to avoid showing stale data from previous user
+        setCurrentBalances({ PL: 0, CL: 0, SL: 0 });
+        setNewBalances({ PL: 0, CL: 0, SL: 0 });
+        
+        let isMounted = true;
+        const fetchBalance = async () => {
+            setLoading(true);
+            try {
+                const res = await API.get(`/leave-balance/${user.id}`);
+                if (isMounted) {
+                    const data = res.data;
+                    const balances = {
+                        PL: data.PL?.has_snapshot ? (data.PL.remaining ?? 0) : 0,
+                        CL: data.CL?.has_snapshot ? (data.CL.remaining ?? 0) : 0,
+                        SL: data.SL?.has_snapshot ? (data.SL.remaining ?? 0) : 0
+                    };
+                    setCurrentBalances(balances);
+                    setNewBalances(balances);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    // 2. Ensure state is explicitly set to 0 on error (e.g. 404 for new users)
+                    setCurrentBalances({ PL: 0, CL: 0, SL: 0 });
+                    setNewBalances({ PL: 0, CL: 0, SL: 0 });
+                    
+                    // Only show error if it's not a 404 (we expect 404 for newly assigned users)
+                    if (err.response?.status !== 404) {
+                        showToast('Failed to load current balances: ' + (err.response?.data?.detail || err.message), 'error');
+                    }
+                }
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        fetchBalance();
+        
+        return () => { isMounted = false; };
+    }, [isOpen, user, showToast]);
+
+    const handleInputChange = (type, val) => {
+        setNewBalances(prev => ({
+            ...prev,
+            [type]: val
+        }));
+    };
+
+    const hasChanges = () => {
+        return ['PL', 'CL', 'SL'].some(type => {
+            const current = currentBalances[type];
+            const newVal = newBalances[type];
+            return newVal !== '' && Number(newVal) !== current;
+        });
+    };
+
+    const handleSave = async () => {
+        if (!hasChanges()) {
+            showToast('No changes detected', 'info');
+            return;
+        }
+
+        const payload = {
+            user_id: user.id,
+            balances: {
+                PL: newBalances.PL !== '' ? Number(newBalances.PL) : currentBalances.PL,
+                CL: newBalances.CL !== '' ? Number(newBalances.CL) : currentBalances.CL,
+                SL: newBalances.SL !== '' ? Number(newBalances.SL) : currentBalances.SL
+            }
+        };
+
+        setSaving(true);
+        try {
+            await API.post('/leave-balance/set', payload);
+            showToast('Balance updated successfully', 'success');
+            if (refresh) refresh();
+            onClose();
+        } catch (err) {
+            showToast('Failed to save balances: ' + (err.response?.data?.detail || err.message), 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (!isOpen || !user) return null;
+
+    return (
+        <div className={styles.modalOverlay} onMouseDown={onClose}>
+            <div className={styles.modalCard} onMouseDown={e => e.stopPropagation()} style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column' }}>
+                <div className={styles.modalHeader}>
+                    <h3>Set Leave Balance</h3>
+                    <button className={styles.closeBtn} onClick={onClose} disabled={saving}>&times;</button>
+                </div>
+
+                <div className={styles.modalBody} style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
+                    <div className={styles.formGrid}>
+                        <p className={styles.subtitle} style={{ marginTop: '0', marginBottom: '0' }}>Adjust current leave balance for this employee.</p>
+                        
+                        <div className={styles.infoBox}>
+                            <p style={{ margin: '0 0 4px' }}><strong>Employee:</strong> {user.name}</p>
+                            <p style={{ margin: 0 }}><strong>Structure:</strong> {structureName || 'None'}</p>
+                        </div>
+
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '2rem' }}>Loading balances...</div>
+                        ) : (
+                            <>
+                                <div className={styles.configTableContainer}>
+                                    <table className={styles.configTable}>
+                                        <thead>
+                                            <tr>
+                                                <th>Leave Type</th>
+                                                <th>Current Balance</th>
+                                                <th>Set New Balance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {['PL', 'CL', 'SL'].map(type => (
+                                                <tr key={type}>
+                                                    <td data-label="Leave Type"><strong>{type}</strong></td>
+                                                    <td data-label="Current Balance">{currentBalances[type]}</td>
+                                                    <td data-label="Set New Balance" style={{ padding: '0.4rem 0.6rem' }}>
+                                                        <input 
+                                                            type="number"
+                                                            value={newBalances[type]}
+                                                            onChange={e => handleInputChange(type, e.target.value)}
+                                                            min="0"
+                                                            step="0.5"
+                                                            placeholder="New balance"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div className={styles.infoBox} style={{ fontSize: '0.9em', fontStyle: 'italic', background: '#f8fafc', borderLeftColor: '#94a3b8', color: '#475569', marginTop: '0.5rem' }}>
+                                    Note: This sets the current balance. Future accruals will continue automatically.
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                <div className={styles.modalActions} style={{ marginTop: '0', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}>
+                    <button type="button" className={styles.secondaryBtn} onClick={onClose} disabled={saving}>Cancel</button>
+                    <button type="button" className={styles.primaryBtn} onClick={handleSave} disabled={loading || saving || !hasChanges()}>
+                        {saving ? 'Saving...' : 'Save Balance'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

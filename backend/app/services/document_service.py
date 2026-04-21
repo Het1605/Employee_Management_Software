@@ -214,8 +214,8 @@ class DocumentService:
             used_c = Decimal(str(vals.get('used', 0)))
             excess_c = Decimal(str(vals.get('excess', 0)))
             
-            # Paid for this category is bounded by its own allocation
-            paid_c = min(alloc_c, used_c)
+            # Paid for this category is derived by subtracting any excess from the total used
+            paid_c = used_c - excess_c
             total_paid_leaves += paid_c
             total_excess_from_api += excess_c
 
@@ -402,7 +402,7 @@ class DocumentService:
                 a_c = Decimal(str(vals.get('allocated', 0)))
                 u_c = Decimal(str(vals.get('used', 0)))
                 e_c = Decimal(str(vals.get('excess', 0)))
-                paid_m += min(a_c, u_c)
+                paid_m += (u_c - e_c)
                 excess_m += e_c
             
             unpaid_m = excess_m + raw_abs_m

@@ -131,6 +131,7 @@ class LeaveBalanceSummaryOut(BaseModel):
     used:      float
     remaining: float
     excess:    float
+    has_snapshot: bool
 
 class LeaveBalanceResponse(BaseModel):
     PL: LeaveBalanceSummaryOut

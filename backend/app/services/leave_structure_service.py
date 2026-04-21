@@ -205,7 +205,7 @@ class LeaveStructureService:
         import calendar as pycal
 
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
-        empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0}
+        empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0, "has_snapshot": False}
         
         if not assignment:
             return {"PL": empty.copy(), "CL": empty.copy(), "SL": empty.copy()}
@@ -222,10 +222,14 @@ class LeaveStructureService:
         for detail in structure.details:
             category = detail.leave_type.value
             yearly_total = float(detail.total_days)
-            monthly_quota = yearly_total / 12.0
+            
+            # Deterministic Integer Distribution
+            base_allocation = int(detail.total_days) // 12
+            extra_allocation = int(detail.total_days) % 12
             policy = detail.reset_policy
             
             snapshot = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=category).first()
+            has_snapshot = snapshot is not None
             
             if snapshot:
                 # If target is STRICTLY before snapshot, return empty
@@ -270,7 +274,8 @@ class LeaveStructureService:
                     m_used += float(req.total_days) * mod
 
                 if detail.allocation_type == AllocationType.MONTHLY:
-                    m_allocated = monthly_quota
+                    m_allocated = float(base_allocation + 1) if m <= extra_allocation else float(base_allocation)
+                    
                     if snapshot and y == snapshot.set_year and m == snapshot.set_month:
                         m_available = carry_forward # Baseline snapshot IS the available pool for that month
                     else:
@@ -293,6 +298,7 @@ class LeaveStructureService:
                     final_used = m_used
                     final_remaining = m_remaining
                     final_excess = m_excess
+                    # We can break here since we reached the target point
                     break
                     
                 # Post-Month Advancement (Rollover)
@@ -320,7 +326,8 @@ class LeaveStructureService:
                 "used": round(final_used, 2),
                 "remaining": round(final_remaining, 2),
                 "excess": round(final_excess, 2),
-                "encashable": round(encashable_days, 2)
+                "encashable": round(encashable_days, 2),
+                "has_snapshot": has_snapshot
             }
 
         return response
