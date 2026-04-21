@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: str = "admin123"
     
     model_config = SettingsConfigDict(
-        env_file=None,  # Rely primarily on environment variables
+        env_file=".env",  # Rely primarily on environment variables
         extra="ignore"
     )
 
