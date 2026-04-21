@@ -254,3 +254,32 @@ class SalarySlipDispatchLog(Base):
     # Relationships
     user = relationship("User")
     company = relationship("Company")
+
+
+class LeaveBalance(Base):
+    __tablename__ = "leave_balances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    leave_type = Column(String, nullable=False) # PL, CL, SL
+    balance = Column(Numeric(precision=5, scale=2), default=0)
+    set_month = Column(Integer, nullable=False)
+    set_year = Column(Integer, nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'leave_type', name='uq_user_leave_type_balance'),
+    )
+
+
+class LeaveBalanceAudit(Base):
+    __tablename__ = "leave_balance_audits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    leave_type = Column(String, nullable=False)
+    old_balance = Column(Numeric(precision=5, scale=2), nullable=True)
+    new_balance = Column(Numeric(precision=5, scale=2), nullable=False)
+    action = Column(String, default="BALANCE_SET")
+    action_by = Column(Integer, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())

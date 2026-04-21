@@ -136,3 +136,12 @@ class LeaveBalanceResponse(BaseModel):
     PL: LeaveBalanceSummaryOut
     CL: LeaveBalanceSummaryOut
     SL: LeaveBalanceSummaryOut
+
+class LeaveBalancesDict(BaseModel):
+    PL: Decimal = Field(..., ge=0)
+    CL: Decimal = Field(..., ge=0)
+    SL: Decimal = Field(..., ge=0)
+
+class LeaveBalanceSetPayload(BaseModel):
+    user_id: int
+    balances: LeaveBalancesDict

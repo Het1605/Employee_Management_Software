@@ -196,184 +196,124 @@ class LeaveStructureService:
     @staticmethod
     def get_runtime_leave_balance(db: Session, user_id: int, month: Optional[int] = None, year: Optional[int] = None) -> dict:
         """
-        Calculates leave balance in real-time, respecting Year-End Resets (EXTEND/VOID/ENCASH).
-        Fully dynamic: RE-PLAYS historical years to find accurate carry-forwards.
+        Calculates leave balance in real-time.
+        Implements rigorous Remaining Carry-Forward logic per month.
         """
-        from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory
+        from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance
+        from app.models.leave_structure import AllocationType, ResetPolicy
         from datetime import date
         import calendar as pycal
 
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0}
+        
         if not assignment:
-            empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0}
-            return {"PL": empty, "CL": empty, "SL": empty}
+            return {"PL": empty.copy(), "CL": empty.copy(), "SL": empty.copy()}
 
         structure = db.query(LeaveStructure).filter_by(id=assignment.structure_id).first()
         if not structure:
-             empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0}
-             return {"PL": empty, "CL": empty, "SL": empty}
+             return {"PL": empty.copy(), "CL": empty.copy(), "SL": empty.copy()}
 
-        # Resolve target date
         today = date.today()
         target_year = year if year else today.year
         target_month = month if month else today.month
         
-        assigned_date = assignment.assigned_at.date() if hasattr(assignment.assigned_at, 'date') else assignment.assigned_at
-        start_year = assigned_date.year
-
         response = {}
         for detail in structure.details:
             category = detail.leave_type.value
-            policy = detail.reset_policy
             yearly_total = float(detail.total_days)
+            monthly_quota = yearly_total / 12.0
+            policy = detail.reset_policy
+            
+            snapshot = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=category).first()
+            
+            if snapshot:
+                # If target is STRICTLY before snapshot, return empty
+                if target_year < snapshot.set_year or (target_year == snapshot.set_year and target_month < snapshot.set_month):
+                    response[category] = empty.copy()
+                    continue
+                    
+                start_year = snapshot.set_year
+                start_month = snapshot.set_month
+                carry_forward = float(snapshot.balance)
+            else:
+                start_year = target_year
+                start_month = 1
+                carry_forward = 0.0
 
-            # --- simulation state ---
-            total_carry_forward = 0.0
             encashable_days = 0.0
             
-            # Final output placeholders for the target month
+            y = start_year
+            m = start_month
+            
             final_allocated = 0.0
             final_used = 0.0
             final_remaining = 0.0
             final_excess = 0.0
-
-            # --- Loop Years from Start to Target ---
-            for y in range(start_year, target_year + 1):
-                y_m_start = assigned_date.month if y == start_year else 1
-                # For historical years we simulate till Dec, for target year till target_month
-                y_m_end = 12 if y < target_year else target_month
+            
+            while True:
+                # Filter usage strictly bounded to month `m` of year `y`
+                m_start = date(y, m, 1)
+                m_end = date(y, m, pycal.monthrange(y, m)[1])
                 
-                if detail.allocation_type == AllocationType.MONTHLY:
-                    # MONTHLY Rolling accumulation
-                    current_y_balance = total_carry_forward
-                    
-                    for m in range(y_m_start, y_m_end + 1):
-                        monthly_quota = float(_get_monthly_allocation(yearly_total, m))
-                        
-                        # Usage for this specific month
-                        m_start = date(y, m, 1)
-                        _, last_d = pycal.monthrange(y, m)
-                        m_end = date(y, m, last_d)
-                        
-                        m_requests = db.query(LeaveRequest).filter(
-                            LeaveRequest.user_id == user_id,
-                            LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
-                            LeaveRequest.status == "approved",
-                            LeaveRequest.start_date >= m_start,
-                            LeaveRequest.start_date <= m_end
-                        ).all()
-                        
-                        m_used = 0.0
-                        for l in m_requests:
-                            if l.leave_duration_type == LeaveDurationType.HALF_DAY:
-                                m_used += float(l.total_days) * 0.5
-                            else:
-                                m_used += float(l.total_days)
-                        
-                        before_m = current_y_balance + monthly_quota
-                        after_m = before_m - m_used
-                        excess_m = abs(min(0, after_m))
-                        after_m = max(0, after_m) # Reset after excess
-                        
-                        # DEBUG LOGS for simulation
-                        print(f"[MONTHLY FLOW] User:{user_id} Type:{category} Month:{m}/{y}")
-                        print(f"  Prev: {current_y_balance} | Added: {monthly_quota} | Used: {m_used} | New: {after_m} | Excess: {excess_m}")
-                        
-                        # Capture target metrics
-                        if y == target_year and m == target_month:
-                            final_allocated = before_m
-                            final_used = m_used
-                            final_remaining = after_m
-                            final_excess = excess_m
-                            
-                        current_y_balance = after_m
-                        
-                    # Year-End Transition
-                    if y < target_year:
-                        if policy == ResetPolicy.EXTEND:
-                            total_carry_forward = current_y_balance
-                        elif policy == ResetPolicy.ENCASH:
-                            total_carry_forward = 0.0
-                            if y == target_year - 1: encashable_days = current_y_balance
-                        else: # VOID
-                            total_carry_forward = 0.0
-                    else:
-                        # For the return dictionary
-                        pass
+                requests = db.query(LeaveRequest).filter(
+                    LeaveRequest.user_id == user_id,
+                    LeaveRequest.leave_category == LeaveCategory[category],
+                    LeaveRequest.status == "approved",
+                    LeaveRequest.start_date >= m_start,
+                    LeaveRequest.start_date <= m_end
+                ).all()
+                
+                m_used = 0.0
+                for req in requests:
+                    mod = 0.5 if req.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0
+                    m_used += float(req.total_days) * mod
 
+                if detail.allocation_type == AllocationType.MONTHLY:
+                    m_allocated = monthly_quota
+                    if snapshot and y == snapshot.set_year and m == snapshot.set_month:
+                        m_available = carry_forward # Baseline snapshot IS the available pool for that month
+                    else:
+                        m_available = carry_forward + m_allocated
                 else:
-                    # YEARLY Fixed Pool (with pro-rating for start year)
-                    # 1. Total pool for year y (sum of all monthly allotments from start_m to 12)
-                    y_total_quota = 0.0
-                    for m in range(y_m_start, 13):
-                        y_total_quota += float(_get_monthly_allocation(yearly_total, m))
-                        
-                    # 2. Cumulative usage till end of y or target_month
-                    y_usage_start = date(y, 1, 1) if y > start_year else assigned_date
-                    curr_y_limit = date(y, y_m_end, pycal.monthrange(y, y_m_end)[1])
+                    # YEARLY SL
+                    is_pool_injected = (m == 1) or (snapshot and y == snapshot.set_year and m == snapshot.set_month)
+                    m_allocated = yearly_total if is_pool_injected else 0.0
+                    if snapshot and y == snapshot.set_year and m == snapshot.set_month:
+                        m_available = carry_forward
+                    else:
+                        m_available = carry_forward + m_allocated
+                
+                m_remaining = max(0.0, m_available - m_used)
+                m_excess = max(0.0, m_used - m_available)
+                
+                # Check target breaking condition
+                if y == target_year and m == target_month:
+                    final_allocated = m_allocated
+                    final_used = m_used
+                    final_remaining = m_remaining
+                    final_excess = m_excess
+                    break
                     
-                    y_requests = db.query(LeaveRequest).filter(
-                        LeaveRequest.user_id == user_id,
-                        LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
-                        LeaveRequest.status == "approved",
-                        LeaveRequest.start_date >= y_usage_start,
-                        LeaveRequest.start_date <= curr_y_limit
-                    ).all()
+                # Post-Month Advancement (Rollover)
+                if m < 12:
+                    carry_forward = m_remaining
+                    m += 1
+                else:
+                    # Year Boundary
+                    if policy == ResetPolicy.EXTEND:
+                        carry_forward = m_remaining
+                    elif policy == ResetPolicy.ENCASH:
+                        carry_forward = 0.0
+                        if y == target_year - 1:
+                            encashable_days = m_remaining
+                    else:
+                        carry_forward = 0.0
+                    y += 1
+                    m = 1
                     
-                    y_used_total = 0.0
-                    for l in y_requests:
-                        if l.leave_duration_type == LeaveDurationType.HALF_DAY:
-                            y_used_total += float(l.total_days) * 0.5
-                        else:
-                            y_used_total += float(l.total_days)
-                            
-                    y_rem = max(0, y_total_quota + total_carry_forward - y_used_total)
-                    
-                    if y == target_year:
-                        # For the monthly slice in the API:
-                        # allocated = remaining before current month usage
-                        # used = current month usage
-                        m_start = date(y, target_month, 1)
-                        m_end = date(y, target_month, pycal.monthrange(y, target_month)[1])
-                        m_requests = db.query(LeaveRequest).filter(
-                            LeaveRequest.user_id == user_id,
-                            LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
-                            LeaveRequest.status == "approved",
-                            LeaveRequest.start_date >= m_start,
-                            LeaveRequest.start_date <= m_end
-                        ).all()
-                        m_used = sum(float(l.total_days) * (0.5 if l.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0) for l in m_requests)
-                        
-                        allocated_before = max(0, y_total_quota + total_carry_forward - (y_used_total - m_used))
-                        final_allocated = allocated_before
-                        final_used = m_used
-                        final_remaining = max(0, allocated_before - m_used)
-                        final_excess = abs(min(0, allocated_before - m_used))
-                        
-                        print(f"[YEARLY FLOW] User:{user_id} Type:{category}")
-                        print(f"  Total: {y_total_quota} | Used Till Now: {y_used_total} | Remaining: {y_rem}")
-                    
-                    # Year-End Transition (only on Dec 31)
-                    if y < target_year:
-                        y_usage_full = 0.0
-                        y_full_end = date(y, 12, 31)
-                        y_full_requests = db.query(LeaveRequest).filter(
-                            LeaveRequest.user_id == user_id,
-                            LeaveRequest.leave_category == LeaveCategory[detail.leave_type.value],
-                            LeaveRequest.status == "approved",
-                            LeaveRequest.start_date >= y_usage_start,
-                            LeaveRequest.start_date <= y_full_end
-                        ).all()
-                        y_usage_full = sum(float(l.total_days) * (0.5 if l.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0) for l in y_full_requests)
-                        
-                        y_final_rem = max(0, y_total_quota + total_carry_forward - y_usage_full)
-                        if policy == ResetPolicy.EXTEND:
-                            total_carry_forward = y_final_rem
-                        elif policy == ResetPolicy.ENCASH:
-                            total_carry_forward = 0.0
-                            if y == target_year - 1: encashable_days = y_final_rem
-                        else:
-                            total_carry_forward = 0.0
+                if y > target_year:
+                    break
 
             response[category] = {
                 "allocated": round(final_allocated, 2),
@@ -384,6 +324,62 @@ class LeaveStructureService:
             }
 
         return response
+
+    # ──────────────────────────────────────────
+    # Set Manual Snapshot Balance
+    # ──────────────────────────────────────────
+
+    @staticmethod
+    def set_manual_balance(db: Session, user_id: int, balances, action_by_id: int) -> List[str]:
+        from app.db.models import LeaveBalance, LeaveBalanceAudit
+        
+        user = db.query(User).filter_by(id=user_id).first()
+        if not user:
+            raise ValueError(f"User {user_id} not found.")
+            
+        today = date.today()
+        current_month = today.month
+        current_year = today.year
+        
+        balance_dict = balances.dict() if hasattr(balances, "dict") else balances
+        updated_types = []
+
+        for leave_type, new_balance in balance_dict.items():
+            if new_balance is None: continue
+            
+            existing = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=leave_type).first()
+            old_balance = existing.balance if existing else None
+            
+            # Audit row
+            audit = LeaveBalanceAudit(
+                user_id=user_id,
+                leave_type=leave_type,
+                old_balance=old_balance,
+                new_balance=new_balance,
+                action="BALANCE_SET",
+                action_by=action_by_id
+            )
+            db.add(audit)
+            
+            # Upsert
+            if existing:
+                existing.balance = new_balance
+                existing.set_month = current_month
+                existing.set_year = current_year
+            else:
+                new_record = LeaveBalance(
+                    user_id=user_id,
+                    leave_type=leave_type,
+                    balance=new_balance,
+                    set_month=current_month,
+                    set_year=current_year
+                )
+                db.add(new_record)
+                
+            updated_types.append(leave_type)
+            
+        db.commit()
+        return updated_types
 
 
     @staticmethod

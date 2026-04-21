@@ -38,6 +38,7 @@ from app.schemas.leave_structure import (
     LeaveStructureCreate,
     LeaveStructureOut,
     LeaveStructureUpdate,
+    LeaveBalanceSetPayload,
 )
 from app.services.leave_structure_service import LeaveStructureService
 
@@ -247,8 +248,32 @@ def delete_leave_assignment(
 
 
 # ─────────────────────────────────────────────────────────────
-# Leave Balances (Dynamic Runtime)
+# Leave Balances (Dynamic Runtime & Snapshot)
 # ─────────────────────────────────────────────────────────────
+
+@router.post(
+    "/leave-balance/set",
+    summary="Admin/HR: Manually Set Current Leave Balance (Snapshot)",
+)
+def set_manual_leave_balance(
+    payload: LeaveBalanceSetPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Sets a manual, definitive snapshot balance for PL, CL, and SL for a given user.
+    """
+    if current_user.role not in ("ADMIN", "HR"):
+        raise HTTPException(status_code=403, detail="Only ADMIN or HR can set manual leave balances.")
+
+    try:
+        updated_types = LeaveStructureService.set_manual_balance(db, payload.user_id, payload.balances, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return {"message": "Leave balance snapshots successfully updated.", "updated_types": updated_types}
+
+
 
 @router.get(
     "/leave-balance/{user_id}",
