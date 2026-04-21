@@ -72,7 +72,8 @@ def get_my_leaves(db: Session = Depends(get_db), current_user: User = Depends(ge
 
     query = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
-        LeaveRequest.company_id == mapping.company_id
+        LeaveRequest.company_id == mapping.company_id,
+        LeaveRequest.hidden_for_employee == False
     )
     return query.order_by(LeaveRequest.applied_at.desc()).all()
 
@@ -82,7 +83,8 @@ def get_all_leaves(company_id: int = Query(..., description="ID of the selected 
         raise HTTPException(status_code=403, detail="Not authorized to view all leaves")
         
     leaves = db.query(LeaveRequest).filter(
-        LeaveRequest.company_id == company_id
+        LeaveRequest.company_id == company_id,
+        LeaveRequest.hidden_for_admin == False
     ).order_by(LeaveRequest.applied_at.desc()).all()
     return leaves
 
@@ -198,9 +200,9 @@ def delete_leave(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Hard-delete a leave request.
-    - Employees can delete their own pending requests.
-    - Admins can delete any request except PENDING (must reject first to ensure flow).
+    Role-based delete for leave requests.
+    - Admin/HR deleting others: Soft delete (hides for admin), only on approved/rejected.
+    - Employee/Owner deleting own: Hard delete if pending, soft delete (hides for employee) if approved/rejected.
     """
     db_request = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
     if not db_request:
@@ -212,29 +214,31 @@ def delete_leave(
     if not is_admin and not is_owner:
         raise HTTPException(status_code=403, detail="Not authorized to delete this leave request")
 
-    if is_admin:
-        # Admin restriction: cannot delete pending
+    if is_admin and not is_owner:
+        # Admin / HR Delete
         if db_request.status == "pending":
             raise HTTPException(status_code=400, detail="Cannot delete a pending leave request. Reject it first.")
+        else:
+            db_request.hidden_for_admin = True
+            msg = "Leave request hidden from admin view"
     else:
-        # Owner restriction: can only delete their own
-        pass
+        # Employee / Intern Delete (Owner)
+        if db_request.status == "pending":
+            # HARD DELETE
+            db.delete(db_request)
+            msg = "Leave request permanently deleted"
+        else:
+            # SOFT DELETE
+            db_request.hidden_for_employee = True
+            
+            # If the owner is ALSO an admin, hiding it for themselves should also hide it from the admin view
+            if is_admin:
+                db_request.hidden_for_admin = True
+                
+            msg = "Leave request hidden from your view"
 
-    # If it was approved, cleanup attendance before deleting
-    if db_request.status == "approved":
-        attendance_service.sync_leave_to_attendance(
-            db,
-            db_request.user_id,
-            db_request.company_id,
-            db_request.start_date,
-            db_request.end_date,
-            db_request.leave_duration_type.value,
-            is_approved=False
-        )
-
-    db.delete(db_request)
     db.commit()
-    return {"message": "Leave request permanently deleted"}
+    return {"message": msg}
 
 @router.get("/calendar-summary", response_model=List[LeaveCalendarSummary])
 def get_calendar_summary(

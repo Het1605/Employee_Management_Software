@@ -101,6 +101,25 @@
     border-color: #fca5a5;
 }
 
+.minimalDeleteBtn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+
+.minimalDeleteBtn:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
 .deleteIconBtn:hover {
     background-color: #fee2e2;
     border-color: #f87171;

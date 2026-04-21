@@ -18,7 +18,6 @@ Endpoints:
 
 Cron trigger endpoints (Admin-only):
   POST   /leave-cron/monthly-allocation      — Trigger monthly allocation
-  POST   /leave-cron/year-end-reset         — Trigger year-end reset
 """
 
 from datetime import date, datetime
@@ -293,28 +292,6 @@ def get_user_leave_balance(
 # Cron Trigger Endpoints (Admin / HR Manual Controls)
 # ─────────────────────────────────────────────────────────────
 
-@router.post(
-    "/leave-cron/year-end-reset",
-    summary="Manually trigger Year-End Leave Reset (Admin / HR only)",
-)
-def trigger_year_end_reset(
-    year: int = Query(..., description="The year to run the reset for (e.g., 2025)"),
-    company_id: Optional[int] = Query(None, description="Optional ID of the company to filter by"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Executes the Year-End Leave Reset policies (Void, Extend, Encash) for all employees.
-    Creates LeaveReset records and calculates payouts for January payroll.
-    """
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can trigger the leave reset.")
-
-    try:
-        summary = LeaveStructureService.run_year_end_reset(db, year, company_id)
-        return {"message": f"Year-end reset for {year} completed.", "summary": summary}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Reset failed: {str(exc)}")
 
 
 @router.post(

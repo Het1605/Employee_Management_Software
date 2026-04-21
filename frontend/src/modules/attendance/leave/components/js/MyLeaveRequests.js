@@ -139,6 +139,15 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
                                             <span>Delete</span>
                                         </button>
                                     )}
+                                    {(req.status === 'approved' || req.status === 'rejected') && (
+                                        <button
+                                            className={styles.minimalDeleteBtn}
+                                            onClick={() => setDeleteConfirm(req)}
+                                            title="Hide Request"
+                                        >
+                                            <DeleteIcon />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -170,9 +179,13 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
                         <div className={styles.confirmIcon}>
                             <DeleteIcon />
                         </div>
-                        <h3 className={styles.confirmTitle}>Delete Leave Request</h3>
+                        <h3 className={styles.confirmTitle}>
+                            {deleteConfirm.status === 'pending' ? 'Delete Leave Request' : 'Remove Leave Request'}
+                        </h3>
                         <p className={styles.confirmText}>
-                            Are you sure you want to permanently delete this leave request?
+                            {deleteConfirm.status === 'pending'
+                                ? 'Are you sure you want to permanently delete this leave request? This action cannot be undone.'
+                                : 'This will remove the leave request from your view only. It will not be deleted permanently.'}
                         </p>
                         <div className={styles.confirmActions}>
                             <button

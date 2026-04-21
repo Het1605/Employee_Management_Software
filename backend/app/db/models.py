@@ -221,6 +221,9 @@ class LeaveRequest(Base):
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
 
+    hidden_for_admin = Column(Boolean, default=False)
+    hidden_for_employee = Column(Boolean, default=False)
+
     user = relationship("User", foreign_keys=[user_id])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
     company = relationship("Company")

@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 from app.db.database import Base, engine
 from app.db import models
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides # Register Calendar models
@@ -52,39 +51,6 @@ def wait_for_db():
     print("FATAL: Could not connect to database. Exiting.")
     exit(1)
 
-def run_manual_migrations(engine):
-    from sqlalchemy import text
-    print("Running manual schema migrations...")
-    try:
-        with engine.connect() as conn:
-            # 1. Ensure leave_resets exists (in case create_all has some issues with existing versions)
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS leave_resets (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    company_id INTEGER NOT NULL,
-                    leave_type VARCHAR(50) NOT NULL,
-                    reset_year INTEGER NOT NULL,
-                    reset_date DATE NOT NULL,
-                    policy_action VARCHAR(50) NOT NULL,
-                    payout_amount NUMERIC(15,2) DEFAULT 0,
-                    is_paid BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                )
-            """))
-            
-            # 2. Add affected_days
-            conn.execute(text("ALTER TABLE leave_resets ADD COLUMN IF NOT EXISTS affected_days NUMERIC(8,2) DEFAULT 0"))
-            
-            # 3. Drop old columns
-            conn.execute(text("ALTER TABLE leave_resets DROP COLUMN IF EXISTS carried_forward_amount"))
-            conn.execute(text("ALTER TABLE leave_resets DROP COLUMN IF EXISTS voided_amount"))
-            conn.execute(text("ALTER TABLE leave_resets DROP COLUMN IF EXISTS encashed_amount"))
-            
-            conn.commit()
-            print("✅ Schema migration for leave_resets successful!")
-    except Exception as e:
-        print(f"❌ Schema migration failed: {str(e)}")
 
 @app.on_event("startup")
 def startup_event():
@@ -94,8 +60,6 @@ def startup_event():
     # Create tables in DB
     Base.metadata.create_all(bind=engine)
     
-    # Run targeted manual migrations for schema syncing
-    run_manual_migrations(engine)
 
     with SessionLocal() as db:
         DocumentService.seed_document_types(db)

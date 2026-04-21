@@ -241,9 +241,9 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                         <div className={styles.confirmIcon}>
                             <DeleteIcon />
                         </div>
-                        <h3 className={styles.confirmTitle}>Delete Leave Request</h3>
+                        <h3 className={styles.confirmTitle}>Remove Leave Request</h3>
                         <p className={styles.confirmText}>
-                            Are you sure you want to delete this leave request? This action cannot be undone.
+                            This will remove the leave request from your view only. It will not be deleted permanently.
                         </p>
                         <div className={styles.confirmActions}>
                             <button
