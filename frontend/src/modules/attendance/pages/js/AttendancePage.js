@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../../../core/api/apiClient';
 import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
 import styles from '../styles/AttendancePage.module.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 const AttendancePage = () => {
     const [status, setStatus] = useState('present');
@@ -28,8 +26,8 @@ const AttendancePage = () => {
         setLoading(true);
         setStatus('present'); // Default to present for employee marking
         try {
-            const userId = localStorage.getItem('userId') || 1;
-            const response = await axios.get(`${API_BASE_URL}/attendance/today`, {
+            const userId = localStorage.getItem('userId');
+            const response = await API.get('/attendance/today', {
                 params: { user_id: userId }
             });
             setTodayStatus(response.data.status);
@@ -51,8 +49,8 @@ const AttendancePage = () => {
         if (isLocked) return;
 
         try {
-            const userId = localStorage.getItem('userId') || 1;
-            await axios.post(`${API_BASE_URL}/attendance/mark`, 
+            const userId = localStorage.getItem('userId');
+            await API.post('/attendance/mark', 
                 { status: 'present', user_id: userId, actor_id: userId }
             );
             setMessage({ text: 'Attendance marked successfully', type: 'success' });

@@ -155,7 +155,13 @@ def get_my_attendance(db: Session, user_id: int, month: int, year: int):
     }
 
 def get_company_attendance(db: Session, company_id: int, month: int, year: int):
-    users = db.query(User).join(UserCompanyMapping).filter(UserCompanyMapping.company_id == company_id).all()
+    # Fetch all users assigned to this company who are currently active
+    users = db.query(User).join(
+        UserCompanyMapping, User.id == UserCompanyMapping.user_id
+    ).filter(
+        UserCompanyMapping.company_id == company_id,
+        User.is_active == True
+    ).all()
     
     start_date = date(year, month, 1)
     last_day = calendar.monthrange(year, month)[1]
@@ -175,12 +181,10 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
 
     # Get working day map for the month to avoid repetitive DB hits
     day_types = {}
-    for day in range(1, last_day + 1):
-        curr_date = date(year, month, day)
+    for d in range(1, last_day + 1):
+        curr_date = date(year, month, d)
         day_info = CalendarService.get_day_status(db, company_id, curr_date)
         day_types[curr_date] = day_info.status
-
-
 
     # Get approved leaves for the company in this month range for locking
     from app.db.models import LeaveRequest
@@ -231,7 +235,8 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
             elif final_status == "half_day":
                 half_count += 1
             elif final_status == "absent":
-                if day_type in ["working", "half"]:
+                # Fix: Check for 'half_day' instead of 'half'
+                if day_type in ["working", "half_day"]:
                     absent_count += 1
 
         response.append({

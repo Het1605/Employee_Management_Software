@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
 from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.roles import role_required
 from app.models.leave_structure import LeaveAssignment
 from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
@@ -63,13 +64,8 @@ router = APIRouter(tags=["Leave Structures"])
 def create_leave_structure(
     payload: LeaveStructureCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    """
-    Creates a named leave structure that groups PL, CL, and SL rules.
-    """
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can create leave structures.")
 
     try:
         structure = LeaveStructureService.create_structure(db, payload)
@@ -87,7 +83,7 @@ def create_leave_structure(
 def list_leave_structures(
     company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"])),
 ):
     return LeaveStructureService.get_all_structures(db, company_id=company_id)
 
@@ -100,7 +96,7 @@ def list_leave_structures(
 def get_leave_structure(
     structure_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"])),
 ):
     structure = LeaveStructureService.get_structure_by_id(db, structure_id)
     if not structure:
@@ -117,10 +113,8 @@ def update_leave_structure(
     structure_id: int,
     payload: LeaveStructureUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave structures.")
 
     try:
         structure = LeaveStructureService.update_structure(db, structure_id, payload)
@@ -138,10 +132,8 @@ def update_leave_structure(
 def delete_leave_structure(
     structure_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave structures.")
 
     try:
         LeaveStructureService.delete_structure(db, structure_id)
@@ -162,10 +154,8 @@ def delete_leave_structure(
 def assign_leave_structure(
     payload: LeaveAssignmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can assign leave structures.")
 
     try:
         assignment = LeaveStructureService.assign_structure(db, payload)
@@ -183,10 +173,8 @@ def assign_leave_structure(
 def list_leave_assignments(
     company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can view all assignments.")
     return LeaveStructureService.get_all_assignments(db, company_id=company_id)
 
 
@@ -215,10 +203,8 @@ def update_leave_assignment(
     user_id: int,
     payload: LeaveAssignmentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can update leave assignments.")
 
     try:
         assignment = LeaveStructureService.update_assignment(db, user_id, payload)
@@ -236,10 +222,8 @@ def update_leave_assignment(
 def delete_leave_assignment(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can delete leave assignments.")
 
     try:
         LeaveStructureService.delete_assignment(db, user_id)
@@ -258,13 +242,8 @@ def delete_leave_assignment(
 def set_manual_leave_balance(
     payload: LeaveBalanceSetPayload,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    """
-    Sets a manual, definitive snapshot balance for PL, CL, and SL for a given user.
-    """
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can set manual leave balances.")
 
     try:
         updated_types = LeaveStructureService.set_manual_balance(db, payload.user_id, payload.balances, current_user.id)
@@ -328,13 +307,8 @@ def trigger_monthly_allocation(
     year: int = Query(..., description="The year to run allocation for"),
     company_id: Optional[int] = Query(None, description="Optional ID of the company to filter by"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    """
-    Triggers the monthly leave allocation logic for all employees in a specific company/period.
-    """
-    if current_user.role not in ("ADMIN", "HR"):
-        raise HTTPException(status_code=403, detail="Only ADMIN or HR can trigger monthly allocation.")
 
     try:
         # Note: This calls the internal allocation logic. 

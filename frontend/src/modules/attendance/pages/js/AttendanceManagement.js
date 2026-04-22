@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import API from '../../../../core/api/apiClient';
 import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
 import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import styles from '../styles/AttendanceManagement.module.css';
 import { useCalendarData } from '../../../calendar/hooks/useCalendarData';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 const AttendanceManagement = () => {
     const { selectedCompany } = useCompanyContext();
@@ -30,7 +28,7 @@ const AttendanceManagement = () => {
     const fetchAttendance = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_BASE_URL}/attendance/company`, {
+            const response = await API.get('/attendance/company', {
                 params: {
                     company_id: selectedCompany.id,
                     month,
@@ -77,7 +75,7 @@ const AttendanceManagement = () => {
     const handleSaveAttendance = async () => {
         try {
             const adminId = localStorage.getItem('userId');
-            await axios.post(`${API_BASE_URL}/attendance/mark`, {
+            await API.post('/attendance/mark', {
                 user_id: selectedRecord.userId,
                 actor_id: adminId,
                 date: selectedRecord.date,

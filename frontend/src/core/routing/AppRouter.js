@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import MainLayout from '../../layout/MainLayout/js/MainLayout';
 
@@ -42,25 +42,27 @@ const AppRouter = () => {
 
         {/* Protected Routes wrapped in MainLayout */}
         <Route element={<MainLayout />}>
-          {/* Admin Routes */}
+          
+          {/* --- Dashboards --- */}
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR', 'ADMIN']}><HRDashboard /></ProtectedRoute>} />
+          <Route path="/manager" element={<ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}><ManagerDashboard /></ProtectedRoute>} />
+          <Route path="/employee" element={<ProtectedRoute allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}><EmployeeDashboard /></ProtectedRoute>} />
+          <Route path="/intern" element={<ProtectedRoute allowedRoles={['INTERN']}><InternDashboard /></ProtectedRoute>} />
+
+          {/* --- User Management --- */}
           <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/users" 
+            path="/user-management" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
                 <UserManagement />
               </ProtectedRoute>
             } 
           />
+
+          {/* --- Organization & Companies --- */}
           <Route 
-            path="/admin/companies" 
+            path="/company-management" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <CompanyManagement />
@@ -68,215 +70,71 @@ const AppRouter = () => {
             } 
           />
           <Route 
-            path="/admin/companies/assign" 
+            path="/company-assignment" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <CompanyAssignment />
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/admin/company-assignment" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <CompanyAssignment />
-              </ProtectedRoute>
-            } 
-          />
+
+          {/* --- Calendar Management --- */}
+          {/* Admin/HR Specific Calendar */}
           <Route 
             path="/admin/calendar" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+              <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminCalendarManagement />
-              </ProtectedRoute>
-            } 
-          />
-
-          <Route 
-            path="/admin/salary-structure" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <SalaryStructureManagement />
-              </ProtectedRoute>
-            } 
-          />
-
-          <Route 
-            path="/admin/attendance" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <AttendanceManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/documents" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <DocumentsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/leave-management" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
-                <LeaveManagementPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/leave-structure" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <LeaveStructureManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/audit-log" 
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
-                <AuditLogPage />
-              </ProtectedRoute>
-            } 
-          />
-
-          {/* HR Routes */}
-          <Route 
-            path="/hr" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <HRDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/users" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <UserManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/companies" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <CompanyManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/company-assignment" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <CompanyAssignment />
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/hr/calendar" 
             element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['HR']}>
                 <HRCalendarManagement />
               </ProtectedRoute>
             } 
           />
+          {/* Employee/General Calendar */}
           <Route 
-            path="/hr/salary-structure" 
+            path="/calendar" 
             element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN',]}>
+                <EmployeeCalendarPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- Payroll --- */}
+          <Route 
+            path="/salary-structure" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <SalaryStructureManagement />
               </ProtectedRoute>
             } 
           />
 
+          {/* --- Attendance --- */}
           <Route 
-            path="/hr/attendance" 
+            path="/mark-attendance" 
             element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER']}>
+                <AttendancePage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/attendance-management" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <AttendanceManagement />
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/hr/documents" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <DocumentsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/leave-management" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
-                <LeaveManagementPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/leave-structure" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <LeaveStructureManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/hr/audit-log" 
-            element={
-              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
-                <AuditLogPage />
-              </ProtectedRoute>
-            } 
-          />
 
-          {/* Manager Routes */}
-          <Route 
-            path="/manager" 
-            element={
-              <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
-                <ManagerDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/manager/users" 
-            element={
-              <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
-                <UserManagement />
-              </ProtectedRoute>
-            } 
-          />
-
-          {/* Employee Routes */}
-          <Route 
-            path="/employee" 
-            element={
-              <ProtectedRoute allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}>
-                <EmployeeDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/employee/calendar" 
-            element={
-              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER', 'HR', 'ADMIN']}>
-                <EmployeeCalendarPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/intern"
-            element={
-              <ProtectedRoute allowedRoles={['INTERN']}>
-                <InternDashboard />
-              </ProtectedRoute>
-            }
-          />
-
+          {/* --- Documents --- */}
           <Route 
             path="/documents" 
             element={
@@ -286,32 +144,49 @@ const AppRouter = () => {
             } 
           />
 
+          {/* --- Leave Management --- */}
           <Route 
-            path="/employee/attendance" 
-            element={
-              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER']}>
-                <AttendancePage />
-              </ProtectedRoute>
-            } 
-          />
-
-          <Route 
-            path="/attendance/leave" 
+            path="/leave-management" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
                 <LeaveManagementPage />
               </ProtectedRoute>
             } 
           />
-
           <Route 
-            path="/employee/profile" 
+            path="/leave-structure" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+                <LeaveStructureManagement />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- Audit Logs --- */}
+          <Route 
+            path="/audit-logs" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+                <AuditLogPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- Self Service --- */}
+          <Route 
+            path="/profile" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
                 <MyProfile />
               </ProtectedRoute>
             } 
           />
+
+          {/* Redirect for legacy role-prefixed paths */}
+          <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+          <Route path="/hr/*" element={<Navigate to="/hr" replace />} />
+          <Route path="/employee/*" element={<Navigate to="/employee" replace />} />
+
         </Route>
 
         {/* Fallback */}

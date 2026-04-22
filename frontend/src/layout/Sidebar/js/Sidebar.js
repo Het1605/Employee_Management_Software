@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Users Management',
       roles: ['ADMIN', 'HR', 'MANAGER'],
       items: [
-        { to: `/${role.toLowerCase()}/users`, icon: Users, label: 'Manage Users' }
+        { to: "/user-management", icon: Users, label: 'Manage Users' }
       ]
     },
     {
@@ -58,8 +58,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Organization',
       roles: ['HR', 'ADMIN'],
       items: [
-        { to: "/admin/companies", icon: Building2, label: 'Manage Companies', end: true },
-        { to: "/admin/companies/assign", icon: LinkIcon, label: 'Company Assignment' },
+        { to: "/company-management", icon: Building2, label: 'Manage Companies', end: true },
+        { to: "/company-assignment", icon: LinkIcon, label: 'Company Assignment' },
         { to: `/${role.toLowerCase()}/calendar`, icon: Calendar, label: 'Calendar' }
       ]
     },
@@ -68,7 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Payroll',
       roles: ['HR', 'ADMIN'],
       items: [
-        { to: `/${role.toLowerCase()}/salary-structure`, icon: Banknote, label: 'Salary Structure' }
+        { to: "/salary-structure", icon: Banknote, label: 'Salary Structure' }
       ]
     },
     {
@@ -84,19 +84,19 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Attendance',
       items: [
         { 
-          to: "/employee/attendance", 
+          to: "/mark-attendance", 
           icon: ClipboardCheck, 
           label: 'Mark Attendance', 
           roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
         },
         { 
-          to: `/${role.toLowerCase()}/attendance`, 
+          to: "/attendance-management", 
           icon: ClipboardList, 
           label: 'Manage Attendance', 
           roles: ['ADMIN', 'HR'] 
         },
         { 
-          to: "/employee/calendar", 
+          to: "/calendar", 
           icon: Calendar, 
           label: 'My Calendar',
           roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
@@ -107,9 +107,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       type: 'group',
       title: 'Leave Management',
       items: [
-        { to: "/attendance/leave", icon: Umbrella, label: 'Manage Leaves' },
+        { to: "/leave-management", icon: Umbrella, label: 'Manage Leaves' },
         { 
-          to: `/${role.toLowerCase()}/leave-structure`, 
+          to: "/leave-structure", 
           icon: ClipboardList, 
           label: 'Leave Structure', 
           roles: ['ADMIN', 'HR'] 
@@ -121,14 +121,14 @@ const Sidebar = ({ isOpen, onClose }) => {
       title: 'Audit Management',
       roles: ['ADMIN', 'HR'],
       items: [
-        { to: `/${role.toLowerCase()}/audit-log`, icon: History, label: 'Audit Log' }
+        { to: "/audit-logs", icon: History, label: 'Audit Log' }
       ]
     },
     {
       type: 'group',
       title: 'Self Service',
       items: [
-        { to: "/employee/profile", icon: UserCircle, label: 'My Profile' }
+        { to: "/profile", icon: UserCircle, label: 'My Profile' }
       ]
     }
   ];
