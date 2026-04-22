@@ -272,14 +272,19 @@ class LeaveBalance(Base):
     )
 
 
-class LeaveBalanceAudit(Base):
-    __tablename__ = "leave_balance_audits"
+class LeaveActivityLog(Base):
+    __tablename__ = "leave_activity_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False)
     old_balance = Column(Numeric(precision=5, scale=2), nullable=True)
     new_balance = Column(Numeric(precision=5, scale=2), nullable=False)
     action = Column(String, default="BALANCE_SET")
-    action_by = Column(Integer, nullable=False)
+    action_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    details = Column(JSONB, nullable=True)
+    impact_month = Column(String, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    admin = relationship("User", foreign_keys=[action_by])

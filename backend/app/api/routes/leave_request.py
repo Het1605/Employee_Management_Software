@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime, date, timedelta
 import calendar
@@ -7,8 +7,14 @@ from app.db.database import get_db
 from app.db.models import LeaveRequest, User, UserCompanyMapping, LeaveCategory, LeaveDurationType
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
 from app.api.dependencies.auth import get_current_user
-from app.schemas.leave_request import LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, LeaveRequestOut, LeaveCalendarSummary
+from app.schemas.leave_request import (
+    LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, 
+    LeaveRequestOut, LeaveCalendarSummary, LeaveActivityLogOut
+)
 from app.services.calendar_service import CalendarService
+from app.services.leave_structure_service import LeaveStructureService
+from app.db.models import LeaveActivityLog
+import calendar as pycal
 from app.services import attendance_service
 
 router = APIRouter(prefix="/leave-requests", tags=["Leave Management"])
@@ -97,6 +103,18 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
+    # AUDIT LOGGING PREPARATION
+    # Capture balance BEFORE change (for the month the leave starts)
+    target_month = db_request.start_date.month
+    target_year = db_request.start_date.year
+    
+    runtime_balances = LeaveStructureService.get_runtime_leave_balance(
+        db, db_request.user_id, month=target_month, year=target_year
+    )
+    cat_key = db_request.leave_category.value
+    old_bal = runtime_balances.get(cat_key, {}).get("remaining", 0.0)
+    
+    # Update status
     old_status = db_request.status
     db_request.status = request.status
     db_request.reviewed_by = current_user.id
@@ -126,6 +144,38 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
         )
 
     db.commit()
+    
+    # LOG AUDIT AFTER COMMIT (to ensure we log the real transition)
+    # Calculate New Balance in the log context
+    new_bal = old_bal
+    mod = 0.5 if db_request.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0
+    impact = float(db_request.total_days) * mod
+    
+    if old_status != "approved" and request.status == "approved":
+        new_bal = old_bal - impact
+    elif old_status == "approved" and request.status != "approved":
+        new_bal = old_bal + impact
+        
+    audit_action = "APPROVED" if request.status == "approved" else "REJECTED"
+    
+    audit_log = LeaveActivityLog(
+        user_id=db_request.user_id,
+        leave_type=cat_key,
+        old_balance=old_bal,
+        new_balance=new_bal,
+        action=audit_action,
+        action_by=current_user.id,
+        impact_month=f"{pycal.month_name[target_month].upper()} {target_year}",
+        details={
+            "start_date": str(db_request.start_date),
+            "end_date": str(db_request.end_date),
+            "total_days": float(db_request.total_days),
+            "request_id": db_request.id
+        }
+    )
+    db.add(audit_log)
+    db.commit()
+
     db.refresh(db_request)
     return db_request
 
@@ -276,4 +326,33 @@ def get_calendar_summary(
             summary.append({"date": curr_date, "leave_count": count})
 
     return summary
-    return summary
+
+@router.get("/activity-logs", response_model=List[LeaveActivityLogOut])
+def get_leave_activity_logs(
+    company_id: int = Query(..., description="ID of the company"),
+    user_id: Optional[int] = Query(None, description="Filter by user"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view activity logs")
+
+    from app.db.models import User, UserCompanyMapping
+    
+    query = db.query(LeaveActivityLog).options(
+        joinedload(LeaveActivityLog.user),
+        joinedload(LeaveActivityLog.admin)
+    ).join(
+        User, LeaveActivityLog.user_id == User.id
+    ).join(
+        UserCompanyMapping, User.id == UserCompanyMapping.user_id
+    ).filter(
+        UserCompanyMapping.company_id == company_id
+    )
+
+    if user_id:
+        query = query.filter(LeaveActivityLog.user_id == user_id)
+
+    logs = query.order_by(LeaveActivityLog.timestamp.desc()).all()
+    return logs
+

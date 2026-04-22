@@ -102,3 +102,23 @@ class LeaveCalendarSummary(BaseModel):
 
     class Config:
         from_attributes = True
+
+class LeaveActivityLogOut(BaseModel):
+    id: int
+    user_id: int
+    leave_type: str
+    old_balance: Optional[Decimal] = None
+    new_balance: Decimal
+    action: str
+    action_by: int
+    impact_month: Optional[str] = None
+    details: Optional[dict] = None
+    timestamp: datetime
+    
+    # Optional fields for UI convenience
+    user: Optional[LeaveRequestOutUser] = None
+    admin: Optional[LeaveRequestOutUser] = None
+
+    class Config:
+        from_attributes = True
+

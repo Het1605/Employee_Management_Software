@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 import logging
-import calendar
+import calendar as pycal
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional
@@ -202,7 +202,6 @@ class LeaveStructureService:
         from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance
         from app.models.leave_structure import AllocationType, ResetPolicy
         from datetime import date
-        import calendar as pycal
 
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
         empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0, "has_snapshot": False}
@@ -338,7 +337,7 @@ class LeaveStructureService:
 
     @staticmethod
     def set_manual_balance(db: Session, user_id: int, balances, action_by_id: int) -> List[str]:
-        from app.db.models import LeaveBalance, LeaveBalanceAudit
+        from app.db.models import LeaveBalance, LeaveActivityLog
         
         user = db.query(User).filter_by(id=user_id).first()
         if not user:
@@ -355,16 +354,23 @@ class LeaveStructureService:
             if new_balance is None: continue
             
             existing = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=leave_type).first()
+            
+            # Skip if balance is unchanged to avoid duplicate audit logs
+            new_bal_dec = Decimal(str(new_balance))
+            if existing and existing.balance == new_bal_dec:
+                continue
+                
             old_balance = existing.balance if existing else None
             
             # Audit row
-            audit = LeaveBalanceAudit(
+            audit = LeaveActivityLog(
                 user_id=user_id,
                 leave_type=leave_type,
                 old_balance=old_balance,
                 new_balance=new_balance,
                 action="BALANCE_SET",
-                action_by=action_by_id
+                action_by=action_by_id,
+                impact_month=f"{pycal.month_name[current_month].upper()} {current_year}"
             )
             db.add(audit)
             

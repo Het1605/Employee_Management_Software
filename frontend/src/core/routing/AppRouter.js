@@ -28,6 +28,7 @@ import LeaveManagementPage from '../../modules/attendance/leave/pages/js/LeaveMa
 import LeaveStructureManagement from '../../modules/attendance/leave/pages/js/LeaveStructureManagement';
 import EmployeeCalendarPage from '../../modules/calendar/pages/js/EmployeeCalendarPage';
 import MyProfile from '../../modules/user/pages/js/MyProfile';
+import AuditLogPage from '../../modules/audit/pages/js/AuditLogPage';
 
 const AppRouter = () => {
   return (
@@ -132,6 +133,14 @@ const AppRouter = () => {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/admin/audit-log" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
+                <AuditLogPage />
+              </ProtectedRoute>
+            } 
+          />
 
           {/* HR Routes */}
           <Route 
@@ -212,6 +221,14 @@ const AppRouter = () => {
             element={
               <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
                 <LeaveStructureManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/hr/audit-log" 
+            element={
+              <ProtectedRoute allowedRoles={['HR', 'ADMIN']}>
+                <AuditLogPage />
               </ProtectedRoute>
             } 
           />

@@ -11,7 +11,8 @@ import {
   ClipboardCheck, 
   ClipboardList, 
   Umbrella, 
-  UserCircle 
+  UserCircle,
+  History 
 } from 'lucide-react';
 import styles from '../style/Sidebar.module.css';
 
@@ -113,6 +114,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           label: 'Leave Structure', 
           roles: ['ADMIN', 'HR'] 
         }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Audit Management',
+      roles: ['ADMIN', 'HR'],
+      items: [
+        { to: `/${role.toLowerCase()}/audit-log`, icon: History, label: 'Audit Log' }
       ]
     },
     {

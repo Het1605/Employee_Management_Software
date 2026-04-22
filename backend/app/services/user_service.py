@@ -1,7 +1,8 @@
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import date
-from app.db.models import User
+from app.db.models import User, UserCompanyMapping
 from app.schemas.user import UserCreate, UserUpdate, ChangePasswordRequest, ResignationRequest
 from app.core.security import hash_password, verify_password
 
@@ -115,10 +116,12 @@ class UserService:
             )
 
     @staticmethod
-    def get_all_users(db: Session, active_only: bool = False):
+    def get_all_users(db: Session, active_only: bool = False, company_id: Optional[int] = None):
         query = db.query(User)
         if active_only:
             query = query.filter(User.is_active == True)
+        if company_id:
+            query = query.join(UserCompanyMapping).filter(UserCompanyMapping.company_id == company_id)
         return query.all()
 
     @staticmethod

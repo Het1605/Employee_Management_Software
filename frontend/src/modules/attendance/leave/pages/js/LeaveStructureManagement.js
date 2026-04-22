@@ -35,7 +35,7 @@ const LeaveStructureManagement = () => {
             const [structRes, assignRes, userRes] = await Promise.all([
                 API.get(`/leave-structures?company_id=${selectedCompanyId}`),
                 API.get(`/leave-assignments?company_id=${selectedCompanyId}`),
-                API.get('/users/')
+                API.get(`/users/?company_id=${selectedCompanyId}&active_only=true`)
             ]);
             setStructures(structRes.data || []);
             setAssignments(assignRes.data || []);
