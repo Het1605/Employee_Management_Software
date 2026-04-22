@@ -38,14 +38,14 @@ const ChangePasswordModal = ({ user, onClose }) => {
       // Wait, the User model refactor REMOVED password from update_user schema.
       // So I probably need a new endpoint or use an existing one if available.
       // Looking at auth routes, there is reset-password-confirm but that's with token.
-      
+
       // I'll check if there is an admin endpoint for this. 
       // If not, I'll need to add one or use the UserService directly if I'm on the server, 
       // but this is frontend.
-      
+
       // Let's assume for now there's an endpoint /users/{id}/reset-password
       await resetUserPassword(user.id, formData.password);
-      
+
       showToast("Password updated successfully", 'success');
       onClose();
     } catch (err) {
@@ -69,26 +69,26 @@ const ChangePasswordModal = ({ user, onClose }) => {
           <div className={styles.fullWidth}>
             <div className={styles.inputGroup}>
               <label>New Password</label>
-              <input 
-                name="password" 
-                type="password" 
+              <input
+                name="password"
+                type="password"
                 value={formData.password}
-                onChange={handleChange} 
+                onChange={handleChange}
                 placeholder="••••••••"
-                required 
+                required
               />
             </div>
           </div>
           <div className={styles.fullWidth}>
             <div className={styles.inputGroup}>
               <label>Confirm New Password</label>
-              <input 
-                name="confirm_password" 
-                type="password" 
+              <input
+                name="confirm_password"
+                type="password"
                 value={formData.confirm_password}
-                onChange={handleChange} 
+                onChange={handleChange}
                 placeholder="••••••••"
-                required 
+                required
               />
             </div>
           </div>

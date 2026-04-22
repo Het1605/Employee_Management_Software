@@ -27,13 +27,38 @@
     border: 1px solid #e5e7eb;
 }
 
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
 .cardTitle {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 0;
+}
+
+.changePasswordBtn {
+    padding: 0.5rem 1rem;
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.changePasswordBtn:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+    border-color: #d1d5db;
 }
 
 .detailsGrid {
@@ -56,4 +81,3 @@
     font-weight: 600;
     color: #111827;
 }
-

@@ -39,8 +39,14 @@ class UserBase(BaseModel):
         return phone
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)
-    confirm_password: str = Field(..., min_length=8)
+    password: str = Field(...)
+    confirm_password: str = Field(...)
+
+    @validator("password", "confirm_password")
+    def validate_password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("password should have at least 8 characters")
+        return v
 
     @validator("confirm_password")
     def passwords_match(cls, v, values, **kwargs):
@@ -91,15 +97,34 @@ class LoginRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     old_password: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(...)
+
+    @validator("new_password")
+    def validate_password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("password should have at least 8 characters")
+        return v
+
 class AdminPasswordReset(BaseModel):
-    password: str = Field(..., min_length=8)
+    password: str = Field(...)
+
+    @validator("password")
+    def validate_password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("password should have at least 8 characters")
+        return v
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
 
 class ResetPasswordConfirm(BaseModel):
     token: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(...)
+
+    @validator("new_password")
+    def validate_password_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("password should have at least 8 characters")
+        return v
 
 class ResignationRequest(BaseModel):
     end_date: date
