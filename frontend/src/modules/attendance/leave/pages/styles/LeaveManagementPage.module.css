@@ -37,3 +37,27 @@
         font-size: 0.95rem;
     }
 }
+
+.balanceBar {
+    width: 100%;
+    background-color: #f3f4f6;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.balanceLabel {
+    font-size: 0.95rem;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.balanceValues {
+    font-size: 0.95rem;
+    color: #111827;
+    font-weight: 500;
+}

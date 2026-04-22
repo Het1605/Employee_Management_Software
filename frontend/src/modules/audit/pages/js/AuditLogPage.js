@@ -78,7 +78,18 @@ const AuditLogPage = () => {
     };
 
     const filteredLogs = logs.filter(log => {
-        const matchesSearch = `${log.user?.first_name} ${log.user?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+        const userName = `${log.user?.first_name || ''} ${log.user?.last_name || ''}`.toLowerCase();
+        const leaveType = (log.leave_type || '').toLowerCase();
+        const actionLabel = getActionLabel(log.action).toLowerCase();
+        const impactMonth = (log.impact_month || '').toLowerCase();
+        const search = searchTerm.toLowerCase();
+
+        const matchesSearch = 
+            userName.includes(search) || 
+            leaveType.includes(search) || 
+            actionLabel.includes(search) ||
+            impactMonth.includes(search);
+
         const matchesFilter = filterType === 'ALL' || log.action === filterType;
         return matchesSearch && matchesFilter;
     });

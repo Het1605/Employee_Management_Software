@@ -26,10 +26,6 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
             return;
         }
 
-        if (new Date(startDate) < new Date(today)) {
-            setMessage({ text: 'Leave cannot be applied for past dates', type: 'error' });
-            return;
-        }
 
         setLoading(true);
         setMessage({ text: '', type: '' });
@@ -72,6 +68,12 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
             {message.text && (
                 <div className={message.type === 'success' ? styles.successMsg : styles.errorMsg}>
                     {message.text}
+                </div>
+            )}
+
+            {new Date(startDate) < new Date(today) && (
+                <div className={styles.warningMsg}>
+                    Note: You are applying for a past date (Backdated Leave).
                 </div>
             )}
 
@@ -118,7 +120,6 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
                             type="date" 
                             className={styles.input}
                             value={startDate}
-                            min={today}
                             onChange={(e) => setStartDate(e.target.value)}
                             required
                         />
@@ -130,7 +131,6 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
                             type="date" 
                             className={styles.input}
                             value={endDate}
-                            min={startDate || today}
                             onChange={(e) => setEndDate(e.target.value)}
                             required
                         />

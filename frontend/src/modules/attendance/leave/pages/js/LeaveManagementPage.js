@@ -3,6 +3,7 @@ import MainLayout from '../../../../../layout/MainLayout/js/MainLayout';
 import LeaveRequestForm from '../../components/js/LeaveRequestForm';
 import MyLeaveRequests from '../../components/js/MyLeaveRequests';
 import LeaveApprovalPanel from '../../components/js/LeaveApprovalPanel';
+import API from '../../../../../core/api/apiClient';
 import styles from '../styles/LeaveManagementPage.module.css';
 
 const LeaveManagementPage = () => {
@@ -10,12 +11,49 @@ const LeaveManagementPage = () => {
     const role = localStorage.getItem('role') || 'EMPLOYEE';
     const isPrivileged = ['ADMIN', 'HR', 'MANAGER'].includes(role.toUpperCase());
 
-    // Trigger state to forcefully refresh nested table components when actions succeed
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [balances, setBalances] = useState({ PL: { remaining: 0 }, CL: { remaining: 0 }, SL: { remaining: 0 } });
+    const [loading, setLoading] = useState(false);
+
+    const userId = localStorage.getItem('userId');
+
+    React.useEffect(() => {
+        if (userId) {
+            fetchBalance();
+        }
+    }, [userId, refreshTrigger]);
+
+    const fetchBalance = async () => {
+        setLoading(true);
+        try {
+            const res = await API.get(`/leave-balance/${userId}`);
+            if (res.data) {
+                setBalances(res.data);
+            }
+        } catch (err) {
+            console.error("Error fetching balance:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleRefresh = () => {
         setRefreshTrigger(prev => prev + 1);
     };
+
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+    const currentYear = new Date().getFullYear();
+
+    const BalanceBar = () => (
+        <div className={styles.balanceBar}>
+            <span className={styles.balanceLabel}>
+                Current Balance ({currentMonth} {currentYear}):
+            </span>
+            <span className={styles.balanceValues}>
+                PL: {balances.PL?.remaining || 0} | CL: {balances.CL?.remaining || 0} | SL: {balances.SL?.remaining || 0}
+            </span>
+        </div>
+    );
 
     return (
         <>
@@ -32,6 +70,7 @@ const LeaveManagementPage = () => {
                 {/* Employee / Non-privileged view */}
                 {!isPrivileged && (
                     <>
+                        <BalanceBar />
                         <LeaveRequestForm onLeaveCreated={handleRefresh} />
                         <MyLeaveRequests refreshTrigger={refreshTrigger} />
                     </>

@@ -21,12 +21,6 @@ class LeaveRequestBase(BaseModel):
     leave_duration_type: LeaveDurationType
 
 class LeaveRequestCreate(LeaveRequestBase):
-    @validator('start_date')
-    def check_future_date(cls, v):
-        if v < date.today():
-            raise ValueError('Leave cannot be applied for past dates')
-        return v
-
     @root_validator(pre=True)
     def check_dates(cls, values):
         start_date = values.get('start_date')
@@ -54,12 +48,6 @@ class LeaveRequestEdit(BaseModel):
     reason: Optional[str] = None
     leave_category: LeaveCategory
     leave_duration_type: LeaveDurationType
-
-    @validator('start_date')
-    def check_future_date(cls, v):
-        if v < date.today():
-            raise ValueError('Leave cannot be applied for past dates')
-        return v
 
     @root_validator(pre=True)
     def validate_edit(cls, values):
