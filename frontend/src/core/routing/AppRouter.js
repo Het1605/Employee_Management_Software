@@ -45,9 +45,9 @@ const AppRouter = () => {
           
           {/* --- Dashboards --- */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR', 'ADMIN']}><HRDashboard /></ProtectedRoute>} />
-          <Route path="/manager" element={<ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}><ManagerDashboard /></ProtectedRoute>} />
-          <Route path="/employee" element={<ProtectedRoute allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}><EmployeeDashboard /></ProtectedRoute>} />
+          <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR']}><HRDashboard /></ProtectedRoute>} />
+          <Route path="/manager" element={<ProtectedRoute allowedRoles={['ADMIN']}><ManagerDashboard /></ProtectedRoute>} />
+          <Route path="/employee" element={<ProtectedRoute allowedRoles={['EMPLOYEE']}><EmployeeDashboard /></ProtectedRoute>} />
           <Route path="/intern" element={<ProtectedRoute allowedRoles={['INTERN']}><InternDashboard /></ProtectedRoute>} />
 
           {/* --- User Management --- */}

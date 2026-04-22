@@ -254,23 +254,38 @@ class LeaveStructureService:
             final_remaining = 0.0
             final_excess = 0.0
             
+            from datetime import timedelta
+            from app.services.calendar_service import CalendarService
+
             while True:
-                # Filter usage strictly bounded to month `m` of year `y`
+                # Filter usage to find any request that overlaps even partially with month `m` of year `y`
                 m_start = date(y, m, 1)
                 m_end = date(y, m, pycal.monthrange(y, m)[1])
                 
+                # Overlap logic: (ReqStart <= MonthEnd) AND (ReqEnd >= MonthStart)
                 requests = db.query(LeaveRequest).filter(
                     LeaveRequest.user_id == user_id,
                     LeaveRequest.leave_category == LeaveCategory[category],
                     LeaveRequest.status == "approved",
-                    LeaveRequest.start_date >= m_start,
-                    LeaveRequest.start_date <= m_end
+                    LeaveRequest.start_date <= m_end,
+                    LeaveRequest.end_date >= m_start
                 ).all()
                 
                 m_used = 0.0
                 for req in requests:
                     mod = 0.5 if req.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0
-                    m_used += float(req.total_days) * mod
+                    
+                    # Calculate how many working days of this request fall within [m_start, m_end]
+                    calc_start = max(req.start_date, m_start)
+                    calc_end = min(req.end_date, m_end)
+                    
+                    curr_day = calc_start
+                    while curr_day <= calc_end:
+                        # Check if this day is a working day
+                        status_info = CalendarService.get_day_status(db, assignment.company_id, curr_day)
+                        if status_info.status not in ["holiday", "off"]:
+                            m_used += (1.0 * mod)
+                        curr_day += timedelta(days=1)
 
                 if detail.allocation_type == AllocationType.MONTHLY:
                     m_allocated = float(base_allocation + 1) if m <= extra_allocation else float(base_allocation)
