@@ -107,7 +107,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       type: 'group',
       title: 'Leave Management',
       items: [
-        { to: "/leave-management", icon: Umbrella, label: 'Manage Leaves' },
+        { to: "/leave-management", icon: Umbrella, label: 'Manage Leaves', roles: ['ADMIN', 'HR', 'MANAGER'] },
+        { to: "/apply-leave", icon: ClipboardCheck, label: 'Apply Leave' },
         { 
           to: "/leave-structure", 
           icon: ClipboardList, 

@@ -154,6 +154,14 @@ const AppRouter = () => {
             } 
           />
           <Route 
+            path="/apply-leave" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+                <LeaveManagementPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/leave-structure" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import MainLayout from '../../../../../layout/MainLayout/js/MainLayout';
 import LeaveRequestForm from '../../components/js/LeaveRequestForm';
 import MyLeaveRequests from '../../components/js/MyLeaveRequests';
@@ -7,6 +8,9 @@ import API from '../../../../../core/api/apiClient';
 import styles from '../styles/LeaveManagementPage.module.css';
 
 const LeaveManagementPage = () => {
+    const location = useLocation();
+    const isApplyOnly = location.pathname === '/apply-leave';
+
     // Standardized role checking from local storage
     const role = localStorage.getItem('role') || 'EMPLOYEE';
     const isPrivileged = ['ADMIN', 'HR', 'MANAGER'].includes(role.toUpperCase());
@@ -55,20 +59,28 @@ const LeaveManagementPage = () => {
         </div>
     );
 
+    // Logic to decide what to show
+    const showApproval = isPrivileged && !isApplyOnly;
+    const showApplyForm = !isPrivileged || isApplyOnly;
+
     return (
         <>
             <div className={styles.container}>
                 <div className={styles.pageHeader}>
-                    <h1 className={styles.pageTitle}>Leave Management</h1>
+                    <h1 className={styles.pageTitle}>
+                        {isApplyOnly ? "Apply for Leave" : "Leave Management"}
+                    </h1>
                     <p className={styles.pageSubtitle}>
-                        {isPrivileged 
-                            ? "Manage your personal leaves and approve pending team requests."
-                            : "Apply for leave and track your previously submitted requests."}
+                        {isApplyOnly 
+                            ? "Submit a new leave request and monitor your existing ones."
+                            : (isPrivileged 
+                                ? "Manage your personal leaves and approve pending team requests."
+                                : "Apply for leave and track your previously submitted requests.")
+                        }
                     </p>
                 </div>
 
-                {/* Employee / Non-privileged view */}
-                {!isPrivileged && (
+                {showApplyForm && (
                     <>
                         <BalanceBar />
                         <LeaveRequestForm onLeaveCreated={handleRefresh} />
@@ -76,8 +88,7 @@ const LeaveManagementPage = () => {
                     </>
                 )}
 
-                {/* Only Privileged roles can see the Approval section */}
-                {isPrivileged && (
+                {showApproval && (
                     <LeaveApprovalPanel refreshTrigger={refreshTrigger} onActionComplete={handleRefresh} />
                 )}
             </div>
