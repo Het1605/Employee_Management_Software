@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../../../../core/api/apiClient';
 import { useToast } from '../../../../../contexts/ToastContext';
 import styles from '../styles/MyLeaveRequests.module.css';
+import LeaveEditModal from './LeaveEditModal';
 
 const ViewIcon = () => (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -17,7 +18,14 @@ const CloseIcon = () => (
     </svg>
 );
 
-const DeleteIcon = () => (
+const EditIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+);
+
+const TrashIcon = () => (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6"/>
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -29,6 +37,7 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
     const [loading, setLoading] = useState(true);
     const [viewingReason, setViewingReason] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [editingLeave, setEditingLeave] = useState(null);
     const [processing, setProcessing] = useState(false);
     const { showToast } = useToast();
 
@@ -47,6 +56,11 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests, refreshTrigger]);
+
+    const handleSaveEdit = (updated) => {
+        setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+        showToast('Leave request updated successfully');
+    };
 
     const formatDate = (dateStr) => {
         const d = new Date(dateStr);
@@ -126,34 +140,37 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
                                             onClick={() => setViewingReason(req.reason)}
                                             title="View Reason"
                                         >
-                                            <ViewIcon /> Reason
+                                            <ViewIcon />
                                         </button>
                                     )}
-                                    {req.status === 'pending' && (
-                                        <button
-                                            className={`${styles.iconBtn} ${styles.deleteIconBtn}`}
-                                            onClick={() => setDeleteConfirm(req)}
-                                            title="Delete Request"
-                                        >
-                                            <DeleteIcon />
-                                            <span>Delete</span>
-                                        </button>
-                                    )}
-                                    {(req.status === 'approved' || req.status === 'rejected') && (
-                                        <button
-                                            className={styles.minimalDeleteBtn}
-                                            onClick={() => setDeleteConfirm(req)}
-                                            title="Hide Request"
-                                        >
-                                            <DeleteIcon />
-                                        </button>
-                                    )}
+                                    <button
+                                        className={styles.iconBtn}
+                                        onClick={() => setEditingLeave(req)}
+                                        title="Edit Request"
+                                    >
+                                        <EditIcon />
+                                    </button>
+                                    <button
+                                        className={`${styles.iconBtn} ${styles.deleteIconBtn}`}
+                                        onClick={() => setDeleteConfirm(req)}
+                                        title={req.status === 'pending' ? "Delete Request" : "Hide Request"}
+                                    >
+                                        <TrashIcon />
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* Edit Modal */}
+            <LeaveEditModal 
+                isOpen={!!editingLeave}
+                onClose={() => setEditingLeave(null)}
+                onSave={handleSaveEdit}
+                leaveData={editingLeave}
+            />
 
             {/* Reason Modal */}
             {viewingReason && (
@@ -177,7 +194,7 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
                 <div className={styles.modalOverlay} onClick={() => !processing && setDeleteConfirm(null)}>
                     <div className={styles.confirmCard} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.confirmIcon}>
-                            <DeleteIcon />
+                            <TrashIcon />
                         </div>
                         <h3 className={styles.confirmTitle}>
                             {deleteConfirm.status === 'pending' ? 'Delete Leave Request' : 'Remove Leave Request'}

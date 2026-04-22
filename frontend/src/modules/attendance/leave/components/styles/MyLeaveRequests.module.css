@@ -66,9 +66,7 @@
 }
 
 .cardActions {
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #f3f4f6;
+    margin-top: 0.25rem;
     display: flex;
     justify-content: flex-end;
 }
@@ -79,26 +77,29 @@
 }
 
 .iconBtn {
-    background: none;
-    border: none;
-    color: #4b5563;
-    padding: 0.4rem 0.75rem;
-    border-radius: 4px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    font-size: 0.75rem;
-    font-weight: 600;
     transition: all 0.2s;
-    border: 1px solid #e5e7eb;
 }
 
-.deleteIconBtn {
-    color: #dc2626;
+.iconBtn:hover {
+    background-color: #f1f5f9;
+    color: #3b82f6;
+    border-color: #bfdbfe;
+}
+
+.deleteIconBtn:hover {
+    color: #ef4444;
     background-color: #fef2f2;
-    border-color: #fca5a5;
+    border-color: #fecaca;
 }
 
 .minimalDeleteBtn {

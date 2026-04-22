@@ -94,7 +94,59 @@ def get_all_leaves(company_id: int = Query(..., description="ID of the selected 
     ).order_by(LeaveRequest.applied_at.desc()).all()
     return leaves
 
-@router.put("/{leave_id}", response_model=LeaveRequestOut)
+@router.put("/{request_id}", response_model=LeaveRequestOut)
+def update_leave_request(
+    request_id: int, 
+    data: LeaveRequestEdit, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch existing
+    db_request = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
+    if not db_request:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    # Permission check: Owner or Admin/HR/Manager
+    is_privileged = current_user.role in ['ADMIN', 'HR', 'MANAGER']
+    if db_request.user_id != current_user.id and not is_privileged:
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this request")
+
+    # Overlap check (excluding current request)
+    existing = db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == db_request.user_id,
+        LeaveRequest.id != request_id,
+        LeaveRequest.status != "rejected",
+        LeaveRequest.start_date <= data.end_date,
+        LeaveRequest.end_date >= data.start_date
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Updated dates overlap with another existing leave request")
+
+    # Recalculate total days
+    total_days = _calculate_total_days(db, db_request.company_id, data.start_date, data.end_date, data.leave_duration_type)
+    if total_days == 0:
+        raise HTTPException(status_code=400, detail="The selected date range contains no working days")
+
+    # Reset status if already reviewed
+    if db_request.status != "pending":
+        db_request.status = "pending"
+        db_request.reviewed_by = None
+        db_request.reviewed_at = None
+
+    # Update fields
+    db_request.leave_category = data.leave_category
+    db_request.leave_duration_type = data.leave_duration_type
+    db_request.start_date = data.start_date
+    db_request.end_date = data.end_date
+    db_request.reason = data.reason
+    db_request.total_days = total_days
+
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+@router.put("/{leave_id}/approve-reject", response_model=LeaveRequestOut)
 def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to approve or reject leaves")

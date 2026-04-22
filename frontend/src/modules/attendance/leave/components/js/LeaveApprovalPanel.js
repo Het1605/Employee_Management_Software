@@ -3,6 +3,7 @@ import API from '../../../../../core/api/apiClient';
 import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import { useToast } from '../../../../../contexts/ToastContext';
 import styles from '../styles/LeaveApprovalPanel.module.css';
+import LeaveEditModal from './LeaveEditModal';
 
 const ViewIcon = () => (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -19,11 +20,16 @@ const CloseIcon = () => (
 );
 
 const DeleteIcon = () => (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6"/>
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        <line x1="10" y1="11" x2="10" y2="17"/>
-        <line x1="14" y1="11" x2="14" y2="17"/>
+    </svg>
+);
+
+const EditIcon = () => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
     </svg>
 );
 
@@ -33,12 +39,12 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
     const [processingId, setProcessingId] = useState(null);
     const [viewingReason, setViewingReason] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [editingLeave, setEditingLeave] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const { selectedCompanyId } = useCompanyContext();
     const { showToast } = useToast();
 
     const fetchRequests = useCallback(async () => {
-        // If no company is selected yet, don't try to fetch (prevents 422 errors)
         if (!selectedCompanyId) {
             setRequests([]);
             setLoading(false);
@@ -47,7 +53,6 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
 
         setLoading(true);
         try {
-            // company_id is required by the backend to isolate records
             const res = await API.get(`/leave-requests?company_id=${parseInt(selectedCompanyId, 10)}`);
             setRequests(res.data);
         } catch (err) {
@@ -62,11 +67,16 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
         fetchRequests();
     }, [fetchRequests, refreshTrigger, selectedCompanyId]);
 
+    const handleSaveEdit = (updated) => {
+        setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+        showToast('Leave request updated successfully');
+        if (onActionComplete) onActionComplete();
+    };
+
     const handleAction = async (id, status) => {
         setProcessingId(id);
         try {
-            await API.put(`/leave-requests/${id}`, { status });
-            // Re-fetch automatically to refresh local state 
+            await API.put(`/leave-requests/${id}/approve-reject`, { status });
             await fetchRequests();
             if (onActionComplete) {
                 onActionComplete();
@@ -86,7 +96,6 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
             await API.delete(`/leave-requests/${deleteConfirm.id}`);
             showToast('Leave request deleted successfully');
             setDeleteConfirm(null);
-            // Remove from state immediately
             setRequests(prev => prev.filter(r => r.id !== deleteConfirm.id));
             if (onActionComplete) {
                 onActionComplete();
@@ -193,25 +202,38 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
                                             Reject
                                         </button>
                                     )}
-
-                                    {/* Delete: only for APPROVED / REJECTED */}
-                                    {!isPending(req.status) && (
+                                    
+                                    <div className={styles.iconActions}>
                                         <button
-                                            className={styles.adminDeleteBtn}
+                                            className={styles.iconBtn}
+                                            onClick={() => setEditingLeave(req)}
+                                            title="Edit Request"
+                                        >
+                                            <EditIcon />
+                                        </button>
+
+                                        <button
+                                            className={`${styles.iconBtn} ${styles.deleteIconBtn}`}
                                             onClick={() => setDeleteConfirm(req)}
                                             title="Delete Leave"
-                                            aria-label="Delete Leave"
                                         >
                                             <DeleteIcon />
-                                            <span>Delete</span>
                                         </button>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* Edit Modal */}
+            <LeaveEditModal 
+                isOpen={!!editingLeave}
+                onClose={() => setEditingLeave(null)}
+                onSave={handleSaveEdit}
+                leaveData={editingLeave}
+            />
 
             {/* Reason Modal */}
             {viewingReason && (
