@@ -27,7 +27,19 @@ const ChangePassword = () => {
             setMessage('Password changed successfully. Please log in with your new password.');
             setTimeout(() => navigate('/'), 2000);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Failed to change password');
+            let errorMsg = err.response?.data?.detail || 'Failed to change password';
+            
+            // Handle FastAPI validation errors (list of objects)
+            if (Array.isArray(errorMsg)) {
+                errorMsg = errorMsg[0]?.msg || 'Validation error';
+            }
+
+            // Custom replacement requested by user
+            if (typeof errorMsg === 'string' && errorMsg.toLowerCase().includes('at least 8 characters')) {
+                errorMsg = 'Password must be at least 8 characters long';
+            }
+            
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
