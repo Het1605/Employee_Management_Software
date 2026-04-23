@@ -98,16 +98,20 @@ class LeaveStructureDetail(Base):
 # ─────────────────────────────────────────
 
 class LeaveAssignment(Base):
-    """One active structure per user (enforced by unique constraint on user_id)."""
+    """One active structure per user per company."""
     __tablename__ = "leave_assignments"
 
     id           = Column(Integer, primary_key=True, index=True)
     company_id   = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id      = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id      = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     structure_id = Column(Integer, ForeignKey("leave_structures.id", ondelete="CASCADE"), nullable=False)
     assigned_at  = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     user      = relationship("User")
     structure = relationship("LeaveStructure", back_populates="assignments")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "company_id", name="uq_user_company_assignment"),
+    )
 

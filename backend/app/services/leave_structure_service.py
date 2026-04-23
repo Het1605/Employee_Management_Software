@@ -168,8 +168,11 @@ class LeaveStructureService:
         if not structure:
             raise ValueError(f"Leave structure {payload.structure_id} not found for this company.")
 
-        # Remove existing assignment (one active per user)
-        existing = db.query(LeaveAssignment).filter_by(user_id=payload.user_id).first()
+        # Remove existing assignment for THIS user in THIS company
+        existing = db.query(LeaveAssignment).filter_by(
+            user_id=payload.user_id, 
+            company_id=payload.company_id
+        ).first()
         if existing:
             db.delete(existing)
             db.flush()
