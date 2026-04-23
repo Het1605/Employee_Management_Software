@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime, date, timedelta
@@ -9,7 +10,8 @@ from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, 
 from app.api.dependencies.auth import get_current_user
 from app.schemas.leave_request import (
     LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, 
-    LeaveRequestOut, LeaveCalendarSummary, LeaveActivityLogOut
+    LeaveRequestOut, LeaveCalendarSummary, LeaveActivityLogOut,
+    LeaveActivityLogPaginated
 )
 from app.services.calendar_service import CalendarService
 from app.services.leave_structure_service import LeaveStructureService
@@ -405,32 +407,53 @@ def get_calendar_summary(
 
     return summary
 
-@router.get("/activity-logs", response_model=List[LeaveActivityLogOut])
+@router.get("/activity-logs", response_model=LeaveActivityLogPaginated)
 def get_leave_activity_logs(
     company_id: int = Query(..., description="ID of the company"),
-    user_id: Optional[int] = Query(None, description="Filter by user"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1),
+    action: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to view activity logs")
 
-    from app.db.models import User, UserCompanyMapping
-    
     query = db.query(LeaveActivityLog).options(
         joinedload(LeaveActivityLog.user),
         joinedload(LeaveActivityLog.admin)
     ).join(
         User, LeaveActivityLog.user_id == User.id
-    ).join(
-        UserCompanyMapping, User.id == UserCompanyMapping.user_id
     ).filter(
-        UserCompanyMapping.company_id == company_id
+        LeaveActivityLog.company_id == company_id
     )
 
-    if user_id:
-        query = query.filter(LeaveActivityLog.user_id == user_id)
+    if action and action != "ALL":
+        query = query.filter(LeaveActivityLog.action == action)
 
-    logs = query.order_by(LeaveActivityLog.timestamp.desc()).all()
-    return logs
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            or_(
+                User.first_name.ilike(search_filter),
+                User.last_name.ilike(search_filter),
+                LeaveActivityLog.leave_type.ilike(search_filter)
+            )
+        )
+
+    # Find total count for traditional pagination
+    total_count = query.count()
+
+    # Pagination
+    offset = (page - 1) * limit
+    logs = query.order_by(LeaveActivityLog.timestamp.desc()).offset(offset).limit(limit).all()
+    
+    has_more = (offset + limit) < total_count
+    
+    return {
+        "logs": logs,
+        "total_count": total_count,
+        "has_more": has_more
+    }
 

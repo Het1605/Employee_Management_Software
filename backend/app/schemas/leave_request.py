@@ -109,4 +109,10 @@ class LeaveActivityLogOut(BaseModel):
 
     class Config:
         from_attributes = True
+class LeaveActivityLogPaginated(BaseModel):
+    logs: List[LeaveActivityLogOut]
+    total_count: int
+    has_more: bool
 
+    class Config:
+        from_attributes = True

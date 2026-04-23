@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     Search, 
-    Filter, 
     History, 
     ArrowRight, 
     Calendar,
     Scale,
     CheckCircle2,
-    XCircle
+    XCircle,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import API from '../../../../core/api/apiClient';
 import { useCompanyContext } from '../../../../contexts/CompanyContext';
@@ -19,23 +20,83 @@ const AuditLogPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('ALL');
+    
+    // Pagination states
+    const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const PAGE_SIZE = 20;
+    
+    const logListRef = useRef(null);
 
+    // Debounce search
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     useEffect(() => {
-        if (selectedCompanyId) {
-            fetchLogs();
-        }
-    }, [selectedCompanyId]);
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async (pageNumber) => {
+        if (!selectedCompanyId) return;
+        
         setLoading(true);
         try {
-            const res = await API.get(`/leave-requests/activity-logs?company_id=${selectedCompanyId}`);
-            setLogs(res.data);
+            const params = new URLSearchParams({
+                company_id: selectedCompanyId,
+                page: pageNumber,
+                limit: PAGE_SIZE,
+                action: filterType,
+                search: debouncedSearch
+            });
+
+            const res = await API.get(`/leave-requests/activity-logs?${params.toString()}`);
+            const { logs: newLogs, has_more, total_count } = res.data;
+
+            setLogs(newLogs);
+            setTotalCount(total_count);
+            setHasMore(has_more);
+
+            // Scroll to top of list on page change
+            if (logListRef.current) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         } catch (error) {
             console.error("Error fetching logs:", error);
         } finally {
             setLoading(false);
         }
+    }, [selectedCompanyId, filterType, debouncedSearch]);
+
+    // Initial load and filter resets
+    useEffect(() => {
+        setPage(1);
+        fetchLogs(1);
+    }, [selectedCompanyId, filterType, debouncedSearch, fetchLogs]);
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= Math.ceil(totalCount / PAGE_SIZE)) {
+            setPage(newPage);
+            fetchLogs(newPage);
+        }
+    };
+
+    const getPageNumbers = () => {
+        const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+        const pages = [];
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible + 2) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (page <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages);
+            } else if (page >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+            }
+        }
+        return pages;
     };
 
     const formatDate = (dateString) => {
@@ -77,23 +138,8 @@ const AuditLogPage = () => {
         }
     };
 
-    const filteredLogs = logs.filter(log => {
-        const userName = `${log.user?.first_name || ''} ${log.user?.last_name || ''}`.toLowerCase();
-        const leaveType = (log.leave_type || '').toLowerCase();
-        const actionLabel = getActionLabel(log.action).toLowerCase();
-        const search = searchTerm.toLowerCase();
-
-        const matchesSearch = 
-            userName.includes(search) || 
-            leaveType.includes(search) || 
-            actionLabel.includes(search);
-
-        const matchesFilter = filterType === 'ALL' || log.action === filterType;
-        return matchesSearch && matchesFilter;
-    });
-
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={logListRef}>
             <div className={styles.header}>
                 <h1>Audit Management</h1>
                 <p>Track leave balance adjustments and workflow history</p>
@@ -104,7 +150,7 @@ const AuditLogPage = () => {
                     <Search className={styles.searchIcon} size={18} />
                     <input 
                         type="text" 
-                        placeholder="Search by User..." 
+                        placeholder="Search by User or leave_type..." 
                         className={styles.searchInput}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,12 +170,12 @@ const AuditLogPage = () => {
 
             {loading ? (
                 <div className={styles.emptyState}>Loading activity logs...</div>
-            ) : filteredLogs.length === 0 ? (
+            ) : logs.length === 0 ? (
                 <div className={styles.emptyState}>No activity logs found.</div>
             ) : (
-                <div className={styles.logList}>
-                    {filteredLogs.map(log => {
-                        return (
+                <>
+                    <div className={styles.logList}>
+                        {logs.map(log => (
                             <div key={log.id} className={styles.card}>
                                 <div className={styles.cardHeader}>
                                     <div className={styles.actionInfo}>
@@ -203,12 +249,49 @@ const AuditLogPage = () => {
                                     </div>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
+                        ))}
+                    </div>
+
+                    <div className={styles.paginationWrapper}>
+                        <div className={styles.pagination}>
+                            <button 
+                                className={styles.navAction}
+                                onClick={() => handlePageChange(page - 1)}
+                                disabled={page === 1}
+                            >
+                                <ChevronLeft size={16} />
+                                Previous
+                            </button>
+
+                            {getPageNumbers().map((num, i) => (
+                                num === '...' ? (
+                                    <span key={`ellipsis-${i}`} className={styles.ellipsis}>...</span>
+                                ) : (
+                                    <button
+                                        key={`page-${num}`}
+                                        className={`${styles.pageCircle} ${page === num ? styles.activePage : ''}`}
+                                        onClick={() => handlePageChange(num)}
+                                    >
+                                        {num}
+                                    </button>
+                                )
+                            ))}
+
+                            <button 
+                                className={styles.navAction}
+                                onClick={() => handlePageChange(page + 1)}
+                                disabled={!hasMore}
+                            >
+                                Next
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );
 };
 
 export default AuditLogPage;
+
