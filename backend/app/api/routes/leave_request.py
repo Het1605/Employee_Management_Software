@@ -34,13 +34,22 @@ def _calculate_total_days(db: Session, company_id: int, start_date: date, end_da
 
 @router.post("", response_model=LeaveRequestOut)
 def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    mapping = db.query(UserCompanyMapping).filter_by(user_id=current_user.id).first()
+    # 1. Security Check: Does user belong to THIS specific company?
+    mapping = db.query(UserCompanyMapping).filter_by(
+        user_id=current_user.id, 
+        company_id=request.company_id
+    ).first()
+    
     if not mapping:
-        raise HTTPException(status_code=400, detail="User does not belong to any company")
+        raise HTTPException(
+            status_code=403, 
+            detail=f"You are not authorized to apply for leave in company ID {request.company_id}"
+        )
 
-    # Overlap check
+    # Overlap check (Siloed per company)
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
+        LeaveRequest.company_id == request.company_id,
         LeaveRequest.status != "rejected",
         LeaveRequest.start_date <= request.end_date,
         LeaveRequest.end_date >= request.start_date
@@ -56,7 +65,7 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
 
     db_request = LeaveRequest(
         user_id=current_user.id,
-        company_id=mapping.company_id,
+        company_id=request.company_id,
         start_date=request.start_date,
         end_date=request.end_date,
         total_days=total_days,
@@ -71,14 +80,22 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
     return db_request
 
 @router.get("/my", response_model=List[LeaveRequestOut])
-def get_my_leaves(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    mapping = db.query(UserCompanyMapping).filter_by(user_id=current_user.id).first()
+def get_my_leaves(
+    company_id: int = Query(..., description="ID of the company to filter by"),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Security Check
+    mapping = db.query(UserCompanyMapping).filter_by(
+        user_id=current_user.id, 
+        company_id=company_id
+    ).first()
     if not mapping:
-        return []
+        raise HTTPException(status_code=403, detail="Not authorized for this company")
 
     query = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
-        LeaveRequest.company_id == mapping.company_id,
+        LeaveRequest.company_id == company_id,
         LeaveRequest.hidden_for_employee == False
     )
     return query.order_by(LeaveRequest.applied_at.desc()).all()
@@ -174,7 +191,9 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     # We do this while the request is still in its OLD status
     before_snapshots = {}
     for m, y in months_spanned:
-        rb = LeaveStructureService.get_runtime_leave_balance(db, db_request.user_id, month=m, year=y)
+        rb = LeaveStructureService.get_runtime_leave_balance(
+            db, db_request.user_id, company_id=db_request.company_id, month=m, year=y
+        )
         before_snapshots[(m, y)] = float(rb.get(cat_key, {}).get("remaining", 0.0))
 
     # 3. Apply the Status Change and Attendance Sync
@@ -201,7 +220,9 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     # 4. Capture 'AFTER' snapshot for all involved months
     # Now that status is updated, get the new remaining balances
     for m, y in months_spanned:
-        rb = LeaveStructureService.get_runtime_leave_balance(db, db_request.user_id, month=m, year=y)
+        rb = LeaveStructureService.get_runtime_leave_balance(
+            db, db_request.user_id, company_id=db_request.company_id, month=m, year=y
+        )
         after_val = float(rb.get(cat_key, {}).get("remaining", 0.0))
         before_val = before_snapshots[(m, y)]
         
@@ -217,6 +238,7 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     audit_action = "APPROVED" if request.status == "approved" else "REJECTED"
     audit_log = LeaveActivityLog(
         user_id=db_request.user_id,
+        company_id=db_request.company_id,
         leave_type=cat_key,
         action=audit_action,
         action_by=current_user.id,

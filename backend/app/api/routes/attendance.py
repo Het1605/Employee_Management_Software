@@ -44,6 +44,7 @@ def mark_attendance(
 @router.get("/my", response_model=MyAttendanceStats)
 def get_my_attendance(
     user_id: int = Query(...),
+    company_id: int = Query(..., description="ID of the company to filter by"),
     month: int = Query(..., ge=1, le=12),
     year: int = Query(..., ge=2000),
     db: Session = Depends(get_db),
@@ -51,7 +52,7 @@ def get_my_attendance(
 ):
     if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
          raise HTTPException(status_code=403, detail="Not authorized to view other's attendance")
-    return attendance_service.get_my_attendance(db, user_id, month, year)
+    return attendance_service.get_my_attendance(db, user_id, company_id, month, year)
 
 @router.get("/company", response_model=List[UserAttendanceRecord])
 def get_company_attendance(
@@ -66,9 +67,10 @@ def get_company_attendance(
 @router.get("/today", response_model=AttendanceToday)
 def get_today_status(
     user_id: int = Query(...),
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
          raise HTTPException(status_code=403, detail="Not authorized")
-    return attendance_service.get_today_status(db, user_id)
+    return attendance_service.get_today_status(db, user_id, company_id)

@@ -37,7 +37,7 @@ const Header = ({ onToggleSidebar }) => {
           <Menu size={24} />
         </button>
         
-        {(role === 'ADMIN' || role === 'HR') && (
+        {(role === 'ADMIN' || role === 'HR' || companies.length > 1) && (
           <div className={styles.companySelectContainer}>
             <div className={styles.companyIcon}>
               <Building2 size={18} strokeWidth={2.5} />

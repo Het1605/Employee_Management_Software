@@ -133,3 +133,8 @@ class CompanyService:
             ~User.id.in_(assigned_ids),
             User.is_active == True
         ).all()
+    @staticmethod
+    def get_my_companies(db: Session, user_id: int):
+        return db.query(Company).join(UserCompanyMapping).filter(
+            UserCompanyMapping.user_id == user_id
+        ).all()

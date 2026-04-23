@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../../../../core/api/apiClient';
 import { useToast } from '../../../../../contexts/ToastContext';
+import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import styles from '../styles/MyLeaveRequests.module.css';
 import LeaveEditModal from './LeaveEditModal';
 
@@ -33,8 +34,9 @@ const TrashIcon = () => (
 );
 
 const MyLeaveRequests = ({ refreshTrigger }) => {
+    const { selectedCompanyId } = useCompanyContext();
     const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [viewingReason, setViewingReason] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [editingLeave, setEditingLeave] = useState(null);
@@ -42,16 +44,22 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
     const { showToast } = useToast();
 
     const fetchRequests = useCallback(async () => {
+        if (!selectedCompanyId) {
+            setRequests([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const res = await API.get(`/leave-requests/my`);
+            const res = await API.get(`/leave-requests/my?company_id=${selectedCompanyId}`);
             setRequests(res.data);
         } catch (err) {
             console.error("Failed to fetch leave requests", err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedCompanyId]);
 
     useEffect(() => {
         fetchRequests();

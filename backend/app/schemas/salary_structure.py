@@ -73,6 +73,7 @@ class SalaryStructureDetailResponse(BaseModel):
 
 class UserSalaryStructureCreate(BaseModel):
     user_id: int
+    company_id: int
     structure_id: int
     ctc: Decimal = Field(..., gt=0)
 
@@ -85,6 +86,7 @@ class UserSalaryStructureUpdate(BaseModel):
 class UserSalaryStructureResponse(BaseModel):
     id: int
     user_id: int
+    company_id: int
     structure_id: int
     ctc: Decimal
     assigned_at: datetime

@@ -189,6 +189,7 @@ const LeaveStructureManagement = () => {
                         showToast={showToast}
                         onOpenModal={openAssignmentModal}
                         onOpenSetBalance={openSetBalanceModal}
+                        selectedCompanyId={selectedCompanyId}
                     />
                 )}
 
@@ -330,7 +331,7 @@ const LeaveStructuresTab = ({ structures, refresh, showToast, onOpenModal }) => 
     );
 };
 
-const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast, onOpenModal, onOpenSetBalance }) => {
+const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast, onOpenModal, onOpenSetBalance, selectedCompanyId }) => {
     const userMap = users.reduce((acc, u) => ({
         ...acc,
         [u.id]: u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || `User ${u.id}`
@@ -342,9 +343,10 @@ const LeaveAssignmentTab = ({ assignments, users, structures, refresh, showToast
     }), {});
 
     const handleDelete = async (userId, name) => {
+        if (!selectedCompanyId) return;
         if (!window.confirm(`Are you sure you want to remove assignment for ${name}? This will also wipe their current balances.`)) return;
         try {
-            await API.delete(`/leave-assignments/${userId}`);
+            await API.delete(`/leave-assignments/${userId}?company_id=${selectedCompanyId}`);
             showToast('Assignment removed successfully', 'success');
             refresh();
         } catch (err) {
@@ -697,6 +699,7 @@ const LeaveAssignmentModal = ({ isOpen, onClose, onSave, users, structures, edit
    ───────────────────────────────────────────────────────────── */
 
 const SetLeaveBalanceModal = ({ isOpen, onClose, user, structureName, showToast, refresh }) => {
+    const { selectedCompanyId } = useCompanyContext();
     const [currentBalances, setCurrentBalances] = useState({ PL: 0, CL: 0, SL: 0 });
     const [newBalances, setNewBalances] = useState({ PL: '', CL: '', SL: '' });
     const [loading, setLoading] = useState(false);
@@ -711,9 +714,10 @@ const SetLeaveBalanceModal = ({ isOpen, onClose, user, structureName, showToast,
         
         let isMounted = true;
         const fetchBalance = async () => {
+            if (!selectedCompanyId) return;
             setLoading(true);
             try {
-                const res = await API.get(`/leave-balance/${user.id}`);
+                const res = await API.get(`/leave-balance/${user.id}?company_id=${selectedCompanyId}`);
                 if (isMounted) {
                     const data = res.data;
                     const balances = {
@@ -743,7 +747,7 @@ const SetLeaveBalanceModal = ({ isOpen, onClose, user, structureName, showToast,
         fetchBalance();
         
         return () => { isMounted = false; };
-    }, [isOpen, user, showToast]);
+    }, [isOpen, user, showToast, selectedCompanyId]);
 
     const handleInputChange = (type, val) => {
         setNewBalances(prev => ({
@@ -768,6 +772,7 @@ const SetLeaveBalanceModal = ({ isOpen, onClose, user, structureName, showToast,
 
         const payload = {
             user_id: user.id,
+            company_id: Number(selectedCompanyId),
             balances: {
                 PL: newBalances.PL !== '' ? Number(newBalances.PL) : currentBalances.PL,
                 CL: newBalances.CL !== '' ? Number(newBalances.CL) : currentBalances.CL,

@@ -215,7 +215,7 @@ const SalaryStructureManagement = () => {
             onDelete={async (assignment) => {
               if (!window.confirm('Are you sure you want to delete this assignment?')) return;
               try {
-                await API.delete(`/user-salary-structures/${assignment.id}`);
+                await API.delete(`/user-salary-structures/${assignment.id}?company_id=${selectedCompanyId}`);
                 refreshAssignments();
                 showToast('Assignment deleted', 'success');
               } catch (err) {
@@ -243,7 +243,7 @@ const SalaryStructureManagement = () => {
 
               try {
                 if (editingAssignment) {
-                  await API.put(`/user-salary-structures/${editingAssignment.id}`, {
+                  await API.put(`/user-salary-structures/${editingAssignment.id}?company_id=${selectedCompanyId}`, {
                     user_id: Number(data.user_id),
                     structure_id: Number(data.structure_id),
                     ctc: Number(data.ctc),
@@ -252,6 +252,7 @@ const SalaryStructureManagement = () => {
                 } else {
                   await API.post('/user-salary-structures', {
                     user_id: Number(data.user_id),
+                    company_id: Number(selectedCompanyId),
                     structure_id: Number(data.structure_id),
                     ctc: Number(data.ctc),
                   });

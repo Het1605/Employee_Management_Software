@@ -145,4 +145,5 @@ class LeaveBalancesDict(BaseModel):
 
 class LeaveBalanceSetPayload(BaseModel):
     user_id: int
+    company_id: int
     balances: LeaveBalancesDict

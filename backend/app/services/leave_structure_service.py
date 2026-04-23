@@ -197,16 +197,22 @@ class LeaveStructureService:
     # ──────────────────────────────────────────
 
     @staticmethod
-    def get_runtime_leave_balance(db: Session, user_id: int, month: Optional[int] = None, year: Optional[int] = None) -> dict:
+    def get_runtime_leave_balance(db: Session, user_id: int, company_id: int, month: Optional[int] = None, year: Optional[int] = None) -> dict:
         """
-        Calculates leave balance in real-time.
+        Calculates leave balance in real-time for a SPECIFIC company.
         Implements rigorous Remaining Carry-Forward logic per month.
         """
-        from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance
+        from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance, UserCompanyMapping
         from app.models.leave_structure import AllocationType, ResetPolicy
         from datetime import date
+        from fastapi import HTTPException
 
-        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        # 1. Security Check: Does user belong to this company?
+        mapping = db.query(UserCompanyMapping).filter_by(user_id=user_id, company_id=company_id).first()
+        if not mapping:
+            raise HTTPException(status_code=403, detail="User is not assigned to this company")
+
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id, company_id=company_id).first()
         empty = {"allocated": 0, "used": 0.0, "remaining": 0.0, "excess": 0.0, "encashable": 0.0, "has_snapshot": False}
         
         if not assignment:
@@ -230,7 +236,11 @@ class LeaveStructureService:
             extra_allocation = int(detail.total_days) % 12
             policy = detail.reset_policy
             
-            snapshot = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=category).first()
+            snapshot = db.query(LeaveBalance).filter_by(
+                user_id=user_id, 
+                company_id=company_id, 
+                leave_type=category
+            ).first()
             has_snapshot = snapshot is not None
             
             if snapshot:
@@ -268,6 +278,7 @@ class LeaveStructureService:
                 # Overlap logic: (ReqStart <= MonthEnd) AND (ReqEnd >= MonthStart)
                 requests = db.query(LeaveRequest).filter(
                     LeaveRequest.user_id == user_id,
+                    LeaveRequest.company_id == company_id,
                     LeaveRequest.leave_category == LeaveCategory[category],
                     LeaveRequest.status == "approved",
                     LeaveRequest.start_date <= m_end,
@@ -344,7 +355,8 @@ class LeaveStructureService:
                 "remaining": round(final_remaining, 2),
                 "excess": round(final_excess, 2),
                 "encashable": round(encashable_days, 2),
-                "has_snapshot": has_snapshot
+                "has_snapshot": has_snapshot,
+                "company_id": company_id
             }
 
         return response
@@ -354,8 +366,10 @@ class LeaveStructureService:
     # ──────────────────────────────────────────
 
     @staticmethod
-    def set_manual_balance(db: Session, user_id: int, balances, action_by_id: int) -> List[str]:
+    def set_manual_balance(db: Session, user_id: int, company_id: int, balances, action_by_id: int, action_by_role: str = "ADMIN") -> List[str]:
         from app.db.models import LeaveBalance, LeaveActivityLog
+        from datetime import date
+        from decimal import Decimal
         
         user = db.query(User).filter_by(id=user_id).first()
         if not user:
@@ -371,31 +385,20 @@ class LeaveStructureService:
         for leave_type, new_balance in balance_dict.items():
             if new_balance is None: continue
             
-            existing = db.query(LeaveBalance).filter_by(user_id=user_id, leave_type=leave_type).first()
+            existing = db.query(LeaveBalance).filter_by(
+                user_id=user_id, 
+                company_id=company_id, 
+                leave_type=leave_type
+            ).first()
             
             # Skip if balance is unchanged to avoid duplicate audit logs
             new_bal_dec = Decimal(str(new_balance))
             if existing and existing.balance == new_bal_dec:
                 continue
                 
-            old_balance = existing.balance if existing else None
-            
-            # Audit row (New JSONB Structure)
-            month_label = f"{pycal.month_name[current_month]} {current_year}"
-            audit = LeaveActivityLog(
-                user_id=user_id,
-                leave_type=leave_type,
-                action="BALANCE_SET",
-                action_by=action_by_id,
-                action_by_role="ADMIN", # Manual setting is strictly an Admin/HR action in this system
-                balance_changes=[{
-                    "month": month_label,
-                    "before": float(old_balance) if old_balance is not None else 0.0,
-                    "after": float(new_balance)
-                }],
-                details={"reason": "Manual Balance Adjustment"}
-            )
-            db.add(audit)
+            # Get 'Before' Snapshot for audit using company_id
+            rb_before = LeaveStructureService.get_runtime_leave_balance(db, user_id, company_id)
+            before_val = float(rb_before.get(leave_type, {}).get("remaining", 0.0))
             
             # Upsert
             if existing:
@@ -405,13 +408,37 @@ class LeaveStructureService:
             else:
                 new_record = LeaveBalance(
                     user_id=user_id,
+                    company_id=company_id,
                     leave_type=leave_type,
                     balance=new_balance,
                     set_month=current_month,
                     set_year=current_year
                 )
                 db.add(new_record)
-                
+            
+            db.flush()
+
+            # Get 'After' Snapshot for audit using company_id
+            rb_after = LeaveStructureService.get_runtime_leave_balance(db, user_id, company_id)
+            after_val = float(rb_after.get(leave_type, {}).get("remaining", 0.0))
+            
+            # Audit row (New JSONB Structure)
+            month_label = f"{pycal.month_name[current_month]} {current_year}"
+            audit = LeaveActivityLog(
+                user_id=user_id,
+                company_id=company_id,
+                leave_type=leave_type,
+                action="BALANCE_SET",
+                action_by=action_by_id,
+                action_by_role=action_by_role,
+                balance_changes=[{
+                    "month": month_label,
+                    "before": before_val,
+                    "after": after_val
+                }],
+                details={"reason": "Manual Balance Adjustment", "manual_input": float(new_balance)}
+            )
+            db.add(audit)
             updated_types.append(leave_type)
             
         db.commit()
@@ -432,18 +459,18 @@ class LeaveStructureService:
 
     @staticmethod
     def update_assignment(
-        db: Session, user_id: int, payload: LeaveAssignmentUpdate
+        db: Session, user_id: int, company_id: int, payload: LeaveAssignmentUpdate
     ) -> LeaveAssignment:
-        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id, company_id=company_id).first()
         if not assignment:
-            raise ValueError(f"No leave assignment found for user {user_id}.")
+            raise ValueError(f"No leave assignment found for user {user_id} in this company.")
 
         new_structure = db.query(LeaveStructure).filter_by(
             id=payload.structure_id,
-            company_id=assignment.company_id
+            company_id=company_id
         ).first()
         if not new_structure:
-            raise ValueError(f"Leave structure {payload.structure_id} not found.")
+            raise ValueError(f"Leave structure {payload.structure_id} not found in this company.")
 
         assignment.structure_id = payload.structure_id
         db.commit()
@@ -455,13 +482,14 @@ class LeaveStructureService:
     # ──────────────────────────────────────────
 
     @staticmethod
-    def delete_assignment(db: Session, user_id: int) -> None:
-        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+    def delete_assignment(db: Session, user_id: int, company_id: int) -> None:
+        assignment = db.query(LeaveAssignment).filter_by(user_id=user_id, company_id=company_id).first()
         if not assignment:
-            raise ValueError(f"No assignment found for user {user_id}.")
+            raise ValueError(f"No assignment found for user {user_id} in this company.")
 
         db.delete(assignment)
         db.commit()
+        # Note: Depending on business rules, you might want to also delete LeaveBalances for this user/company here
 
     # ──────────────────────────────────────────
     # 7. Update Leave Structure

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../../../core/api/apiClient';
 import MainLayout from '../../../../layout/MainLayout/js/MainLayout';
+import { useCompanyContext } from '../../../../contexts/CompanyContext';
 import styles from '../styles/AttendancePage.module.css';
 
 const AttendancePage = () => {
+    const { selectedCompanyId } = useCompanyContext();
     const [status, setStatus] = useState('present');
     const [todayStatus, setTodayStatus] = useState(null);
     const [dayType, setDayType] = useState('working');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
     const [isLocked, setIsLocked] = useState(false);
     const [lockMessage, setLockMessage] = useState('');
@@ -19,16 +21,25 @@ const AttendancePage = () => {
     });
 
     useEffect(() => {
-        fetchTodayStatus();
-    }, []);
+        if (selectedCompanyId) {
+            fetchTodayStatus();
+        } else {
+            setTodayStatus(null);
+            setIsLocked(false);
+        }
+    }, [selectedCompanyId]);
 
     const fetchTodayStatus = async () => {
+        if (!selectedCompanyId) return;
         setLoading(true);
         setStatus('present'); // Default to present for employee marking
         try {
             const userId = localStorage.getItem('userId');
             const response = await API.get('/attendance/today', {
-                params: { user_id: userId }
+                params: { 
+                    user_id: userId,
+                    company_id: selectedCompanyId
+                }
             });
             setTodayStatus(response.data.status);
             setDayType(response.data.day_type);
@@ -46,12 +57,17 @@ const AttendancePage = () => {
     };
 
     const handleMarkAttendance = async () => {
-        if (isLocked) return;
+        if (isLocked || !selectedCompanyId) return;
 
         try {
             const userId = localStorage.getItem('userId');
             await API.post('/attendance/mark', 
-                { status: 'present', user_id: userId, actor_id: userId }
+                { 
+                    status: 'present', 
+                    user_id: userId, 
+                    actor_id: userId,
+                    company_id: Number(selectedCompanyId)
+                }
             );
             setMessage({ text: 'Attendance marked successfully', type: 'success' });
             setTodayStatus('present');

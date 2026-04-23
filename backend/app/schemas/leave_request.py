@@ -14,6 +14,7 @@ class LeaveDurationType(str, enum.Enum):
     HALF_DAY = "HALF_DAY"
 
 class LeaveRequestBase(BaseModel):
+    company_id: int
     start_date: date
     end_date: date
     reason: Optional[str] = None

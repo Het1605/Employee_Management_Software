@@ -96,7 +96,7 @@ class DocumentService:
         return value.lower() or 'document'
 
     @staticmethod
-    def _calculate_approved_leaves_for_month(db: Session, user_id: int, year: int, month: int) -> int:
+    def _calculate_approved_leaves_for_month(db: Session, user_id: int, company_id: int, year: int, month: int) -> int:
         from app.db.models import LeaveRequest
         from datetime import date
         from calendar import monthrange
@@ -107,6 +107,7 @@ class DocumentService:
         
         leaves = db.query(LeaveRequest).filter(
             LeaveRequest.user_id == user_id,
+            LeaveRequest.company_id == company_id,
             LeaveRequest.status == "approved",
             LeaveRequest.is_deleted == False,
             LeaveRequest.start_date <= month_end,
@@ -127,7 +128,10 @@ class DocumentService:
         company = DocumentService._get_company(db, company_id)
         
         # 1. Structure & CTC
-        assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.user_id == user.id).first()
+        assignment = db.query(UserSalaryStructure).filter(
+            UserSalaryStructure.user_id == user.id,
+            UserSalaryStructure.company_id == company.id
+        ).first()
         if not assignment or not assignment.ctc:
             raise HTTPException(status_code=400, detail="Salary structure or CTC not assigned to user")
             
@@ -138,7 +142,7 @@ class DocumentService:
         monthly_base = Decimal(str(ctc)) / Decimal('12')
 
         # 3. Attendance
-        att_summary = get_my_attendance(db, user.id, int(month), int(year))
+        att_summary = get_my_attendance(db, user.id, company.id, int(month), int(year))
         
         # 4. Payable Days Reconciliation
         from app.db.models import LeaveRequest, LeaveDurationType
@@ -153,6 +157,7 @@ class DocumentService:
         # A. Get Approved Leaves for this month
         leaves = db.query(LeaveRequest).filter(
             LeaveRequest.user_id == user.id,
+            LeaveRequest.company_id == company.id,
             LeaveRequest.status == "approved",
             LeaveRequest.start_date <= month_end,
             LeaveRequest.end_date >= month_start
@@ -168,7 +173,7 @@ class DocumentService:
 
         # B. Get Dynamic Runtime Balances
         # Note: get_runtime_leave_balance now returns the cumulative/dynamic state for the year.
-        balance_summary = LeaveStructureService.get_runtime_leave_balance(db, user.id, month=int(month), year=int(year))
+        balance_summary = LeaveStructureService.get_runtime_leave_balance(db, user.id, company_id=company.id, month=int(month), year=int(year))
         
         # C. Re-calculate Reconciliation based on Runtime Balance
         # available_balance in the context of this month's salary logic
@@ -325,7 +330,10 @@ class DocumentService:
         company = DocumentService._get_company(db, company_id)
         
         # 1. Structure & CTC
-        assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.user_id == user.id).first()
+        assignment = db.query(UserSalaryStructure).filter(
+            UserSalaryStructure.user_id == user.id,
+            UserSalaryStructure.company_id == company.id
+        ).first()
         if not assignment or not assignment.ctc:
             raise HTTPException(status_code=400, detail="Salary structure or CTC not assigned to user")
             
@@ -361,9 +369,10 @@ class DocumentService:
             month_end = date(int(year), month_idx, last_day)
 
             # A. Attendance & Approved Leaves
-            att_summary = get_my_attendance(db, user.id, month_idx, int(year))
+            att_summary = get_my_attendance(db, user.id, company.id, month_idx, int(year))
             leaves = db.query(LeaveRequest).filter(
                 LeaveRequest.user_id == user.id,
+                LeaveRequest.company_id == company.id,
                 LeaveRequest.status == "approved",
                 LeaveRequest.start_date <= month_end,
                 LeaveRequest.end_date >= month_start
@@ -378,7 +387,7 @@ class DocumentService:
                     curr += timedelta(days=1)
 
             # B. Get Dynamic Runtime Balances
-            balance_summary = LeaveStructureService.get_runtime_leave_balance(db, user.id, month=month_idx, year=int(year))
+            balance_summary = LeaveStructureService.get_runtime_leave_balance(db, user.id, company_id=company.id, month=month_idx, year=int(year))
             
             # C. Process Attendance Days & Raw Absences
             raw_abs_m = Decimal('0')

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import API from '../../../../../core/api/apiClient';
+import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import styles from '../styles/LeaveRequestForm.module.css';
 
 const LeaveRequestForm = ({ onLeaveCreated }) => {
     const today = new Date().toISOString().split('T')[0];
+    const { selectedCompanyId } = useCompanyContext();
     
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
@@ -16,6 +18,11 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        if (!selectedCompanyId) {
+            setMessage({ text: 'Please select a company in the header first.', type: 'error' });
+            return;
+        }
+
         if (!startDate || !endDate) {
             setMessage({ text: 'Please select required dates', type: 'error' });
             return;
@@ -32,6 +39,7 @@ const LeaveRequestForm = ({ onLeaveCreated }) => {
 
         try {
             await API.post('/leave-requests', {
+                company_id: parseInt(selectedCompanyId),
                 start_date: startDate,
                 end_date: endDate,
                 reason: reason,

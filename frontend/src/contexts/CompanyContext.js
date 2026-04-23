@@ -19,8 +19,11 @@ export const CompanyProvider = ({ children }) => {
   useEffect(() => {
     const loadCompanies = async () => {
       setLoadingCompanies(true);
+      const role = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
+      const endpoint = (role === 'ADMIN' || role === 'HR') ? '/companies' : '/companies/my';
+      
       try {
-        const res = await API.get('/companies');
+        const res = await API.get(endpoint);
         const list = res.data || [];
         setCompanies(list);
         

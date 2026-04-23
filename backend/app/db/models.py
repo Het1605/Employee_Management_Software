@@ -128,12 +128,18 @@ class UserSalaryStructure(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     structure_id = Column(Integer, ForeignKey("salary_structure_definitions.id"), nullable=False)
     ctc = Column(Numeric(precision=15, scale=2), nullable=False)
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
 
     structure = relationship("SalaryStructureDefinition", back_populates="user_assignments")
     user = relationship("User")
+    company = relationship("Company")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'company_id', name='uq_user_salary_per_company'),
+    )
 
 
 class DocumentType(Base):
@@ -188,7 +194,7 @@ class Attendance(Base):
     company = relationship("Company")
 
     __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='uq_user_attendance_per_day'),
+        UniqueConstraint('user_id', 'company_id', 'date', name='uq_user_attendance_per_day_per_company'),
         Index('idx_company_attendance_date', 'company_id', 'date'),
         Index('idx_user_attendance_date', 'user_id', 'date')
     )
@@ -261,14 +267,18 @@ class LeaveBalance(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False) # PL, CL, SL
     balance = Column(Numeric(precision=5, scale=2), default=0)
     set_month = Column(Integer, nullable=False)
     set_year = Column(Integer, nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
+    user = relationship("User")
+    company = relationship("Company")
+
     __table_args__ = (
-        UniqueConstraint('user_id', 'leave_type', name='uq_user_leave_type_balance'),
+        UniqueConstraint('user_id', 'company_id', 'leave_type', name='uq_user_company_leave_type_balance'),
     )
 
 
@@ -277,6 +287,7 @@ class LeaveActivityLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False)
     action = Column(String, default="BALANCE_SET")
     action_by = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -287,3 +298,4 @@ class LeaveActivityLog(Base):
 
     user = relationship("User", foreign_keys=[user_id])
     admin = relationship("User", foreign_keys=[action_by])
+    company = relationship("Company")

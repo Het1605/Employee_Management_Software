@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useCompanyContext } from '../../../../../contexts/CompanyContext';
 import MainLayout from '../../../../../layout/MainLayout/js/MainLayout';
 import LeaveRequestForm from '../../components/js/LeaveRequestForm';
 import MyLeaveRequests from '../../components/js/MyLeaveRequests';
@@ -9,6 +10,7 @@ import styles from '../styles/LeaveManagementPage.module.css';
 
 const LeaveManagementPage = () => {
     const location = useLocation();
+    const { selectedCompanyId } = useCompanyContext();
     const isApplyOnly = location.pathname === '/apply-leave';
 
     // Standardized role checking from local storage
@@ -22,15 +24,16 @@ const LeaveManagementPage = () => {
     const userId = localStorage.getItem('userId');
 
     React.useEffect(() => {
-        if (userId) {
+        if (userId && selectedCompanyId) {
             fetchBalance();
         }
-    }, [userId, refreshTrigger]);
+    }, [userId, refreshTrigger, selectedCompanyId]);
 
     const fetchBalance = async () => {
+        if (!selectedCompanyId) return;
         setLoading(true);
         try {
-            const res = await API.get(`/leave-balance/${userId}`);
+            const res = await API.get(`/leave-balance/${userId}?company_id=${selectedCompanyId}`);
             if (res.data) {
                 setBalances(res.data);
             }

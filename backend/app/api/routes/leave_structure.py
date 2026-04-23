@@ -181,16 +181,25 @@ def list_leave_assignments(
 @router.get(
     "/leave-assignments/{user_id}",
     response_model=LeaveAssignmentOut,
-    summary="Get the active leave assignment for a user",
+    summary="Get the active leave assignment for a user in a specific company",
 )
 def get_user_assignment(
     user_id: int,
+    company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assignment = db.query(LeaveAssignment).filter_by(user_id=user_id).first()
+    # Security Check
+    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    assignment = db.query(LeaveAssignment).filter_by(
+        user_id=user_id, 
+        company_id=company_id
+    ).first()
+    
     if not assignment:
-        raise HTTPException(status_code=404, detail=f"No leave structure assigned to user {user_id}.")
+        raise HTTPException(status_code=404, detail=f"No leave structure assigned to user {user_id} in this company.")
     return assignment
 
 
@@ -202,12 +211,13 @@ def get_user_assignment(
 def update_leave_assignment(
     user_id: int,
     payload: LeaveAssignmentUpdate,
+    company_id: int = Query(..., description="ID of the company context"),
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
 
     try:
-        assignment = LeaveStructureService.update_assignment(db, user_id, payload)
+        assignment = LeaveStructureService.update_assignment(db, user_id, company_id, payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -221,12 +231,13 @@ def update_leave_assignment(
 )
 def delete_leave_assignment(
     user_id: int,
+    company_id: int = Query(..., description="ID of the company context"),
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
 
     try:
-        LeaveStructureService.delete_assignment(db, user_id)
+        LeaveStructureService.delete_assignment(db, user_id, company_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -246,7 +257,14 @@ def set_manual_leave_balance(
 ):
 
     try:
-        updated_types = LeaveStructureService.set_manual_balance(db, payload.user_id, payload.balances, current_user.id)
+        updated_types = LeaveStructureService.set_manual_balance(
+            db, 
+            user_id=payload.user_id, 
+            company_id=payload.company_id,
+            balances=payload.balances, 
+            action_by_id=current_user.id,
+            action_by_role=current_user.role
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -261,31 +279,23 @@ def set_manual_leave_balance(
 )
 def get_user_leave_balance(
     user_id: int,
+    company_id: int = Query(..., description="ID of the company context"),
     month: Optional[int] = Query(None, ge=1, le=12),
     year: Optional[int] = Query(None, ge=2000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns real-time leave balance (Allocated, Used, Remaining, Excess) for PL, CL, SL.
-    Calculation is done on-the-fly based on tenure and approved requests.
-    Supports optional month and year for point-in-time calculation.
+    Returns real-time leave balance for a SPECIFIC company.
     """
     # Authorization check
     if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
         raise HTTPException(status_code=403, detail="Not authorized to view this user's balance.")
 
-    # Determine as_of_date
-    today = date.today()
-    target_year = year if year else today.year
-    target_month = month if month else today.month
-    
-    # Get the last day of that month
-    _, last_day = calendar.monthrange(target_year, target_month)
-    as_of_date = date(target_year, target_month, last_day)
-
     try:
-        balance = LeaveStructureService.get_runtime_leave_balance(db, user_id, month=target_month, year=target_year)
+        balance = LeaveStructureService.get_runtime_leave_balance(
+            db, user_id, company_id=company_id, month=month, year=year
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

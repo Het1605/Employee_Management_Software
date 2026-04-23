@@ -136,26 +136,29 @@ def list_assignments(
 @assign_router.get("/{assignment_id}", response_model=UserSalaryStructureResponse)
 def get_assignment(
     assignment_id: int, 
+    company_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
 ):
-    return SalaryStructureService.get_assignment(db, assignment_id)
+    return SalaryStructureService.get_assignment(db, assignment_id, company_id)
 
 
 @assign_router.put("/{assignment_id}", response_model=UserSalaryStructureResponse)
 def update_assignment(
     assignment_id: int, 
     data: UserSalaryStructureUpdate, 
+    company_id: int,
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return SalaryStructureService.update_assignment(db, assignment_id, data)
+    return SalaryStructureService.update_assignment(db, assignment_id, company_id, data)
 
 
 @assign_router.delete("/{assignment_id}")
 def delete_assignment(
     assignment_id: int, 
+    company_id: int,
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return SalaryStructureService.delete_assignment(db, assignment_id)
+    return SalaryStructureService.delete_assignment(db, assignment_id, company_id)

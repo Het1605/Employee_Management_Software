@@ -25,6 +25,13 @@ def get_companies(
 ):
     return CompanyService.get_companies(db)
 
+@router.get("/my", response_model=List[CompanyResponse])
+def get_my_companies(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return CompanyService.get_my_companies(db, current_user.id)
+
 @router.get("/{company_id}", response_model=CompanyResponse)
 def get_company(
     company_id: int, 

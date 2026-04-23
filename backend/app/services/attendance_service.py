@@ -31,6 +31,7 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
     from app.db.models import LeaveRequest
     approved_leave = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == user_id,
+        LeaveRequest.company_id == company_id,
         LeaveRequest.status == "approved",
         LeaveRequest.start_date <= final_date,
         LeaveRequest.end_date >= final_date
@@ -76,6 +77,7 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
     # UPSERT: Always store records, including 'absent'
     existing = db.query(Attendance).filter(
         Attendance.user_id == user_id,
+        Attendance.company_id == company_id,
         Attendance.date == final_date
     ).first()
 
@@ -94,24 +96,18 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
     db.commit()
     return {"message": f"Attendance recorded as {status_str}"}
 
-def get_my_attendance(db: Session, user_id: int, month: int, year: int):
+def get_my_attendance(db: Session, user_id: int, company_id: int, month: int, year: int):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # Get associated company
-    mapping = db.query(UserCompanyMapping).filter(UserCompanyMapping.user_id == user_id).first()
-    if not mapping:
-        raise HTTPException(status_code=404, detail="User not assigned to any company")
-    
-    company_id = mapping.company_id
-    
     start_date = date(year, month, 1)
     last_day = calendar.monthrange(year, month)[1]
     end_date = date(year, month, last_day)
 
     records = db.query(Attendance).filter(
         Attendance.user_id == user_id,
+        Attendance.company_id == company_id,
         Attendance.date >= start_date,
         Attendance.date <= end_date
     ).all()
@@ -250,14 +246,13 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
 
     return response
 
-def get_today_status(db: Session, user_id: int):
+def get_today_status(db: Session, user_id: int, company_id: int):
     today = date.today()
     from app.db.models import LeaveRequest, LeaveDurationType
-    mapping = db.query(UserCompanyMapping).filter(UserCompanyMapping.user_id == user_id).first()
-    company_id = mapping.company_id if mapping else None
     
     record = db.query(Attendance).filter(
         Attendance.user_id == user_id,
+        Attendance.company_id == company_id,
         Attendance.date == today
     ).first()
     
@@ -267,6 +262,7 @@ def get_today_status(db: Session, user_id: int):
     # Check for approved leave lock
     approved_leave = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == user_id,
+        LeaveRequest.company_id == company_id,
         LeaveRequest.status == "approved",
         LeaveRequest.start_date <= today,
         LeaveRequest.end_date >= today
@@ -314,7 +310,7 @@ def sync_leave_to_attendance(
                 target_status = "absent" if duration_type == "FULL_DAY" else "half_day"
                 
                 # UPSERT
-                existing = db.query(Attendance).filter_by(user_id=user_id, date=curr).first()
+                existing = db.query(Attendance).filter_by(user_id=user_id, company_id=company_id, date=curr).first()
                 if existing:
                     existing.status = target_status
                 else:
@@ -329,7 +325,7 @@ def sync_leave_to_attendance(
                 # If the employee had a manual "Present" record before approval, we should keep it?
                 # The design says "Attendance must always reflect final state".
                 # To be safe, we remove any attendance for those dates so the user can re-mark.
-                db.query(Attendance).filter_by(user_id=user_id, date=curr).delete()
+                db.query(Attendance).filter_by(user_id=user_id, company_id=company_id, date=curr).delete()
         
         curr += timedelta(days=1)
     

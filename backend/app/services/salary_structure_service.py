@@ -209,7 +209,10 @@ class SalaryStructureService:
     # ---------- User Salary Structures ----------
     @staticmethod
     def create_assignment(db: Session, data):
-        SalaryStructureService.get_definition(db, data.structure_id)
+        structure = SalaryStructureService.get_definition(db, data.structure_id)
+        if structure.company_id != data.company_id:
+            raise HTTPException(status_code=400, detail="Structure company mismatch")
+
         user = db.query(User).filter(User.id == data.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -222,30 +225,32 @@ class SalaryStructureService:
             return assignment
         except IntegrityError:
             db.rollback()
-            raise HTTPException(status_code=400, detail="Assignment already exists or invalid")
+            raise HTTPException(status_code=400, detail="Assignment already exists for this company or invalid data")
 
     @staticmethod
     def list_assignments(db: Session, company_id: Optional[int] = None):
         query = db.query(UserSalaryStructure)
         if company_id is not None:
-            query = (
-                query
-                .join(SalaryStructureDefinition, SalaryStructureDefinition.id == UserSalaryStructure.structure_id)
-                .filter(SalaryStructureDefinition.company_id == company_id)
-            )
+            query = query.filter(UserSalaryStructure.company_id == company_id)
         return query.all()
 
     @staticmethod
-    def get_assignment(db: Session, assignment_id: int):
-        assignment = db.query(UserSalaryStructure).filter(UserSalaryStructure.id == assignment_id).first()
+    def get_assignment(db: Session, assignment_id: int, company_id: Optional[int] = None):
+        query = db.query(UserSalaryStructure).filter(UserSalaryStructure.id == assignment_id)
+        if company_id is not None:
+            query = query.filter(UserSalaryStructure.company_id == company_id)
+        assignment = query.first()
         if not assignment:
             raise HTTPException(status_code=404, detail="Assignment not found")
         return assignment
 
     @staticmethod
-    def update_assignment(db: Session, assignment_id: int, data):
-        assignment = SalaryStructureService.get_assignment(db, assignment_id)
-        SalaryStructureService.get_definition(db, data.structure_id)
+    def update_assignment(db: Session, assignment_id: int, company_id: int, data):
+        assignment = SalaryStructureService.get_assignment(db, assignment_id, company_id)
+        structure = SalaryStructureService.get_definition(db, data.structure_id)
+        if structure.company_id != company_id:
+            raise HTTPException(status_code=400, detail="Structure company mismatch")
+        
         assignment.structure_id = data.structure_id
         assignment.ctc = data.ctc
         db.commit()
@@ -253,8 +258,8 @@ class SalaryStructureService:
         return assignment
 
     @staticmethod
-    def delete_assignment(db: Session, assignment_id: int):
-        assignment = SalaryStructureService.get_assignment(db, assignment_id)
+    def delete_assignment(db: Session, assignment_id: int, company_id: int):
+        assignment = SalaryStructureService.get_assignment(db, assignment_id, company_id)
         db.delete(assignment)
         db.commit()
         return {"detail": "Deleted"}
