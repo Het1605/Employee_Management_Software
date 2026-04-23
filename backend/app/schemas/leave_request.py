@@ -1,5 +1,5 @@
 from pydantic import BaseModel, root_validator, validator
-from typing import Optional
+from typing import List, Optional
 from datetime import date, datetime
 from decimal import Decimal
 import enum
@@ -95,11 +95,10 @@ class LeaveActivityLogOut(BaseModel):
     id: int
     user_id: int
     leave_type: str
-    old_balance: Optional[Decimal] = None
-    new_balance: Decimal
     action: str
     action_by: int
-    impact_month: Optional[str] = None
+    action_by_role: Optional[str] = None
+    balance_changes: List[dict]
     details: Optional[dict] = None
     timestamp: datetime
     

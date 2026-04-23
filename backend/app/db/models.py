@@ -278,12 +278,11 @@ class LeaveActivityLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False)
-    old_balance = Column(Numeric(precision=5, scale=2), nullable=True)
-    new_balance = Column(Numeric(precision=5, scale=2), nullable=False)
     action = Column(String, default="BALANCE_SET")
     action_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action_by_role = Column(String, nullable=True) # ADMIN, HR, MANAGER
+    balance_changes = Column(JSONB, nullable=False) # List of {month, before, after}
     details = Column(JSONB, nullable=True)
-    impact_month = Column(String, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", foreign_keys=[user_id])

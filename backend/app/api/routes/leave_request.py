@@ -155,69 +155,73 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    # AUDIT LOGGING PREPARATION
-    # Capture balance BEFORE change (for the month the leave starts)
-    target_month = db_request.start_date.month
-    target_year = db_request.start_date.year
-    
-    runtime_balances = LeaveStructureService.get_runtime_leave_balance(
-        db, db_request.user_id, month=target_month, year=target_year
-    )
+    # --- ADVANCED MULTI-MONTH AUDIT LOGGING ---
     cat_key = db_request.leave_category.value
-    old_bal = runtime_balances.get(cat_key, {}).get("remaining", 0.0)
+    balance_changes = []
     
-    # Update status
+    # 1. Identify all unique months spanned by this leave
+    months_spanned = []
+    curr = date(db_request.start_date.year, db_request.start_date.month, 1)
+    end_limit = date(db_request.end_date.year, db_request.end_date.month, 1)
+    while curr <= end_limit:
+        months_spanned.append((curr.month, curr.year))
+        if curr.month == 12:
+            curr = date(curr.year + 1, 1, 1)
+        else:
+            curr = date(curr.year, curr.month + 1, 1)
+
+    # 2. Capture 'BEFORE' snapshot for all involved months
+    # We do this while the request is still in its OLD status
+    before_snapshots = {}
+    for m, y in months_spanned:
+        rb = LeaveStructureService.get_runtime_leave_balance(db, db_request.user_id, month=m, year=y)
+        before_snapshots[(m, y)] = float(rb.get(cat_key, {}).get("remaining", 0.0))
+
+    # 3. Apply the Status Change and Attendance Sync
     old_status = db_request.status
     db_request.status = request.status
     db_request.reviewed_by = current_user.id
     db_request.reviewed_at = datetime.utcnow()
     
-    # SYNC ATTENDANCE
     if request.status == "approved":
         attendance_service.sync_leave_to_attendance(
-            db,
-            db_request.user_id,
-            db_request.company_id,
-            db_request.start_date,
-            db_request.end_date,
-            db_request.leave_duration_type.value,
-            is_approved=True
+            db, db_request.user_id, db_request.company_id,
+            db_request.start_date, db_request.end_date,
+            db_request.leave_duration_type.value, is_approved=True
         )
     elif old_status == "approved" and request.status != "approved":
-        # If it was approved and now it's not, cleanup attendance
         attendance_service.sync_leave_to_attendance(
-            db,
-            db_request.user_id,
-            db_request.company_id,
-            db_request.start_date,
-            db_request.end_date,
-            db_request.leave_duration_type.value,
-            is_approved=False
+            db, db_request.user_id, db_request.company_id,
+            db_request.start_date, db_request.end_date,
+            db_request.leave_duration_type.value, is_approved=False
         )
+    
+    db.flush() # Ensure the status change is visible to the next runtime calculation
 
-    db.commit()
-    
-    # LOG AUDIT AFTER COMMIT (to ensure we log the real transition)
-    # Calculate New Balance in the log context
-    new_bal = old_bal
-    mod = 0.5 if db_request.leave_duration_type == LeaveDurationType.HALF_DAY else 1.0
-    impact = float(db_request.total_days) * mod
-    
-    if old_status != "approved" and request.status == "approved":
-        new_bal = old_bal - impact
-    elif old_status == "approved" and request.status != "approved":
-        new_bal = old_bal + impact
+    # 4. Capture 'AFTER' snapshot for all involved months
+    # Now that status is updated, get the new remaining balances
+    for m, y in months_spanned:
+        rb = LeaveStructureService.get_runtime_leave_balance(db, db_request.user_id, month=m, year=y)
+        after_val = float(rb.get(cat_key, {}).get("remaining", 0.0))
+        before_val = before_snapshots[(m, y)]
         
+        # Only record if there was a change or it's the primary month
+        if before_val != after_val or (m == db_request.start_date.month and y == db_request.start_date.year):
+            balance_changes.append({
+                "month": f"{pycal.month_name[m]} {y}",
+                "before": before_val,
+                "after": after_val
+            })
+
+    # 5. Save the Audit Log
     audit_action = "APPROVED" if request.status == "approved" else "REJECTED"
-    
     audit_log = LeaveActivityLog(
         user_id=db_request.user_id,
         leave_type=cat_key,
-        old_balance=old_bal,
-        new_balance=new_bal,
         action=audit_action,
         action_by=current_user.id,
-        impact_month=f"{pycal.month_name[target_month].upper()} {target_year}",
+        action_by_role=current_user.role,
+        balance_changes=balance_changes,
         details={
             "start_date": str(db_request.start_date),
             "end_date": str(db_request.end_date),
@@ -227,7 +231,6 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     )
     db.add(audit_log)
     db.commit()
-
     db.refresh(db_request)
     return db_request
 

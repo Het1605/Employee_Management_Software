@@ -377,15 +377,20 @@ class LeaveStructureService:
                 
             old_balance = existing.balance if existing else None
             
-            # Audit row
+            # Audit row (New JSONB Structure)
+            month_label = f"{pycal.month_name[current_month]} {current_year}"
             audit = LeaveActivityLog(
                 user_id=user_id,
                 leave_type=leave_type,
-                old_balance=old_balance,
-                new_balance=new_balance,
                 action="BALANCE_SET",
                 action_by=action_by_id,
-                impact_month=f"{pycal.month_name[current_month].upper()} {current_year}"
+                action_by_role="ADMIN", # Manual setting is strictly an Admin/HR action in this system
+                balance_changes=[{
+                    "month": month_label,
+                    "before": float(old_balance) if old_balance is not None else 0.0,
+                    "after": float(new_balance)
+                }],
+                details={"reason": "Manual Balance Adjustment"}
             )
             db.add(audit)
             

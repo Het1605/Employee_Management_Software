@@ -81,14 +81,12 @@ const AuditLogPage = () => {
         const userName = `${log.user?.first_name || ''} ${log.user?.last_name || ''}`.toLowerCase();
         const leaveType = (log.leave_type || '').toLowerCase();
         const actionLabel = getActionLabel(log.action).toLowerCase();
-        const impactMonth = (log.impact_month || '').toLowerCase();
         const search = searchTerm.toLowerCase();
 
         const matchesSearch = 
             userName.includes(search) || 
             leaveType.includes(search) || 
-            actionLabel.includes(search) ||
-            impactMonth.includes(search);
+            actionLabel.includes(search);
 
         const matchesFilter = filterType === 'ALL' || log.action === filterType;
         return matchesSearch && matchesFilter;
@@ -131,12 +129,6 @@ const AuditLogPage = () => {
             ) : (
                 <div className={styles.logList}>
                     {filteredLogs.map(log => {
-                        const oldBal = parseFloat(log.old_balance || 0);
-                        const newBal = parseFloat(log.new_balance || 0);
-                        const delta = newBal - oldBal;
-                        const isPositive = delta > 0;
-                        const hasDelta = delta !== 0 && log.old_balance !== null;
-
                         return (
                             <div key={log.id} className={styles.card}>
                                 <div className={styles.cardHeader}>
@@ -164,28 +156,33 @@ const AuditLogPage = () => {
                                         <span className={styles.value}>{log.leave_type}</span>
                                     </div>
 
-                                    <div className={styles.infoItem}>
-                                      <span className={styles.label}>Balance Change</span>
-                                      <div className={styles.balanceRow}>
-                                          <span className={styles.value}>{oldBal.toFixed(2)}</span>
-                                          <ArrowRight size={14} className={styles.arrow} />
-                                          <span className={`${styles.value} ${styles.highlight}`}>
-                                              {newBal.toFixed(2)}
-                                          </span>
-                                          {hasDelta && (
-                                              <span className={`${styles.delta} ${isPositive ? styles.plus : styles.minus}`}>
-                                                  {isPositive ? '+' : ''}{delta.toFixed(2)}
-                                              </span>
-                                          )}
-                                      </div>
-                                    </div>
-
-                                    {log.impact_month && (
-                                        <div className={styles.infoItem}>
-                                            <span className={styles.label}>Impact Month</span>
-                                            <span className={styles.impactMonth}>{log.impact_month}</span>
+                                    <div className={styles.infoItem} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                                        <span className={styles.label}>Balance Change</span>
+                                        <div className={styles.multiMonthContainer}>
+                                            {(log.balance_changes || []).map((change, index) => {
+                                                const before = parseFloat(change.before || 0);
+                                                const after = parseFloat(change.after || 0);
+                                                const delta = after - before;
+                                                return (
+                                                    <div key={index} className={styles.balanceRow}>
+                                                        <span className={styles.monthLabel}>{change.month}</span>
+                                                        <div className={styles.adjustmentLine}>
+                                                            <span className={styles.value}>{before.toFixed(2)}</span>
+                                                            <ArrowRight size={12} className={styles.arrow} />
+                                                            <span className={`${styles.value} ${styles.highlight}`}>
+                                                                {after.toFixed(2)}
+                                                            </span>
+                                                            {delta !== 0 && (
+                                                                <span className={`${styles.delta} ${delta > 0 ? styles.plus : styles.minus}`}>
+                                                                    {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
 
                                     {log.details && log.details.start_date && (
                                         <div className={styles.infoItem}>
@@ -199,7 +196,10 @@ const AuditLogPage = () => {
 
                                     <div className={styles.infoItem}>
                                         <span className={styles.label}>Action By</span>
-                                        <span className={styles.value}>Admin ({log.admin?.first_name || 'System'})</span>
+                                        <span className={styles.value} style={{ textTransform: 'capitalize' }}>
+                                            {log.action_by_role ? log.action_by_role.toLowerCase() : 'System'}{' '}
+                                            ({log.admin?.first_name || 'System'})
+                                        </span>
                                     </div>
                                 </div>
                             </div>
