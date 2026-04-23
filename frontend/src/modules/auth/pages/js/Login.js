@@ -106,8 +106,7 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-              <a href="/change-password" style={{ fontSize: '0.875rem', color: '#6b7280', textDecoration: 'none' }}>Change Password</a>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
               <a href="/forgot-password" style={{ fontSize: '0.875rem', color: '#3b82f6', textDecoration: 'none' }}>Forgot Password?</a>
             </div>
           </div>
