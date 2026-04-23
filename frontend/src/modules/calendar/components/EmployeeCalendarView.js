@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useEmployeeCalendarData } from '../hooks/useEmployeeCalendarData';
+import { useEmployeeCalendarSummary } from '../hooks/useEmployeeCalendarSummary';
 import '../pages/styles/CalendarModule.css';
 
 const generateCalendarDays = (year, month) => {
@@ -17,13 +18,14 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const EmployeeCalendarView = () => {
-    const { workingDays, holidays, overrides, loading: coreLoading } = useEmployeeCalendarData();
-
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDateInfo, setSelectedDateInfo] = useState(null);
-
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
+
+    const { workingDays, holidays, overrides, loading: coreLoading } = useEmployeeCalendarData();
+    const { days: summaryDays, loading: summaryLoading } = useEmployeeCalendarSummary(month, year);
+
+    const [selectedDateInfo, setSelectedDateInfo] = useState(null);
     const dates = useMemo(() => generateCalendarDays(year, month), [year, month]);
 
     const getStatusForDate = (date) => {
@@ -32,33 +34,69 @@ const EmployeeCalendarView = () => {
         const dd = String(date.getDate()).padStart(2, '0');
         const dtStr = `${yyyy}-${mm}-${dd}`;
 
+        // Find summary data first for attendance/leave markers
+        const summaryDay = summaryDays.find(d => d.date === dtStr);
+
         // 1. Overrides
         const override = overrides.find(o => o.date === dtStr);
-        if (override) return { status: override.override_type, name: override.reason || 'Override', source: 'Manual Override', dateStr: dtStr };
+        if (override) return { 
+            status: override.override_type, 
+            name: override.reason || 'Override', 
+            source: 'Manual Override', 
+            summary: summaryDay 
+        };
 
         // 2. Holidays
         const holiday = holidays.find(h => h.date === dtStr);
-        if (holiday) return { status: 'holiday', name: holiday.name, source: `Holiday (${holiday.type})`, dateStr: dtStr };
+        if (holiday) return { 
+            status: 'holiday', 
+            name: holiday.name, 
+            source: `Holiday (${holiday.type})`, 
+            summary: summaryDay 
+        };
 
-        // 3. Working Days
+        // 3. Working Day Logic
         const dayOfWeek = date.getDay();
         const wd = workingDays.find(w => w.day_of_week === dayOfWeek);
+        
+        let baseStatus = { status: 'working', name: 'Working', source: 'Weekly Rule', summary: summaryDay };
+
         if (wd) {
-            // Check for Alternate Saturdays (e.g., 2nd & 4th OFF)
+            // Check for Alternate Saturdays
             if (dayOfWeek === 6 && wd.is_alternate_saturday) {
                 const weekOfMonth = Math.ceil(date.getDate() / 7);
                 const offWeeks = wd.off_saturdays || [];
                 if (offWeeks.includes(weekOfMonth)) {
-                    return { status: 'off', name: 'Off / Rest', source: 'Alternate Saturday Rule', dateStr: dtStr };
+                    return { status: 'off', name: 'Off / Rest', source: 'Alternate Saturday Rule', summary: summaryDay };
                 }
             }
 
-            if (!wd.is_working) return { status: 'off', name: 'Off / Rest', source: 'Weekly Rule', dateStr: dtStr };
-            if (wd.is_half_day) return { status: 'half_day', name: 'Half Day', source: 'Weekly Rule', dateStr: dtStr };
-            return { status: 'working', name: 'Working', source: 'Weekly Rule', dateStr: dtStr };
+            if (!wd.is_working) return { status: 'off', name: 'Off / Rest', source: 'Weekly Rule', summary: summaryDay };
+            if (wd.is_half_day) baseStatus = { status: 'half_day', name: 'Half Day', source: 'Weekly Rule', summary: summaryDay };
         }
 
-        return { status: 'unknown', name: 'Unconfigured', source: 'N/A', dateStr: dtStr };
+        // If it's a working day, check if we have attendance or leave info from summary
+        if (summaryDay) {
+            if (summaryDay.leave) {
+                return { 
+                    status: summaryDay.leave === 'full' ? 'leave-full' : 'leave-half', 
+                    name: summaryDay.leave === 'full' ? 'On Leave' : 'Half Leave', 
+                    source: 'Approved Leave Request', 
+                    summary: summaryDay 
+                };
+            }
+            if (summaryDay.attendance) {
+                const attNames = { present: 'Present', half_day: 'Half Day (P)', absent: 'Absent' };
+                return { 
+                    status: `attendance-${summaryDay.attendance}`, 
+                    name: attNames[summaryDay.attendance] || 'Attendance Mark', 
+                    source: 'Biometric / Manual Mark', 
+                    summary: summaryDay 
+                };
+            }
+        }
+
+        return baseStatus;
     };
 
     const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
@@ -71,6 +109,8 @@ const EmployeeCalendarView = () => {
             date.getMonth() === today.getMonth() &&
             date.getFullYear() === today.getFullYear();
     };
+
+    const isLoading = coreLoading || summaryLoading;
 
     return (
         <div className="calendar-view-card">
@@ -100,7 +140,7 @@ const EmployeeCalendarView = () => {
                 <button onClick={jumpToToday} className="btn-secondary today-btn truncate">Today</button>
             </div>
 
-            {coreLoading ? <div className="loading-state">Loading company calendar...</div> : (
+            {isLoading ? <div className="loading-state">Loading company calendar...</div> : (
                 <div className="calendar-scroll-area">
                     <div className="calendar-high-fidelity">
                         {/* Header Row */}
@@ -115,9 +155,12 @@ const EmployeeCalendarView = () => {
                             const statusObj = getStatusForDate(date);
                             let colorClass = 'loading';
 
-                            if (statusObj.status.includes('working')) colorClass = 'working';
-                            if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
-                            if (statusObj.status.includes('half_day')) colorClass = 'half-day';
+                            // Priority based color coding
+                            if (statusObj.status.includes('leave')) colorClass = 'leave';
+                            else if (statusObj.status.includes('attendance')) colorClass = statusObj.status.split('-')[1];
+                            else if (statusObj.status.includes('working')) colorClass = 'working';
+                            else if (statusObj.status.includes('holiday') || statusObj.status === 'off') colorClass = 'holiday';
+                            else if (statusObj.status.includes('half_day')) colorClass = 'half-day';
 
                             const todayClass = isToday(date) ? 'today-cell' : '';
 

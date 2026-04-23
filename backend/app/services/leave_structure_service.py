@@ -483,13 +483,20 @@ class LeaveStructureService:
 
     @staticmethod
     def delete_assignment(db: Session, user_id: int, company_id: int) -> None:
+        from app.models.leave_structure import LeaveAssignment
+        from app.db.models import LeaveBalance
+
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id, company_id=company_id).first()
         if not assignment:
             raise ValueError(f"No assignment found for user {user_id} in this company.")
 
+        # 1. Delete the assignment mapping
         db.delete(assignment)
+        
+        # 2. Cleanup balance snapshots for this user/company to prevent pollution on re-assignment
+        db.query(LeaveBalance).filter_by(user_id=user_id, company_id=company_id).delete()
+        
         db.commit()
-        # Note: Depending on business rules, you might want to also delete LeaveBalances for this user/company here
 
     # ──────────────────────────────────────────
     # 7. Update Leave Structure

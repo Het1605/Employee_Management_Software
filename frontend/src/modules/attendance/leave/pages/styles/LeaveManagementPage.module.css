@@ -61,3 +61,44 @@
     color: #111827;
     font-weight: 500;
 }
+
+.restrictedCard {
+    background: white;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    border: 1px solid #fee2e2;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin: 2rem 0;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.restrictedIcon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.restrictedCard h3 {
+    color: #111827;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.restrictedCard p {
+    color: #4b5563;
+    max-width: 450px;
+    margin: 0 auto 0.5rem;
+    line-height: 1.5;
+}
+
+.restrictedHint {
+    font-size: 0.9rem;
+    color: #6366f1 !important;
+    font-weight: 500;
+    margin-top: 1rem !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

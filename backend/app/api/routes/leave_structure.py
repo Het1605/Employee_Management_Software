@@ -226,7 +226,6 @@ def update_leave_assignment(
 
 @router.delete(
     "/leave-assignments/{user_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove a user's leave assignment and balances (Admin / HR only)",
 )
 def delete_leave_assignment(
@@ -238,6 +237,7 @@ def delete_leave_assignment(
 
     try:
         LeaveStructureService.delete_assignment(db, user_id, company_id)
+        return {"message": "Assignment and balances successfully removed."}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

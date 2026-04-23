@@ -135,14 +135,17 @@ def get_day_status(
 
 @router.get("/my-config", response_model=CompanyCalendarConfig)
 def get_my_company_calendar_config(
+    company_id: int = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    mapping = db.query(UserCompanyMapping).filter_by(user_id=current_user.id).first()
-    if not mapping:
-        raise HTTPException(status_code=400, detail="User not assigned to any company")
-    
-    company_id = mapping.company_id
+    # Verify user belongs to this company
+    mapping = db.query(UserCompanyMapping).filter_by(
+        user_id=current_user.id, 
+        company_id=company_id
+    ).first()
+    if not mapping and current_user.role not in ["ADMIN", "HR"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this company's calendar")
     
     working_days = CalendarService.get_working_days(db, company_id)
     holidays = CalendarService.get_holidays(db, company_id)
@@ -156,16 +159,19 @@ def get_my_company_calendar_config(
 
 @router.get("/employee-summary", response_model=EmployeeCalendarSummary)
 def get_employee_calendar_summary(
+    company_id: int = Query(...),
     month: int = Query(..., ge=1, le=12),
     year: int = Query(..., ge=2000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    mapping = db.query(UserCompanyMapping).filter_by(user_id=current_user.id).first()
-    if not mapping:
-        raise HTTPException(status_code=400, detail="User not assigned to any company")
-    
-    company_id = mapping.company_id
+    # Verify mapping
+    mapping = db.query(UserCompanyMapping).filter_by(
+        user_id=current_user.id, 
+        company_id=company_id
+    ).first()
+    if not mapping and current_user.role not in ["ADMIN", "HR"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this company's calendar")
     
     # Range
     start_date = date(year, month, 1)
@@ -195,6 +201,7 @@ def get_employee_calendar_summary(
     # 4. Attendance
     attendance = db.query(Attendance).filter(
         Attendance.user_id == current_user.id,
+        Attendance.company_id == company_id,
         Attendance.date >= start_date,
         Attendance.date <= end_date
     ).all()
@@ -203,6 +210,7 @@ def get_employee_calendar_summary(
     # 5. Leaves (Approved)
     leaves = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
+        LeaveRequest.company_id == company_id,
         LeaveRequest.status == "approved",
         LeaveRequest.start_date <= end_date,
         LeaveRequest.end_date >= start_date

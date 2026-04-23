@@ -17,10 +17,10 @@ const LeaveManagementPage = () => {
     const role = localStorage.getItem('role') || 'EMPLOYEE';
     const isPrivileged = ['ADMIN', 'HR', 'MANAGER'].includes(role.toUpperCase());
 
+    const [isAssigned, setIsAssigned] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [balances, setBalances] = useState({ PL: { remaining: 0 }, CL: { remaining: 0 }, SL: { remaining: 0 } });
     const [loading, setLoading] = useState(false);
-
     const userId = localStorage.getItem('userId');
 
     React.useEffect(() => {
@@ -32,12 +32,16 @@ const LeaveManagementPage = () => {
     const fetchBalance = async () => {
         if (!selectedCompanyId) return;
         setLoading(true);
+        setIsAssigned(true);
         try {
             const res = await API.get(`/leave-balance/${userId}?company_id=${selectedCompanyId}`);
             if (res.data) {
                 setBalances(res.data);
             }
         } catch (err) {
+            if (err.response?.status === 403) {
+                setIsAssigned(false);
+            }
             console.error("Error fetching balance:", err);
         } finally {
             setLoading(false);
@@ -64,7 +68,7 @@ const LeaveManagementPage = () => {
 
     // Logic to decide what to show
     const showApproval = isPrivileged && !isApplyOnly;
-    const showApplyForm = !isPrivileged || isApplyOnly;
+    const showApplyForm = (!isPrivileged || isApplyOnly) && isAssigned;
 
     return (
         <>
@@ -82,6 +86,15 @@ const LeaveManagementPage = () => {
                         }
                     </p>
                 </div>
+
+                {!isAssigned && isApplyOnly && (
+                    <div className={styles.restrictedCard}>
+                        <div className={styles.restrictedIcon}>🚫</div>
+                        <h3>Access Restricted</h3>
+                        <p>You are not assigned to this company. You can only apply for leaves in companies where you are an active member.</p>
+                        <p className={styles.restrictedHint}>Please select your home organization from the header to continue.</p>
+                    </div>
+                )}
 
                 {showApplyForm && (
                     <>

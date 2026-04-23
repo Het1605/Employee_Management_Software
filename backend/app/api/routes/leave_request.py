@@ -131,6 +131,7 @@ def update_leave_request(
     # Overlap check (excluding current request)
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == db_request.user_id,
+        LeaveRequest.company_id == db_request.company_id,
         LeaveRequest.id != request_id,
         LeaveRequest.status != "rejected",
         LeaveRequest.start_date <= data.end_date,
