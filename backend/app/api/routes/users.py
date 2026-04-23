@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.models import User
@@ -55,7 +55,13 @@ def delete_user(
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
+    if admin_user.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account."
+        )
     return UserService.delete_user(db, user_id)
+
 @router.put("/{user_id}/reset-password")
 def admin_reset_password(
     user_id: int, 
@@ -80,6 +86,11 @@ def toggle_user_status(
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
+    if admin_user.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own account."
+        )
     return UserService.toggle_user_status(db, user_id, data.is_active)
 
 

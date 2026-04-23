@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
 from app.db import models
@@ -72,17 +72,23 @@ UPLOADS_DIR = "/app/uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
-app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(company_router)
-app.include_router(calendar_router)
-app.include_router(salary_component_router)
-app.include_router(salary_structure_router)
-app.include_router(salary_assign_router)
-app.include_router(document_router)
-app.include_router(attendance_router, prefix="/attendance", tags=["Attendance"])
-app.include_router(leave_request_router)
-app.include_router(leave_structure_router)
+# Centralized API Router with /api prefix
+api_router = APIRouter(prefix="/api")
+
+api_router.include_router(auth_router)
+api_router.include_router(users_router)
+api_router.include_router(company_router)
+api_router.include_router(calendar_router)
+api_router.include_router(salary_component_router)
+api_router.include_router(salary_structure_router)
+api_router.include_router(salary_assign_router)
+api_router.include_router(document_router)
+api_router.include_router(attendance_router, prefix="/attendance", tags=["Attendance"])
+api_router.include_router(leave_request_router)
+api_router.include_router(leave_structure_router)
+
+# Include the centralized API router into the main app
+app.include_router(api_router)
 
 @app.get("/")
 def home():
