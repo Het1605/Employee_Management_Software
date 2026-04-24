@@ -1,9 +1,8 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const API = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: process.env.REACT_APP_API_URL + "/",
 });
 
 // Attach Authorization Token to every API request globally

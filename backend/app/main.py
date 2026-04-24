@@ -90,6 +90,6 @@ api_router.include_router(leave_structure_router)
 # Include the centralized API router into the main app
 app.include_router(api_router)
 
-@app.get("/")
+@app.get("/api")
 def home():
     return {"message": "API running"}
