@@ -4,6 +4,7 @@ from app.db.database import Base, engine
 from app.db import models
 from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides # Register Calendar models
 from app.models.leave_structure import LeaveStructure, LeaveStructureDetail, LeaveAssignment  # Register leave structure models
+from app.models.location import JourneySession, LocationLog # Register Location models
 from app.api.routes.auth import router as auth_router
 from app.api.routes.users import router as users_router
 from app.api.routes.company import router as company_router
@@ -14,6 +15,7 @@ from app.api.routes.document import router as document_router
 from app.api.routes.attendance import router as attendance_router
 from app.api.routes.leave_request import router as leave_request_router
 from app.api.routes.leave_structure import router as leave_structure_router
+from app.api.routes.location import router as location_router
 
 from app.core.config import settings
 from app.db.database import SessionLocal
@@ -86,6 +88,7 @@ api_router.include_router(document_router)
 api_router.include_router(attendance_router, prefix="/attendance", tags=["Attendance"])
 api_router.include_router(leave_request_router)
 api_router.include_router(leave_structure_router)
+api_router.include_router(location_router)
 
 # Include the centralized API router into the main app
 app.include_router(api_router)
