@@ -134,11 +134,15 @@ const JourneyDetailPage = () => {
         </button>
         
         <div className={styles.journeyInfo}>
-          <h2 className={styles.title}>Location History: Employee #{journey.user_id}</h2>
+          <h2 className={styles.title}>Location History: {journey.user_name || `Employee #${journey.user_id}`}</h2>
           <div className={styles.statsBar}>
             <div className={styles.stat}>
               <Clock size={16} />
-              <span>Started: {new Date(journey.start_time).toLocaleTimeString()}</span>
+              <span>Started: {formatTime(journey.start_time)}</span>
+            </div>
+            <div className={styles.stat}>
+              <Clock size={16} />
+              <span>Ended: {journey.status === "ACTIVE" ? "Ongoing" : formatTime(journey.end_time)}</span>
             </div>
             <div className={styles.stat}>
               <MapPin size={16} />

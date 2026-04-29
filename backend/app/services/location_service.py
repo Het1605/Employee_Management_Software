@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func, and_
 from fastapi import HTTPException, status
 from app.models.location import JourneySession, LocationLog, JourneyStatus
@@ -160,7 +160,7 @@ class LocationService:
             query = query.filter(JourneySession.user_id == user_id)
             
         total = query.count()
-        items = query.order_by(JourneySession.start_time.desc()).offset((page - 1) * size).limit(size).all()
+        items = query.options(joinedload(JourneySession.user)).order_by(JourneySession.start_time.desc()).offset((page - 1) * size).limit(size).all()
         
         return {
             "status": "success",
@@ -175,7 +175,7 @@ class LocationService:
 
     @staticmethod
     async def get_journey_detail(db: Session, journey_id: UUID, company_id: int):
-        journey = db.query(JourneySession).filter(
+        journey = db.query(JourneySession).options(joinedload(JourneySession.user)).filter(
             JourneySession.id == journey_id,
             JourneySession.company_id == company_id
         ).first()

@@ -47,6 +47,7 @@ class LocationLogResponse(BaseModel):
 class JourneyResponse(BaseModel):
     id: UUID
     user_id: int
+    user_name: Optional[str] = None
     company_id: int
     start_time: datetime
     end_time: Optional[datetime] = None

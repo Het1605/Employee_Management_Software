@@ -33,6 +33,13 @@ class JourneySession(Base):
 
     # Relationships
     logs = relationship("LocationLog", back_populates="journey", cascade="all, delete-orphan")
+    user = relationship("app.db.models.User")
+
+    @property
+    def user_name(self):
+        if self.user:
+            return f"{self.user.first_name}"
+        return None
 
 class LocationLog(Base):
     __tablename__ = "location_logs"

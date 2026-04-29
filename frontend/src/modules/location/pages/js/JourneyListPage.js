@@ -70,8 +70,8 @@ const JourneyListPage = () => {
                     <User size={20} />
                   </div>
                   <div>
-                    <h3 className={styles.userName}>Employee #{journey.user_id}</h3>
-                    <span className={styles.userId}>ID: {journey.user_id}</span>
+                    <h3 className={styles.userName}>{journey.user_name || `Employee #${journey.user_id}`}</h3>
+                    <span className={styles.userId}>Employee ID: {journey.user_id}</span>
                   </div>
                 </div>
                 <span className={`${styles.statusBadge} ${journey.status === 'ACTIVE' ? styles.active : styles.completed}`}>
