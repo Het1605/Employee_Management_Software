@@ -92,58 +92,80 @@
   z-index: 1;
 }
 
-.loadingState, .errorState {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-size: 1.125rem;
-  color: #64748b;
-  background-color: #f8fafc;
+/* --- CUSTOM MARKER STYLES --- */
+
+.customMarkerContainer {
+  background: transparent !important;
+  border: none !important;
 }
 
-/* Custom Leaflet Pulse Marker */
-.customPulseIcon {
-  background: transparent;
-  border: none;
-}
-
-.pulseMarker {
-  width: 16px;
-  height: 16px;
-  background-color: #3b82f6;
-  border: 3px solid white;
-  border-radius: 50%;
-  position: relative;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-
-.pulseMarker::after {
-  content: '';
+.markerPin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50% 50% 50% 0;
+  background: #3b82f6;
   position: absolute;
-  top: -3px;
-  left: -3px;
-  right: -3px;
-  bottom: -3px;
-  border: 3px solid #3b82f6;
-  border-radius: 50%;
-  animation: pulse-ring 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -10px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.33); opacity: 0.8; }
-  80%, 100% { opacity: 0; transform: scale(1.5); }
+.startPin {
+  background: #22c55e !important; /* Green */
+}
+
+.endPin {
+  background: #ef4444 !important; /* Red */
+  animation: end-pulse 2s infinite;
+}
+
+.markerDot {
+  width: 8px;
+  height: 8px;
+  background-color: #3b82f6;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+@keyframes end-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* --- POPUP STYLES --- */
+
+.popupContent {
+  padding: 4px;
+}
+
+.popupContent strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.popupTime {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  margin-bottom: 2px;
+}
+
+.popupCoords {
+  color: #64748b;
+  font-size: 0.75rem;
 }
 
 @media (max-width: 640px) {
   .container {
     padding: 1rem;
   }
-  
-  .statsBar {
-    gap: 0.75rem;
-  }
-  
   .title {
     font-size: 1.25rem;
   }

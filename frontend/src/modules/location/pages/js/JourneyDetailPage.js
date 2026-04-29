@@ -1,26 +1,41 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useCompanyContext } from "../../../../contexts/CompanyContext";
 import LocationService from "../../services/locationService";
 import styles from "../styles/JourneyDetailPage.module.css";
-import { ArrowLeft, Clock, MapPin, Navigation, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, RefreshCcw } from "lucide-react";
 
-// Fix Leaflet marker icon issue in React
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+// --- CUSTOM ICONS ---
 
-let DefaultIcon = L.icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+// Start Point Icon (Green)
+const startIcon = L.divIcon({
+  className: styles.customMarkerContainer,
+  html: `<div class="${styles.markerPin} ${styles.startPin}"></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
-L.Marker.prototype.options.icon = DefaultIcon;
 
-// Helper to auto-fit map bounds to the polyline
+// End Point Icon (Red)
+const endIcon = L.divIcon({
+  className: styles.customMarkerContainer,
+  html: `<div class="${styles.markerPin} ${styles.endPin}"></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+// Mid Point Icon (Small Blue Dot)
+const midIcon = L.divIcon({
+  className: styles.customMarkerContainer,
+  html: `<div class="${styles.markerDot}"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
+// --- HELPER COMPONENTS ---
+
 const FitBounds = ({ positions }) => {
   const map = useMap();
   useEffect(() => {
@@ -43,6 +58,11 @@ const JourneyDetailPage = () => {
   const [lastSync, setLastSync] = useState(null);
   const pollingRef = useRef(null);
 
+  // Sort logs by time for accurate Start/End identification
+  const sortedLogs = useMemo(() => {
+    return [...logs].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+  }, [logs]);
+
   useEffect(() => {
     if (id && selectedCompanyId) {
       fetchJourneyData();
@@ -61,7 +81,6 @@ const JourneyDetailPage = () => {
         setLogs(response.data.logs || []);
         setLastSync(new Date());
 
-        // Start polling if journey is ACTIVE
         if (response.data.status === "ACTIVE" && !pollingRef.current) {
           startPolling();
         } else if (response.data.status === "COMPLETED" && pollingRef.current) {
@@ -93,16 +112,18 @@ const JourneyDetailPage = () => {
       } catch (error) {
         console.error("Polling error:", error);
       }
-    }, 30000); // 30 seconds
+    }, 30000);
   };
 
-  if (loading) return <div className={styles.loadingState}>Initializing map and loading points...</div>;
-  if (!journey) return <div className={styles.errorState}>Journey not found or access denied.</div>;
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
 
-  const positions = logs.map(log => [log.latitude, log.longitude]);
-  const startPos = [journey.start_lat, journey.start_lng];
-  const endPos = journey.status === "COMPLETED" ? [journey.end_lat, journey.end_lng] : null;
-  const latestPos = logs.length > 0 ? [logs[logs.length-1].latitude, logs[logs.length-1].longitude] : startPos;
+  if (loading) return <div className={styles.loadingState}>Loading journey points...</div>;
+  if (!journey) return <div className={styles.errorState}>Journey not found.</div>;
+
+  const allPositions = sortedLogs.map(log => [log.latitude, log.longitude]);
+  const centerPos = allPositions.length > 0 ? allPositions[allPositions.length - 1] : [journey.start_lat, journey.start_lng];
 
   return (
     <div className={styles.container}>
@@ -113,7 +134,7 @@ const JourneyDetailPage = () => {
         </button>
         
         <div className={styles.journeyInfo}>
-          <h2 className={styles.title}>Journey Report: Employee #{journey.user_id}</h2>
+          <h2 className={styles.title}>Location History: Employee #{journey.user_id}</h2>
           <div className={styles.statsBar}>
             <div className={styles.stat}>
               <Clock size={16} />
@@ -121,12 +142,12 @@ const JourneyDetailPage = () => {
             </div>
             <div className={styles.stat}>
               <MapPin size={16} />
-              <span>Points: {journey.total_points}</span>
+              <span>Journey Points: {sortedLogs.length}</span>
             </div>
             {journey.status === "ACTIVE" && (
               <div className={`${styles.stat} ${styles.liveSync}`}>
                 <RefreshCcw size={14} className={styles.spin} />
-                <span>Live Tracking Active (Synced {lastSync?.toLocaleTimeString()})</span>
+                <span>Live Syncing...</span>
               </div>
             )}
           </div>
@@ -135,53 +156,42 @@ const JourneyDetailPage = () => {
 
       <div className={styles.mapCard}>
         <MapContainer 
-          center={latestPos} 
+          center={centerPos} 
           zoom={15} 
           className={styles.map}
-          scrollWheelZoom={true}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {positions.length > 0 && (
-            <>
-              <Polyline positions={positions} color="#3b82f6" weight={4} opacity={0.7} />
-              <FitBounds positions={positions} />
-            </>
-          )}
+          {allPositions.length > 0 && <FitBounds positions={allPositions} />}
 
-          {/* Start Marker */}
-          <Marker position={startPos}>
-            <Popup>
-              <strong>Start Point</strong><br />
-              {new Date(journey.start_time).toLocaleString()}
-            </Popup>
-          </Marker>
+          {sortedLogs.map((log, index) => {
+            const isFirst = index === 0;
+            const isLast = index === sortedLogs.length - 1;
+            
+            // Determine which icon to use
+            let icon = midIcon;
+            if (isFirst) icon = startIcon;
+            else if (isLast) icon = endIcon;
 
-          {/* End Marker (if completed) */}
-          {endPos && (
-            <Marker position={endPos}>
-              <Popup>
-                <strong>End Point</strong><br />
-                {new Date(journey.end_time).toLocaleString()}
-              </Popup>
-            </Marker>
-          )}
-
-          {/* Current Location Marker (if active) */}
-          {journey.status === "ACTIVE" && logs.length > 0 && (
-            <Marker 
-              position={latestPos}
-              icon={L.divIcon({
-                className: styles.customPulseIcon,
-                html: `<div class="${styles.pulseMarker}"></div>`
-              })}
-            >
-              <Popup>Last known location: {lastSync?.toLocaleTimeString()}</Popup>
-            </Marker>
-          )}
+            return (
+              <Marker 
+                key={log.id || index} 
+                position={[log.latitude, log.longitude]} 
+                icon={icon}
+              >
+                <Popup className={styles.pointPopup}>
+                  <div className={styles.popupContent}>
+                    <strong>{isFirst ? "Start Point" : isLast ? "Current/End Point" : "Way Point"}</strong>
+                    <div className={styles.popupTime}>🕒 {formatTime(log.recorded_at)}</div>
+                    <div className={styles.popupCoords}>📍 {log.latitude.toFixed(5)}, {log.longitude.toFixed(5)}</div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
     </div>
