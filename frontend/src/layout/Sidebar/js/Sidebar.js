@@ -12,7 +12,8 @@ import {
   ClipboardList, 
   Umbrella, 
   UserCircle,
-  History 
+  History,
+  Navigation
 } from 'lucide-react';
 import styles from '../style/Sidebar.module.css';
 
@@ -115,6 +116,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           label: 'Leave Structure', 
           roles: ['ADMIN', 'HR'] 
         }
+      ]
+    },
+    {
+      type: 'group',
+      title: 'Field Operations',
+      roles: ['ADMIN', 'HR', 'MANAGER'],
+      items: [
+        { to: "/location", icon: Navigation, label: 'Location Tracking' }
       ]
     },
     {

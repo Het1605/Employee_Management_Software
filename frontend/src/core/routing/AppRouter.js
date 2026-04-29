@@ -29,6 +29,8 @@ import LeaveStructureManagement from '../../modules/attendance/leave/pages/js/Le
 import EmployeeCalendarPage from '../../modules/calendar/pages/js/EmployeeCalendarPage';
 import MyProfile from '../../modules/user/pages/js/MyProfile';
 import AuditLogPage from '../../modules/audit/pages/js/AuditLogPage';
+import JourneyListPage from '../../modules/location/pages/js/JourneyListPage';
+import JourneyDetailPage from '../../modules/location/pages/js/JourneyDetailPage';
 
 const AppRouter = () => {
   return (
@@ -176,6 +178,24 @@ const AppRouter = () => {
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <AuditLogPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- Location Tracking --- */}
+          <Route 
+            path="/location" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
+                <JourneyListPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/location/journey/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
+                <JourneyDetailPage />
               </ProtectedRoute>
             } 
           />

@@ -1,0 +1,150 @@
+.container {
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.backButton:hover {
+  color: #3b82f6;
+}
+
+.journeyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.statsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.liveSync {
+  color: #16a34a;
+  font-weight: 600;
+  background: #f0fdf4;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+}
+
+.spin {
+  animation: spin-animation 2s linear infinite;
+}
+
+@keyframes spin-animation {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mapCard {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.loadingState, .errorState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.125rem;
+  color: #64748b;
+  background-color: #f8fafc;
+}
+
+/* Custom Leaflet Pulse Marker */
+.customPulseIcon {
+  background: transparent;
+  border: none;
+}
+
+.pulseMarker {
+  width: 16px;
+  height: 16px;
+  background-color: #3b82f6;
+  border: 3px solid white;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.pulseMarker::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: pulse-ring 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.33); opacity: 0.8; }
+  80%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .statsBar {
+    gap: 0.75rem;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+}
