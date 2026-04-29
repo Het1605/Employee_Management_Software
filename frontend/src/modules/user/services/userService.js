@@ -8,7 +8,10 @@ export const submitResignation = (endDate) => {
     return API.post('/users/resign', { end_date: endDate });
 };
 
-export const fetchUsers = () => API.get('/users/');
+export const fetchUsers = (companyId = null) => {
+    const params = companyId ? { company_id: companyId } : {};
+    return API.get('/users/', { params });
+};
 
 export const createUser = (payload) => API.post('/users/', payload);
 

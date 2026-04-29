@@ -4,13 +4,13 @@ const LocationService = {
   /**
    * Fetch all journeys for a company with pagination and optional user filtering
    */
-  getJourneys: async (companyId, page = 1, size = 20, userId = null) => {
+  getJourneys: async (companyId, page = 1, size = 20, filters = {}) => {
     const params = {
       company_id: companyId,
       page,
       size,
+      ...filters
     };
-    if (userId) params.user_id = userId;
 
     const response = await API.get("/location/journeys", { params });
     return response.data; // Standardized ResponseEnvelope: { status, message, data: { items, total, ... } }

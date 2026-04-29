@@ -153,11 +153,22 @@ class LocationService:
         }
 
     @staticmethod
-    async def get_journeys(db: Session, company_id: int, user_id: int = None, page: int = 1, size: int = 20):
+    async def get_journeys(db: Session, company_id: int, user_id: int = None, status: str = None, start_date=None, end_date=None, page: int = 1, size: int = 20):
         query = db.query(JourneySession).filter(JourneySession.company_id == company_id)
         
         if user_id:
             query = query.filter(JourneySession.user_id == user_id)
+        
+        if status:
+            query = query.filter(JourneySession.status == status)
+            
+        if start_date:
+            # Filter where start_time (as date) is >= start_date
+            query = query.filter(func.date(JourneySession.start_time) >= start_date)
+            
+        if end_date:
+            # Filter where start_time (as date) is <= end_date
+            query = query.filter(func.date(JourneySession.start_time) <= end_date)
             
         total = query.count()
         items = query.options(joinedload(JourneySession.user)).order_by(JourneySession.start_time.desc()).offset((page - 1) * size).limit(size).all()
