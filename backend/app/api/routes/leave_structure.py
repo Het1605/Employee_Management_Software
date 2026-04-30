@@ -27,10 +27,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import User
+from app.models import User
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.roles import role_required
-from app.models.leave_structure import LeaveAssignment
+from app.models import LeaveAssignment
 from app.schemas.leave_structure import (
     LeaveAssignmentCreate,
     LeaveAssignmentOut,

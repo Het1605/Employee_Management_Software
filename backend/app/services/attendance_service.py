@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.db.models import Attendance, User, UserCompanyMapping
-from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
+from app.models import Attendance, User, UserCompanyMapping
+from app.models import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
 from datetime import date, datetime, timedelta
 import calendar
 from fastapi import HTTPException, status
@@ -28,7 +28,7 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
 
     # 1. LOCK CHECK: Check if an approved leave exists for this date
     # (Avoid circular import by importing here)
-    from app.db.models import LeaveRequest
+    from app.models import LeaveRequest
     approved_leave = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == user_id,
         LeaveRequest.company_id == company_id,
@@ -183,7 +183,7 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
         day_types[curr_date] = day_info.status
 
     # Get approved leaves for the company in this month range for locking
-    from app.db.models import LeaveRequest
+    from app.models import LeaveRequest
     leaves = db.query(LeaveRequest).filter(
         LeaveRequest.company_id == company_id,
         LeaveRequest.status == "approved",
@@ -248,7 +248,7 @@ def get_company_attendance(db: Session, company_id: int, month: int, year: int):
 
 def get_today_status(db: Session, user_id: int, company_id: int):
     today = date.today()
-    from app.db.models import LeaveRequest, LeaveDurationType
+    from app.models import LeaveRequest, LeaveDurationType
     
     record = db.query(Attendance).filter(
         Attendance.user_id == user_id,

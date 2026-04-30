@@ -6,7 +6,7 @@ import re
 from weasyprint import HTML
 from typing import List, Optional
 from app.core.config import settings
-from app.db.models import DocumentType, GeneratedDocument, User, SentDocument, Company, UserSalaryStructure, ComponentType, SalarySlipDispatchLog
+from app.models import DocumentType, GeneratedDocument, User, SentDocument, Company, UserSalaryStructure, ComponentType, SalarySlipDispatchLog
 from app.schemas.document import (
     GeneratedDocumentCreate,
     GeneratedDocumentUpdate,
@@ -97,7 +97,7 @@ class DocumentService:
 
     @staticmethod
     def _calculate_approved_leaves_for_month(db: Session, user_id: int, company_id: int, year: int, month: int) -> int:
-        from app.db.models import LeaveRequest
+        from app.models import LeaveRequest
         from datetime import date
         from calendar import monthrange
         
@@ -145,7 +145,7 @@ class DocumentService:
         att_summary = get_my_attendance(db, user.id, company.id, int(month), int(year))
         
         # 4. Payable Days Reconciliation
-        from app.db.models import LeaveRequest, LeaveDurationType
+        from app.models import LeaveRequest, LeaveDurationType
         from app.services.leave_structure_service import LeaveStructureService
         from datetime import date, timedelta
         import calendar as pycal
@@ -229,10 +229,6 @@ class DocumentService:
         total_leaves_taken = total_paid_leaves + total_unpaid_leaves
 
         # MANDATORY DEBUG LOGS
-        print(f"[SALARY DEBUG] User:{user.id} Month:{month} Year:{year}")
-        print(f"  API Paid: {total_paid_leaves} | API Excess: {total_excess_from_api}")
-        print(f"  Raw Absences (Internal): {raw_absences}")
-        print(f"  Final Paid: {total_paid_leaves} | Final Unpaid: {total_unpaid_leaves}")
 
         if total_working_days == 0:
             total_working_days = last_day
@@ -282,7 +278,6 @@ class DocumentService:
                         "label": f"Leave Encashment ({float(enc_days)} Days)", # User requested 'label' key
                         "amount": round(float(enc_amount), 2)
                     })
-                    print(f"  [ENCASH DETECTED] Type:{cat} Days:{enc_days} Amount:{enc_amount}")
 
         if leave_deduction > 0:
             deductions_list.append({
@@ -354,7 +349,7 @@ class DocumentService:
         monthly_data = []
         month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-        from app.db.models import LeaveRequest, LeaveDurationType
+        from app.models import LeaveRequest, LeaveDurationType
         from app.services.leave_structure_service import LeaveStructureService
         from datetime import date, timedelta
         import calendar as pycal

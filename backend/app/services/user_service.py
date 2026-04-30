@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from datetime import date
-from app.db.models import User, UserCompanyMapping
+from app.models import User, UserCompanyMapping
 from app.schemas.user import UserCreate, UserUpdate, ChangePasswordRequest, ResignationRequest
 from app.core.security import hash_password, verify_password
 

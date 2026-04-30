@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from app.db.models import ComponentType
+from app.models import ComponentType
 
 class SalaryComponentResponse(BaseModel):
     id: int

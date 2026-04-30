@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.db.models import (
+from app.models import (
     SalaryComponent,
     Company,
     SalaryStructureDefinition,

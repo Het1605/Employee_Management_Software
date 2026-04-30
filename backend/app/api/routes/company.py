@@ -6,7 +6,7 @@ from app.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse, U
 from app.services.company_service import CompanyService
 from app.api.dependencies.roles import role_required
 from app.api.dependencies.auth import get_current_user
-from app.db.models import User
+from app.models import User
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 

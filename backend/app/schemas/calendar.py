@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, conint, field_validator
 from datetime import date, datetime
 import datetime as dt
 from typing import Optional, List
-from app.models.calendar import HolidayType, HolidaySource, OverrideType
+from app.models import HolidayType, HolidaySource, OverrideType
 
 # ----------------- Working Days Schemas -----------------
 

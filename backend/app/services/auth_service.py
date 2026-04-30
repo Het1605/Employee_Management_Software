@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from app.db.models import User
+from app.models import User
 from app.core.security import verify_password, hash_password
 from app.core.config import settings
 from app.schemas.user import LoginRequest, ResetPasswordConfirm
@@ -44,7 +44,6 @@ class AuthService:
         access_token = jwt.encode(access_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         refresh_token = jwt.encode(refresh_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-        print(f"AUTH LOG: [LOGIN] User {user.email} logged in. Access: {settings.ACCESS_TOKEN_EXPIRE_MINUTES}m, Refresh: {settings.REFRESH_TOKEN_EXPIRE_DAYS}d")
 
         return {
             "access_token": access_token,
@@ -68,13 +67,11 @@ class AuthService:
             token_type = payload.get("type")
 
             if not email or token_type != "refresh":
-                print(f"AUTH WARNING: Invalid refresh token attempt.")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid refresh token"
                 )
         except JWTError as e:
-            print(f"AUTH WARNING: Refresh token expired or corrupted: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token expired or invalid"
@@ -107,7 +104,6 @@ class AuthService:
         new_access_token = jwt.encode(new_access_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         new_refresh_token = jwt.encode(new_refresh_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-        print(f"AUTH LOG: [REFRESH] Tokens rotated for {user.email}. New Access: {settings.ACCESS_TOKEN_EXPIRE_MINUTES}m, Refresh: {settings.REFRESH_TOKEN_EXPIRE_DAYS}d")
 
         return {
             "access_token": new_access_token,
@@ -205,19 +201,11 @@ class AuthService:
 
         try:
             # Connect to SMTP server
-            print(f"DEBUG: Connecting to {settings.SMTP_SERVER}:{settings.SMTP_PORT}...")
             server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
-            server.set_debuglevel(1) # Enable debug output in console
             server.starttls() # Secure the connection
-            
-            print(f"DEBUG: Logging in as {settings.SMTP_USER}...")
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            
-            print(f"DEBUG: Sending email to {email}...")
             server.send_message(message)
             server.quit()
-            print("DEBUG: Email sent successfully!")
-            
         except Exception as e:
             print(f"EMAIL ERROR: {str(e)}")
             # Optional: re-raise or handle silently as per requirements

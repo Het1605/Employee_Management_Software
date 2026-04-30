@@ -33,7 +33,7 @@ class JourneySession(Base):
 
     # Relationships
     logs = relationship("LocationLog", back_populates="journey", cascade="all, delete-orphan")
-    user = relationship("app.db.models.User")
+    user = relationship("User")
 
     @property
     def user_name(self):

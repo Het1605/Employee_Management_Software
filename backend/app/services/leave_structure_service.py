@@ -27,8 +27,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.database import SessionLocal
-from app.db.models import User
-from app.models.leave_structure import (
+from app.models import User
+from app.models import (
     AllocationType,
     LeaveAssignment,
     LeaveStructure,
@@ -202,8 +202,8 @@ class LeaveStructureService:
         Calculates leave balance in real-time for a SPECIFIC company.
         Implements rigorous Remaining Carry-Forward logic per month.
         """
-        from app.db.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance, UserCompanyMapping
-        from app.models.leave_structure import AllocationType, ResetPolicy
+        from app.models import LeaveRequest, LeaveDurationType, LeaveCategory, LeaveBalance, UserCompanyMapping
+        from app.models import AllocationType, ResetPolicy
         from datetime import date
         from fastapi import HTTPException
 
@@ -367,7 +367,7 @@ class LeaveStructureService:
 
     @staticmethod
     def set_manual_balance(db: Session, user_id: int, company_id: int, balances, action_by_id: int, action_by_role: str = "ADMIN") -> List[str]:
-        from app.db.models import LeaveBalance, LeaveActivityLog
+        from app.models import LeaveBalance, LeaveActivityLog
         from datetime import date
         from decimal import Decimal
         
@@ -483,8 +483,8 @@ class LeaveStructureService:
 
     @staticmethod
     def delete_assignment(db: Session, user_id: int, company_id: int) -> None:
-        from app.models.leave_structure import LeaveAssignment
-        from app.db.models import LeaveBalance
+        from app.models import LeaveAssignment
+        from app.models import LeaveBalance
 
         assignment = db.query(LeaveAssignment).filter_by(user_id=user_id, company_id=company_id).first()
         if not assignment:

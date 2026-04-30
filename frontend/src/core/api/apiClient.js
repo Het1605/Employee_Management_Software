@@ -33,7 +33,6 @@ API.interceptors.request.use(
 
 API.interceptors.response.use(
   (response) => {
-    console.log(`✅ API SUCCESS: [${response.config.method.toUpperCase()}] ${response.config.url}`);
     return response;
   },
   async (error) => {
@@ -41,7 +40,6 @@ API.interceptors.response.use(
 
     // Handle 401 errors and try refreshing the token
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.warn(`🔒 AUTH ALERT: 401 Unauthorized detected for ${originalRequest.url}`);
       
       const refreshToken = localStorage.getItem('refresh_token');
       const path = window.location.pathname;
@@ -54,7 +52,6 @@ API.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        console.log("⏳ AUTH LOG: Refresh already in progress. Queuing this request...");
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -70,7 +67,6 @@ API.interceptors.response.use(
 
       return new Promise(async (resolve, reject) => {
         try {
-          console.log("🔄 AUTH LOG: Access token expired. Sending REFRESH request to backend...");
           
           // Use JSON body instead of headers for cross-platform consistency (like mobile)
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
@@ -89,7 +85,6 @@ API.interceptors.response.use(
           localStorage.setItem('token', access_token); // Compatibility
           if (new_refresh_token) localStorage.setItem('refresh_token', new_refresh_token);
 
-          console.log("✨ AUTH LOG: Refresh SUCCESSFUL. New tokens stored. Retrying original request...");
           
           API.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
           originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
@@ -113,7 +108,6 @@ API.interceptors.response.use(
 );
 
 const handleLogout = () => {
-  console.warn("🧹 SESSION CLEANUP: Clearing storage and redirecting to login.");
   localStorage.clear();
   const path = window.location.pathname;
   if (path !== '/' && path !== '/forgot-password' && path !== '/reset-password') {

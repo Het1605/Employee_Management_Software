@@ -1,7 +1,7 @@
 import calendar as py_calendar
 from datetime import date, timedelta
-from app.db.models import User, UserCompanyMapping, Attendance, LeaveRequest
-from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides
+from app.models import User, UserCompanyMapping, Attendance, LeaveRequest
+from app.models import WorkingDaysConfig, Holidays, CalendarOverrides
 from app.schemas.calendar import (
     WorkingDayResponse, WorkingDaysUpdateBulk,
     HolidayCreate, HolidayUpdate, HolidayResponse,
@@ -17,7 +17,7 @@ from typing import List
 from app.db.database import get_db
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.roles import role_required
-from app.db.models import User
+from app.models import User
 from app.services.calendar_service import CalendarService
 
 
@@ -222,7 +222,7 @@ def get_employee_calendar_summary(
         curr = l.start_date
         while curr <= l.end_date:
             if start_date <= curr <= end_date:
-                leave_data_map[curr] = l.leave_type # FULL_DAY or HALF_DAY
+                leave_data_map[curr] = l.leave_duration_type # FULL_DAY or HALF_DAY
             curr += timedelta(days=1)
 
     # 6. Build response

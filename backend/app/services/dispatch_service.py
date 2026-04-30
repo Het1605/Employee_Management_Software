@@ -6,7 +6,7 @@ import os
 import logging
 import pytz
 from app.db.database import SessionLocal
-from app.db.models import SalarySlipDispatchLog
+from app.models import SalarySlipDispatchLog
 from app.core.email_utils import send_email_with_attachment
 
 # Setup logging

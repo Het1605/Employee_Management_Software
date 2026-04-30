@@ -8,7 +8,7 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-from app.models.calendar import (
+from app.models import (
     WorkingDaysConfig, Holidays, CalendarOverrides, 
     HolidayType, OverrideType, HolidaySource
 )
@@ -18,7 +18,7 @@ from app.schemas.calendar import (
     OverrideCreate, OverrideUpdate, OverrideResponse,
     DayStatusResponse
 )
-from app.db.models import Company
+from app.models import Company
 
 class CalendarService:
     # -----------------------------------------------------

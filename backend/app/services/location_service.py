@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func, and_
 from fastapi import HTTPException, status
-from app.models.location import JourneySession, LocationLog, JourneyStatus
-from app.db.models import UserCompanyMapping
+from app.models import JourneySession, LocationLog, JourneyStatus
+from app.models import UserCompanyMapping
 from app.schemas.location import JourneyStart, JourneyTrack, JourneyEnd
 from datetime import datetime
 from uuid import UUID
@@ -138,7 +138,6 @@ class LocationService:
             raise HTTPException(status_code=400, detail="Journey is already COMPLETED or invalid")
         
         # 3. Mark COMPLETED
-        print(f"AUTH LOG: [END] Ending journey: {journey.id} for user: {user_id}")
         journey.status = JourneyStatus.COMPLETED
         journey.end_time = datetime.utcnow()
         journey.end_lat = data.end_lat
@@ -146,7 +145,6 @@ class LocationService:
         
         db.commit()
         db.refresh(journey)
-        print(f"AUTH LOG: [END] Journey {journey.id} marked COMPLETED")
         
         return {
             "status": "success",
@@ -204,7 +202,6 @@ class LocationService:
     @staticmethod
     async def get_active_journey(db: Session, user_id: int):
         """Finds any currently ACTIVE journey for the user across any company."""
-        print(f"AUTH LOG: [SYNC] Checking active journey for user_id: {user_id}")
         
         journey = db.query(JourneySession).filter(
             JourneySession.user_id == user_id,
@@ -212,14 +209,12 @@ class LocationService:
         ).order_by(JourneySession.start_time.desc()).first()
         
         if not journey:
-            print(f"AUTH LOG: [SYNC] No active journey found for user_id: {user_id}")
             return {
                 "status": "success",
                 "message": "No active journey found",
                 "data": None
             }
             
-        print(f"AUTH LOG: [SYNC] Active journey FOUND: {journey.id}")
         return {
             "status": "success",
             "message": "Active journey found",

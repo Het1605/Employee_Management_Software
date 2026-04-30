@@ -1,10 +1,7 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
-from app.db import models
-from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides # Register Calendar models
-from app.models.leave_structure import LeaveStructure, LeaveStructureDetail, LeaveAssignment  # Register leave structure models
-from app.models.location import JourneySession, LocationLog # Register Location models
+import app.models  # Register all models for SQLAlchemy
 from app.api.routes.auth import router as auth_router
 from app.api.routes.users import router as users_router
 from app.api.routes.company import router as company_router
@@ -39,17 +36,14 @@ app.add_middleware(
 )
 
 def wait_for_db():
-    print("Waiting for database connection...")
     retries = 60 # Wait up to 120 seconds
     while retries > 0:
         try:
             # Attempt to connect to the engine
             with engine.connect() as conn:
-                print("✅ Database connection successful!")
                 return
         except (OperationalError, Exception) as e:
             retries -= 1
-            print(f"❌ Database not ready. Retrying in 2 seconds... ({retries} retries left) Error: {str(e)[:100]}...")
             time.sleep(2)
     print("FATAL: Could not connect to database. Exiting.")
     exit(1)

@@ -7,7 +7,7 @@ from fastapi import Query
 from app.db.database import get_db
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.roles import role_required
-from app.db.models import User
+from app.models import User
 from app.schemas.salary_structure import (
     SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
 )

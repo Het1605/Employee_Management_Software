@@ -5,8 +5,8 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 import calendar
 from app.db.database import get_db
-from app.db.models import LeaveRequest, User, UserCompanyMapping, LeaveCategory, LeaveDurationType
-from app.models.calendar import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
+from app.models import LeaveRequest, User, UserCompanyMapping, LeaveCategory, LeaveDurationType
+from app.models import WorkingDaysConfig, Holidays, CalendarOverrides, OverrideType
 from app.api.dependencies.auth import get_current_user
 from app.schemas.leave_request import (
     LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestEdit, 
@@ -15,7 +15,7 @@ from app.schemas.leave_request import (
 )
 from app.services.calendar_service import CalendarService
 from app.services.leave_structure_service import LeaveStructureService
-from app.db.models import LeaveActivityLog
+from app.models import LeaveActivityLog
 import calendar as pycal
 from app.services import attendance_service
 

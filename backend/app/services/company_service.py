@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from app.db.models import Company, User, UserCompanyMapping
+from app.models import Company, User, UserCompanyMapping
 from app.schemas.company import CompanyCreate, CompanyUpdate
 from sqlalchemy import and_
 

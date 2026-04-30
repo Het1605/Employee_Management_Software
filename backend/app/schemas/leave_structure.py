@@ -9,7 +9,7 @@ from typing import List, Optional
 from datetime import datetime
 from decimal import Decimal
 
-from app.models.leave_structure import LeaveType, AllocationType, ResetPolicy
+from app.models import LeaveType, AllocationType, ResetPolicy
 
 
 # ─────────────────────────────────────────────────────────────
