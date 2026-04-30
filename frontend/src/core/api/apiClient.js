@@ -71,15 +71,23 @@ API.interceptors.response.use(
       return new Promise(async (resolve, reject) => {
         try {
           console.log("🔄 AUTH LOG: Access token expired. Sending REFRESH request to backend...");
-          const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/refresh`, {}, {
-            headers: { 'refresh-token': `Bearer ${refreshToken}` }
+          
+          // Use JSON body instead of headers for cross-platform consistency (like mobile)
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
+            refresh_token: refreshToken
           });
 
-          const { access_token, refresh_token } = response.data;
+          // Handle both root-level tokens and nested 'data' envelope
+          const data = response.data?.data || response.data;
+          const { access_token, refresh_token: new_refresh_token } = data;
           
+          if (!access_token) {
+            throw new Error("No access token returned from refresh endpoint");
+          }
+
           localStorage.setItem('access_token', access_token);
           localStorage.setItem('token', access_token); // Compatibility
-          if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+          if (new_refresh_token) localStorage.setItem('refresh_token', new_refresh_token);
 
           console.log("✨ AUTH LOG: Refresh SUCCESSFUL. New tokens stored. Retrying original request...");
           
@@ -89,7 +97,7 @@ API.interceptors.response.use(
           processQueue(null, access_token);
           resolve(API(originalRequest));
         } catch (refreshError) {
-          console.error("❌ AUTH ERROR: Refresh Token has also EXPIRED. Forced logout.", refreshError);
+          console.error("❌ AUTH ERROR: Refresh Token has also EXPIRED or is invalid. Forced logout.", refreshError);
           processQueue(refreshError, null);
           handleLogout();
           reject(refreshError);

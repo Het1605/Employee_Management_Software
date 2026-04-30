@@ -138,6 +138,7 @@ class LocationService:
             raise HTTPException(status_code=400, detail="Journey is already COMPLETED or invalid")
         
         # 3. Mark COMPLETED
+        print(f"AUTH LOG: [END] Ending journey: {journey.id} for user: {user_id}")
         journey.status = JourneyStatus.COMPLETED
         journey.end_time = datetime.utcnow()
         journey.end_lat = data.end_lat
@@ -145,6 +146,7 @@ class LocationService:
         
         db.commit()
         db.refresh(journey)
+        print(f"AUTH LOG: [END] Journey {journey.id} marked COMPLETED")
         
         return {
             "status": "success",
@@ -197,5 +199,29 @@ class LocationService:
         return {
             "status": "success",
             "message": "Journey details retrieved",
+            "data": journey
+        }
+    @staticmethod
+    async def get_active_journey(db: Session, user_id: int):
+        """Finds any currently ACTIVE journey for the user across any company."""
+        print(f"AUTH LOG: [SYNC] Checking active journey for user_id: {user_id}")
+        
+        journey = db.query(JourneySession).filter(
+            JourneySession.user_id == user_id,
+            JourneySession.status == "ACTIVE" # Use string directly for safety
+        ).order_by(JourneySession.start_time.desc()).first()
+        
+        if not journey:
+            print(f"AUTH LOG: [SYNC] No active journey found for user_id: {user_id}")
+            return {
+                "status": "success",
+                "message": "No active journey found",
+                "data": None
+            }
+            
+        print(f"AUTH LOG: [SYNC] Active journey FOUND: {journey.id}")
+        return {
+            "status": "success",
+            "message": "Active journey found",
             "data": journey
         }

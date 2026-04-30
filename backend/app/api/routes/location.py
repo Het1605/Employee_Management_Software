@@ -13,6 +13,13 @@ from datetime import date
 
 router = APIRouter(prefix="/location", tags=["Location Tracking"])
 
+@router.get("/active-journey", response_model=ResponseEnvelope[Optional[JourneyResponse]])
+async def get_active_journey(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return await LocationService.get_active_journey(db, current_user.id)
+
 @router.post("/start", response_model=ResponseEnvelope[Union[JourneyResponse, Dict[str, Any]]], status_code=status.HTTP_201_CREATED)
 async def start_journey(
     data: JourneyStart,
