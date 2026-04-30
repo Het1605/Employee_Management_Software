@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../../../core/api/apiClient";
 import styles from "../styles/Login.module.css";
 
@@ -9,6 +9,14 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("session") === "expired") {
+      setError("Session expired. Please login again.");
+    }
+  }, [location]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -44,7 +52,9 @@ function Login() {
       role = role ? role.toUpperCase() : "";
       
       // Store in localStorage for routing and identification
-      localStorage.setItem("token", res.data.access_token);
+      localStorage.setItem("access_token", res.data.access_token);
+      localStorage.setItem("refresh_token", res.data.refresh_token);
+      localStorage.setItem("token", res.data.access_token); // Compatibility
       localStorage.setItem("userId", res.data.user.id);
       localStorage.setItem("username", userName);
       localStorage.setItem("userEmail", userEmail);

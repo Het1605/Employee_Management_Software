@@ -17,9 +17,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
-        if email is None:
+        token_type: str = payload.get("type")
+        
+        if email is None or token_type != "access":
+            print(f"AUTH WARNING: Token missing 'sub' or incorrect type: {token_type}")
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        print(f"AUTH WARNING: JWT Decode Error: {str(e)}")
         raise credentials_exception
         
     user = db.query(User).filter(User.email == email).first()

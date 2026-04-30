@@ -24,17 +24,31 @@ class AuthService:
                 detail="Your account is inactive. Please contact admin."
             )
 
-        # Generate Access Token
+        # Generate Tokens
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        
         access_token_data = {
             "sub": user.email,
             "role": user.role.upper(),
+            "type": "access",
             "exp": datetime.utcnow() + access_token_expires
         }
+        
+        refresh_token_data = {
+            "sub": user.email,
+            "type": "refresh",
+            "exp": datetime.utcnow() + refresh_token_expires
+        }
+
         access_token = jwt.encode(access_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        refresh_token = jwt.encode(refresh_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+        print(f"AUTH LOG: [LOGIN] User {user.email} logged in. Access: {settings.ACCESS_TOKEN_EXPIRE_MINUTES}m, Refresh: {settings.REFRESH_TOKEN_EXPIRE_DAYS}d")
 
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "message": "Login successful",
             "role": user.role.upper(),
@@ -44,6 +58,61 @@ class AuthService:
                 "last_name": user.last_name,
                 "email": user.email
             }
+        }
+
+    @staticmethod
+    def refresh_tokens(db: Session, refresh_token: str):
+        try:
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            email = payload.get("sub")
+            token_type = payload.get("type")
+
+            if not email or token_type != "refresh":
+                print(f"AUTH WARNING: Invalid refresh token attempt.")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid refresh token"
+                )
+        except JWTError as e:
+            print(f"AUTH WARNING: Refresh token expired or corrupted: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token expired or invalid"
+            )
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+
+        # Issue new pair (Rotation)
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+        new_access_token_data = {
+            "sub": user.email,
+            "role": user.role.upper(),
+            "type": "access",
+            "exp": datetime.utcnow() + access_token_expires
+        }
+        
+        new_refresh_token_data = {
+            "sub": user.email,
+            "type": "refresh",
+            "exp": datetime.utcnow() + refresh_token_expires
+        }
+
+        new_access_token = jwt.encode(new_access_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        new_refresh_token = jwt.encode(new_refresh_token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+        print(f"AUTH LOG: [REFRESH] Tokens rotated for {user.email}. New Access: {settings.ACCESS_TOKEN_EXPIRE_MINUTES}m, Refresh: {settings.REFRESH_TOKEN_EXPIRE_DAYS}d")
+
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer"
         }
 
     @staticmethod
