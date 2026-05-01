@@ -1,20 +1,28 @@
-# Base image
-FROM node:20-alpine
-
-# Set working directory
+# Stage 1: Build React App
+FROM node:20-alpine as build-stage
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
-# Copy project files
 COPY . .
 
-# Expose port 3000
-EXPOSE 3000
+# Argument to pass API URL during build
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
-# Run React dev server
-CMD ["npm", "start"]
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM nginx:stable-alpine
+COPY --from=build-stage /app/build /usr/share/nginx/html
+# Add custom nginx config to handle React routing
+RUN echo "server { \
+    listen 80; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files \$uri \$uri/ /index.html; \
+    } \
+}" > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

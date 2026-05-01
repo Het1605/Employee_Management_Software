@@ -1,13 +1,14 @@
 import React from 'react';
-import MainLayout from '../../../MainLayout/js/MainLayout';
+import { useNavigate } from 'react-router-dom';
 import styles from '../../../../styles/Dashboard.module.css';
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
   const sections = [
-    { title: 'User Management', desc: 'Manage team member accounts.', path: '/manager/users' },
-    { title: 'Team Overview', desc: 'Manage your direct reports and their tasks.', path: '#' },
-    { title: 'Attendance Tracking', desc: 'Review team clock-in/out records.', path: '#' },
-    { title: 'Project Management', desc: 'Assign and monitor project progress.', path: '#' },
+    { title: 'User Management', desc: 'Manage team member accounts.', path: '/user-management' },
+    { title: 'Attendance Management', desc: 'Track and review employee attendance.', path: '/attendance-management' },
+    { title: 'Leave Management', desc: 'Review and manage leave requests.', path: '/leave-management' },
+    { title: 'Location Tracking', desc: 'Monitor field staff journeys.', path: '/location' },
   ];
 
   return (
@@ -20,7 +21,7 @@ const ManagerDashboard = () => {
           <div key={i} className={styles.card}>
             <h3 className={styles.cardTitle}>{sec.title}</h3>
             <p className={styles.cardDesc}>{sec.desc}</p>
-            <button className={styles.cardBtn} onClick={() => sec.path !== '#' && (window.location.href = sec.path)}>
+            <button className={styles.cardBtn} onClick={() => sec.path !== '#' && navigate(sec.path)}>
               Open Module
             </button>
           </div>

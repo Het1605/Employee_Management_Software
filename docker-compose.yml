@@ -19,24 +19,20 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
       - uploads_data:/app/uploads
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # In production, we don't need --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     depends_on:
       - db
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL}
     container_name: employee_frontend
-    env_file:
-      - .env
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "3000:80" # Maps port 80 inside container (Nginx) to 3000 outside
     depends_on:
       - backend
 
