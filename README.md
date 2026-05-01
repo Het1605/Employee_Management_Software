@@ -1,58 +1,56 @@
-# Employee Management Software
+# Employee Management System - Production Deployment
 
-A professional, modular Employee Management System built with **FastAPI (Python)** and **React (JavaScript)**.
+This project is a modular, containerized Employee Management System. It is delivered as a set of pre-built Docker images to ensure a seamless, "zero-setup" deployment experience.
 
-## 🚀 Quick Start (Local Development)
+## 📦 Handover Files
+Please ensure you have the following 4 files in a single directory:
+1.  **`frontend.tar`**: Compiled React application and Nginx Gateway.
+2.  **`backend.tar`**: Compiled FastAPI application and services.
+3.  **`docker-compose.yml`**: Deployment instructions (previously `docker-compose.production.yml`).
+4.  **`.env`**: Database and security configurations.
 
-1. **Setup Environment**:
-   - Create a `.env` file in the root directory (use `.env.example` as a template).
-   - Ensure `DATABASE_URL` and `SECRET_KEY` are set.
-
-2. **Run with Docker**:
-   ```bash
-   docker-compose up --build
-   ```
 ---
 
-## 🌐 Production Deployment Guide
+## 🚀 Deployment Instructions
 
-This project is optimized for deployment behind an **Nginx Reverse Proxy**.
+Follow these steps to deploy the system on any Linux/AMD64 server:
 
-### Recommended Nginx Configuration
-If you are deploying to a domain (e.g., `example.com`), use the following configuration as a template:
-
-```nginx
-server {
-    listen 80;
-    server_name example.com; # Replace with your domain
-
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+### 1. Load the Docker Images
+Import the pre-built images into your local Docker daemon:
+```bash
+docker load -i frontend.tar
+docker load -i backend.tar
 ```
 
-### 🛠️ Technical Highlights
-- **Backend**: Domain-driven modular model structure (`app/models/`).
-- **Security**: JWT-based authentication with `bcrypt` password hashing.
-- **Frontend**: Multi-stage Docker build served by Nginx for high performance.
-- **Reports**: HTML-to-PDF generation using `WeasyPrint`.
+### 2. Configure Environment
+Verify the `.env` file contains your desired secrets (Database passwords, Secret keys, etc.). The system is configured to automatically sync these with the containers.
+
+### 3. Start the System
+Run the following command to start the Database, Backend, and Frontend:
+```bash
+docker-compose up -d
+```
 
 ---
 
-## 📁 Project Structure
-- `backend/`: FastAPI application, modular models, and services.
-- `frontend/`: React application with unified routing and role-based dashboards.
-- `docker-compose.yml`: Production-ready container orchestration.
+## 🌐 Accessing the System
+
+Once started, the system is unified under a single entry point:
+
+*   **Main Application**: [http://localhost:3000](http://localhost:3000)
+*   **API Documentation**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+*   **Admin Credentials**: Found in the `.env` file under `DEFAULT_ADMIN_EMAIL`.
+
+### 🛡️ Architecture & Security
+- **Unified Gateway**: The Frontend Nginx container acts as a reverse proxy for the Backend. 
+- **Port Mapping**: The system is mapped to Port 3000 to avoid common conflicts with Port 80.
+- **Persistence**: Data is stored in Docker volumes (`postgres_data` and `uploads_data`) to prevent data loss on restarts.
+- **Relative API Routing**: The React application uses relative paths (`/api`) to ensure compatibility with any domain or IP without reconfiguration.
+
+---
+
+### 🛠️ Technical Highlights
+- **Backend**: FastAPI with a modular domain-driven architecture.
+- **Frontend**: React.js with role-based dashboard routing.
+- **Features**: JWT Authentication, HTML-to-PDF reports, and automated salary slip dispatch.
+- **Mobile Support**: Fully compatible with the Field Tracking mobile application.

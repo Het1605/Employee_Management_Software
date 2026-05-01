@@ -28,7 +28,7 @@ services:
     image: ems-frontend:latest
     container_name: employee_frontend
     ports:
-      - "80:80"  # Unified Port
+      - "3000:80"  # Unified Port (Moved to 3000 to avoid conflicts)
     depends_on:
       - backend
     restart: always

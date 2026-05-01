@@ -24,7 +24,11 @@ import os
 import time
 from sqlalchemy.exc import OperationalError
 
-app = FastAPI(title=settings.PROJECT_NAME)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json"
+)
 
 # Add CORS middleware
 app.add_middleware(

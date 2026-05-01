@@ -16,8 +16,6 @@ services:
     container_name: employee_backend
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     volumes:
       - uploads_data:/app/uploads
     # In production, we don't need --reload
@@ -30,7 +28,7 @@ services:
       context: ./frontend
     container_name: employee_frontend
     ports:
-      - "80:80" # Maps port 80 inside container (Nginx) to 80 outside (Standard HTTP)
+      - "3000:80" # Unified Port (3000 outside -> 80 inside)
     depends_on:
       - backend
 
