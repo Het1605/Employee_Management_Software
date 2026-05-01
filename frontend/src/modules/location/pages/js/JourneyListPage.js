@@ -4,7 +4,7 @@ import { useCompanyContext } from "../../../../contexts/CompanyContext";
 import LocationService from "../../services/locationService";
 import { fetchUsers } from "../../../user/services/userService";
 import styles from "../styles/JourneyListPage.module.css";
-import { MapPin, Clock, Calendar, ChevronRight, User, Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Clock, Calendar, ChevronRight, User, Search, Filter, X, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 const JourneyListPage = () => {
   const { selectedCompanyId } = useCompanyContext();
@@ -96,6 +96,26 @@ const JourneyListPage = () => {
 
   const handleViewMap = (journeyId) => {
     navigate(`/location/journey/${journeyId}`);
+  };
+
+  const handleDelete = async (e, journeyId) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (!window.confirm("Are you sure you want to delete this journey? All location history for this trip will be permanently removed.")) {
+      return;
+    }
+
+    try {
+      const response = await LocationService.deleteJourney(journeyId, selectedCompanyId);
+      if (response.status === "success") {
+        // Remove from local state
+        setJourneys(journeys.filter(j => j.id !== journeyId));
+        setTotal(prev => prev - 1);
+      }
+    } catch (error) {
+      console.error("Failed to delete journey:", error);
+      alert(error.response?.data?.detail || "Failed to delete journey");
+    }
   };
 
   const hasActiveFilters = Object.values(activeFilters).some(v => v !== "");
@@ -225,6 +245,15 @@ const JourneyListPage = () => {
                   {journey.status === 'ACTIVE' && <span className={styles.pulse}></span>}
                   {journey.status}
                 </span>
+                {journey.status === 'COMPLETED' && (
+                  <button 
+                    className={styles.deleteBtn}
+                    onClick={(e) => handleDelete(e, journey.id)}
+                    title="Delete Journey"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
 
               <div className={styles.cardBody}>

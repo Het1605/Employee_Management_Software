@@ -72,3 +72,15 @@ async def get_journey_detail(
     LocationService._validate_user_membership(db, current_user.id, company_id)
     
     return await LocationService.get_journey_detail(db, id, company_id)
+
+@router.delete("/journey/{id}", response_model=ResponseEnvelope[Dict[str, Any]])
+async def delete_journey(
+    id: UUID,
+    company_id: int = Query(...),
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Strict validation
+    LocationService._validate_user_membership(db, current_user.id, company_id)
+    
+    return await LocationService.delete_journey(db, id, company_id)

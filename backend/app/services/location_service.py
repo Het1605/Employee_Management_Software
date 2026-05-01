@@ -220,3 +220,29 @@ class LocationService:
             "message": "Active journey found",
             "data": journey
         }
+
+    @staticmethod
+    async def delete_journey(db: Session, journey_id: UUID, company_id: int):
+        """Deletes a journey and its associated logs. Only COMPLETED journeys can be deleted."""
+        journey = db.query(JourneySession).filter(
+            JourneySession.id == journey_id,
+            JourneySession.company_id == company_id
+        ).first()
+
+        if not journey:
+            raise HTTPException(status_code=404, detail="Journey not found")
+
+        # Safety Check: Do not allow deleting ACTIVE journeys
+        if journey.status == JourneyStatus.ACTIVE:
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot delete an ACTIVE journey. Please end it first."
+            )
+
+        db.delete(journey)
+        db.commit()
+
+        return {
+            "status": "success",
+            "message": "Journey and all associated location data deleted successfully"
+        }

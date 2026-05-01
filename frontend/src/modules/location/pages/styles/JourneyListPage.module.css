@@ -253,6 +253,26 @@
   border: 1px solid #e2e8f0;
 }
 
+.deleteBtn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.deleteBtn:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
+  transform: scale(1.05);
+}
+
 .pulse {
   width: 8px;
   height: 8px;

@@ -24,6 +24,16 @@ const LocationService = {
       params: { company_id: companyId },
     });
     return response.data; // Standardized ResponseEnvelope: { status, message, data: { ...journey, logs: [] } }
+  },
+
+  /**
+   * Delete a journey and its logs (Only for COMPLETED journeys)
+   */
+  deleteJourney: async (journeyId, companyId) => {
+    const response = await API.delete(`/location/journey/${journeyId}`, {
+      params: { company_id: companyId },
+    });
+    return response.data;
   }
 };
 
