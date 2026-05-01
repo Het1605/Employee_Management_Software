@@ -241,19 +241,21 @@ const JourneyListPage = () => {
                     <span className={styles.userId}>User ID: {journey.user_id}</span>
                   </div>
                 </div>
-                <span className={`${styles.statusBadge} ${journey.status === 'ACTIVE' ? styles.active : styles.completed}`}>
-                  {journey.status === 'ACTIVE' && <span className={styles.pulse}></span>}
-                  {journey.status}
-                </span>
-                {journey.status === 'COMPLETED' && (
-                  <button 
-                    className={styles.deleteBtn}
-                    onClick={(e) => handleDelete(e, journey.id)}
-                    title="Delete Journey"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+                <div className={styles.cardActions}>
+                  <span className={`${styles.statusBadge} ${journey.status === 'ACTIVE' ? styles.active : styles.completed}`}>
+                    {journey.status === 'ACTIVE' && <span className={styles.pulse}></span>}
+                    {journey.status}
+                  </span>
+                  {journey.status === 'COMPLETED' && (
+                    <button 
+                      className={styles.deleteBtn}
+                      onClick={(e) => handleDelete(e, journey.id)}
+                      title="Delete Journey"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className={styles.cardBody}>
