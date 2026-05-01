@@ -28,11 +28,9 @@ services:
   frontend:
     build: 
       context: ./frontend
-      args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL}
     container_name: employee_frontend
     ports:
-      - "3000:80" # Maps port 80 inside container (Nginx) to 3000 outside
+      - "80:80" # Maps port 80 inside container (Nginx) to 80 outside (Standard HTTP)
     depends_on:
       - backend
 

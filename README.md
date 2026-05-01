@@ -12,9 +12,6 @@ A professional, modular Employee Management System built with **FastAPI (Python)
    ```bash
    docker-compose up --build
    ```
-   - **Frontend**: http://localhost:3000
-   - **Backend API**: http://localhost:8000/docs
-
 ---
 
 ## 🌐 Production Deployment Guide

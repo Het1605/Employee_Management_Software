@@ -5,10 +5,6 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-# Argument to pass API URL during build
-ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-
 RUN npm run build
 
 # Stage 2: Serve with Nginx
@@ -21,6 +17,13 @@ RUN echo "server { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
         try_files \$uri \$uri/ /index.html; \
+    } \
+    location /api { \
+        proxy_pass http://employee_backend:8000; \
+        proxy_set_header Host \$host; \
+        proxy_set_header X-Real-IP \$remote_addr; \
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; \
+        proxy_set_header X-Forwarded-Proto \$scheme; \
     } \
 }" > /etc/nginx/conf.d/default.conf
 
