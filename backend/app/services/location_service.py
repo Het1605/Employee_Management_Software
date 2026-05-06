@@ -8,6 +8,8 @@ from datetime import datetime
 from uuid import UUID
 from typing import List
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
 class LocationService:
     @staticmethod
     def _validate_user_membership(db: Session, user_id: int, company_id: int):
@@ -83,36 +85,56 @@ class LocationService:
         if journey.status != JourneyStatus.ACTIVE:
             raise HTTPException(status_code=400, detail="Cannot track location: Journey is not ACTIVE")
 
-        # 3. Duplicate Protection (Lightweight)
-        # We'll filter out points that might be duplicates in this batch or already exist
-        # To avoid heavy DB checks, we'll at least deduplicate the incoming batch
-        seen_points = set()
-        unique_logs = []
-        
-        for loc in data.locations:
-            point_key = (loc.recorded_at, loc.latitude, loc.longitude)
-            if point_key not in seen_points:
-                seen_points.add(point_key)
-                unique_logs.append(
-                    LocationLog(
-                        journey_id=journey.id,
-                        user_id=user_id,
-                        company_id=journey.company_id,
-                        latitude=loc.latitude,
-                        longitude=loc.longitude,
-                        recorded_at=loc.recorded_at
-                    )
-                )
+        # 3. Efficient Deduplication & Insertion (Postgres ON CONFLICT)
+        logs_to_insert = []
+        seen_in_batch = set()
 
-        if unique_logs:
-            db.bulk_save_objects(unique_logs)
-            journey.total_points += len(unique_logs)
+        for loc in data.locations:
+            # Rounding to 6 decimal places (approx 10cm precision) ensures consistency
+            # while preventing minor float drift from bypassing uniqueness checks.
+            lat = round(float(loc.latitude), 6)
+            lng = round(float(loc.longitude), 6)
+            
+            point_key = (loc.recorded_at, lat, lng)
+            if point_key not in seen_in_batch:
+                seen_in_batch.add(point_key)
+                logs_to_insert.append({
+                    "journey_id": journey.id,
+                    "user_id": user_id,
+                    "company_id": journey.company_id,
+                    "latitude": lat,
+                    "longitude": lng,
+                    "recorded_at": loc.recorded_at
+                })
+
+        if logs_to_insert:
+            # Use PostgreSQL-specific INSERT ... ON CONFLICT DO NOTHING
+            # This handles network retries perfectly by ignoring rows that already exist.
+            stmt = pg_insert(LocationLog).values(logs_to_insert)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=['journey_id', 'latitude', 'longitude', 'recorded_at']
+            )
+            
+            result = db.execute(stmt)
+            # We need to manually update total_points because DO NOTHING won't tell us how many were NEW
+            # unless we use RETURNING. But for efficiency, we can just recount or rely on the fact
+            # that we've ensured integrity.
+            
+            # Let's count current points to keep total_points accurate
+            new_count = db.query(func.count(LocationLog.id)).filter(LocationLog.journey_id == journey.id).scalar()
+            journey.total_points = new_count
             db.commit()
+
+            return {
+                "status": "success", 
+                "message": "Location data processed",
+                "data": {"points_added_attempted": len(logs_to_insert), "total_points": journey.total_points}
+            }
         
         return {
-            "status": "success", 
-            "message": f"Successfully tracked {len(unique_logs)} points",
-            "data": {"points_added": len(unique_logs), "total_points": journey.total_points}
+            "status": "success",
+            "message": "No new points to track",
+            "data": {"total_points": journey.total_points}
         }
 
     @staticmethod

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Float, ForeignKey, Integer, BigInteger, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, Float, ForeignKey, Integer, BigInteger, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -53,6 +53,10 @@ class LocationLog(Base):
     longitude = Column(Float, nullable=False)
     recorded_at = Column(DateTime(timezone=True), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('journey_id', 'latitude', 'longitude', 'recorded_at', name='_journey_location_uc'),
+    )
 
     # Relationships
     journey = relationship("JourneySession", back_populates="logs")
