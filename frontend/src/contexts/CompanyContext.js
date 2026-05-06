@@ -24,14 +24,17 @@ export const CompanyProvider = ({ children }) => {
       
       try {
         const res = await API.get(endpoint);
-        const list = res.data || [];
+        // Extract array from envelope if present, otherwise use res.data
+        const rawData = res.data?.data || res.data;
+        const list = Array.isArray(rawData) ? rawData : [];
         setCompanies(list);
         
         // Auto-select if nothing selected
         if (!selectedCompany?.id && list.length > 0) {
           setSelectedCompanyId(list[0]);
         }
-      } catch {
+      } catch (error) {
+        console.error("Failed to load companies:", error);
         setCompanies([]);
       } finally {
         setLoadingCompanies(false);
@@ -53,7 +56,7 @@ export const CompanyProvider = ({ children }) => {
   }, [selectedCompany]);
 
   useEffect(() => {
-    if (!selectedCompany?.id || companies.length === 0) return;
+    if (!selectedCompany?.id || !Array.isArray(companies) || companies.length === 0) return;
     const exists = companies.some((c) => String(c.id) === String(selectedCompany.id));
     if (!exists) {
       setSelectedCompany(null);
@@ -76,7 +79,7 @@ export const CompanyProvider = ({ children }) => {
       return;
     }
 
-    const found = companies.find((c) => String(c.id) === String(company));
+    const found = Array.isArray(companies) ? companies.find((c) => String(c.id) === String(company)) : null;
     setSelectedCompany({
       id: String(company),
       name: found?.name || '',

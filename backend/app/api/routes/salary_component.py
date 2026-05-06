@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status, HTTPException
+from app.schemas.base_response import ResponseSchema
 from sqlalchemy.orm import Session
 from typing import List
 from fastapi import Query
@@ -15,32 +16,35 @@ from app.services.salary_structure_service import SalaryStructureService
 
 router = APIRouter(prefix="/salary-components", tags=["Salary Components"])
 
-@router.post("/", response_model=SalaryComponentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ResponseSchema[SalaryComponentResponse], status_code=status.HTTP_201_CREATED)
 def create_component(
     component: SalaryComponentCreate,
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return SalaryStructureService.create_salary_component(db, component)
+    result = SalaryStructureService.create_salary_component(db, component)
+    return ResponseSchema(status="success", message="Salary component created", data=result)
 
-@router.get("/", response_model=List[SalaryComponentResponse])
+@router.get("/", response_model=ResponseSchema[List[SalaryComponentResponse]])
 def get_components(
     company_id: int = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
 ):
-    return SalaryStructureService.get_salary_components(db, company_id)
+    result = SalaryStructureService.get_salary_components(db, company_id)
+    return ResponseSchema(status="success", data=result)
 
-@router.get("/{component_id}", response_model=SalaryComponentResponse)
+@router.get("/{component_id}", response_model=ResponseSchema[SalaryComponentResponse])
 def get_component(
     component_id: int,
     company_id: int = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
 ):
-    return SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
+    result = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
+    return ResponseSchema(status="success", data=result)
 
-@router.put("/{component_id}", response_model=SalaryComponentResponse)
+@router.put("/{component_id}", response_model=ResponseSchema[SalaryComponentResponse])
 def update_component(
     component_id: int,
     data: SalaryComponentUpdate,
@@ -48,13 +52,15 @@ def update_component(
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return SalaryStructureService.update_salary_component(db, component_id, company_id, data)
+    result = SalaryStructureService.update_salary_component(db, component_id, company_id, data)
+    return ResponseSchema(status="success", message="Salary component updated", data=result)
 
-@router.delete("/{component_id}")
+@router.delete("/{component_id}", response_model=ResponseSchema[dict])
 def delete_component(
     component_id: int,
     company_id: int = Query(...),
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return SalaryStructureService.delete_salary_component(db, component_id, company_id)
+    result = SalaryStructureService.delete_salary_component(db, component_id, company_id)
+    return ResponseSchema(status="success", message="Salary component deleted", data=result)

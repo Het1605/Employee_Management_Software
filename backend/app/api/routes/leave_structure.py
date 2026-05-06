@@ -1,29 +1,8 @@
-"""
-Leave Structure & Assignment API Routes
-========================================
-Endpoints:
-  POST   /leave-structures                   — Create a leave structure
-  GET    /leave-structures                   — List all structures
-  GET    /leave-structures/{id}              — Get single structure
-  PUT    /leave-structures/{id}              — Update structure name / details
-  DELETE /leave-structures/{id}              — Delete (only if unassigned)
-  POST   /leave-assignments                  — Assign structure to user
-  GET    /leave-assignments/{user_id}        — Get user's active assignment
-  PUT    /leave-assignments/{user_id}        — Reassign to a different structure
-  DELETE /leave-assignments/{user_id}        — Remove assignment + balances
-  GET    /leave-balances/{user_id}           — Full balance history
-  GET    /leave-balances/{user_id}/current   — Current-period balances
-  POST   /leave-balances/deduct             — Deduct approved leave
-  POST   /leave-balances/reverse            — Reverse a deduction
-
-Cron trigger endpoints (Admin-only):
-  POST   /leave-cron/monthly-allocation      — Trigger monthly allocation
-"""
-
 from datetime import date, datetime
 import calendar
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.schemas.base_response import ResponseSchema
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -57,7 +36,7 @@ router = APIRouter(tags=["Leave Structures"])
 
 @router.post(
     "/leave-structures",
-    response_model=LeaveStructureOut,
+    response_model=ResponseSchema[LeaveStructureOut],
     status_code=status.HTTP_201_CREATED,
     summary="Create a new leave structure (Admin / HR only)",
 )
@@ -72,12 +51,12 @@ def create_leave_structure(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return structure
+    return ResponseSchema(status="success", message="Leave structure created", data=structure)
 
 
 @router.get(
     "/leave-structures",
-    response_model=List[LeaveStructureOut],
+    response_model=ResponseSchema[List[LeaveStructureOut]],
     summary="List all leave structures",
 )
 def list_leave_structures(
@@ -85,12 +64,13 @@ def list_leave_structures(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"])),
 ):
-    return LeaveStructureService.get_all_structures(db, company_id=company_id)
+    result = LeaveStructureService.get_all_structures(db, company_id=company_id)
+    return ResponseSchema(status="success", data=result)
 
 
 @router.get(
     "/leave-structures/{structure_id}",
-    response_model=LeaveStructureOut,
+    response_model=ResponseSchema[LeaveStructureOut],
     summary="Get a single leave structure by ID",
 )
 def get_leave_structure(
@@ -101,12 +81,12 @@ def get_leave_structure(
     structure = LeaveStructureService.get_structure_by_id(db, structure_id)
     if not structure:
         raise HTTPException(status_code=404, detail="Leave structure not found.")
-    return structure
+    return ResponseSchema(status="success", data=structure)
 
 
 @router.put(
     "/leave-structures/{structure_id}",
-    response_model=LeaveStructureOut,
+    response_model=ResponseSchema[LeaveStructureOut],
     summary="Update a leave structure (Admin / HR only)",
 )
 def update_leave_structure(
@@ -121,12 +101,13 @@ def update_leave_structure(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return structure
+    return ResponseSchema(status="success", message="Leave structure updated", data=structure)
 
 
 @router.delete(
     "/leave-structures/{structure_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=ResponseSchema[dict],
+    status_code=status.HTTP_200_OK,
     summary="Delete a leave structure (Admin / HR only)",
 )
 def delete_leave_structure(
@@ -137,6 +118,7 @@ def delete_leave_structure(
 
     try:
         LeaveStructureService.delete_structure(db, structure_id)
+        return ResponseSchema(status="success", message="Leave structure deleted")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -147,7 +129,7 @@ def delete_leave_structure(
 
 @router.post(
     "/leave-assignments",
-    response_model=LeaveAssignmentOut,
+    response_model=ResponseSchema[LeaveAssignmentOut],
     status_code=status.HTTP_201_CREATED,
     summary="Assign a leave structure to a user (Admin / HR only)",
 )
@@ -162,12 +144,12 @@ def assign_leave_structure(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return assignment
+    return ResponseSchema(status="success", message="Leave structure assigned", data=assignment)
 
 
 @router.get(
     "/leave-assignments",
-    response_model=List[LeaveAssignmentOut],
+    response_model=ResponseSchema[List[LeaveAssignmentOut]],
     summary="List all active leave assignments (Admin / HR only)",
 )
 def list_leave_assignments(
@@ -175,12 +157,13 @@ def list_leave_assignments(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
-    return LeaveStructureService.get_all_assignments(db, company_id=company_id)
+    result = LeaveStructureService.get_all_assignments(db, company_id=company_id)
+    return ResponseSchema(status="success", data=result)
 
 
 @router.get(
     "/leave-assignments/{user_id}",
-    response_model=LeaveAssignmentOut,
+    response_model=ResponseSchema[LeaveAssignmentOut],
     summary="Get the active leave assignment for a user in a specific company",
 )
 def get_user_assignment(
@@ -200,12 +183,12 @@ def get_user_assignment(
     
     if not assignment:
         raise HTTPException(status_code=404, detail=f"No leave structure assigned to user {user_id} in this company.")
-    return assignment
+    return ResponseSchema(status="success", data=assignment)
 
 
 @router.put(
     "/leave-assignments/{user_id}",
-    response_model=LeaveAssignmentOut,
+    response_model=ResponseSchema[LeaveAssignmentOut],
     summary="Reassign a user to a different leave structure (Admin / HR only)",
 )
 def update_leave_assignment(
@@ -221,11 +204,12 @@ def update_leave_assignment(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return assignment
+    return ResponseSchema(status="success", message="Assignment updated", data=assignment)
 
 
 @router.delete(
     "/leave-assignments/{user_id}",
+    response_model=ResponseSchema[Dict[str, Any]],
     summary="Remove a user's leave assignment and balances (Admin / HR only)",
 )
 def delete_leave_assignment(
@@ -237,7 +221,7 @@ def delete_leave_assignment(
 
     try:
         LeaveStructureService.delete_assignment(db, user_id, company_id)
-        return {"message": "Assignment and balances successfully removed."}
+        return ResponseSchema(status="success", message="Assignment and balances successfully removed.")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -248,6 +232,7 @@ def delete_leave_assignment(
 
 @router.post(
     "/leave-balance/set",
+    response_model=ResponseSchema[Dict[str, Any]],
     summary="Admin/HR: Manually Set Current Leave Balance (Snapshot)",
 )
 def set_manual_leave_balance(
@@ -268,13 +253,17 @@ def set_manual_leave_balance(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return {"message": "Leave balance snapshots successfully updated.", "updated_types": updated_types}
+    return ResponseSchema(
+        status="success", 
+        message="Leave balance snapshots successfully updated.", 
+        data={"updated_types": updated_types}
+    )
 
 
 
 @router.get(
     "/leave-balance/{user_id}",
-    response_model=LeaveBalanceResponse,
+    response_model=ResponseSchema[LeaveBalanceResponse],
     summary="Get real-time leave balance for a user",
 )
 def get_user_leave_balance(
@@ -299,7 +288,7 @@ def get_user_leave_balance(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    return balance
+    return ResponseSchema(status="success", data=balance)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -310,6 +299,7 @@ def get_user_leave_balance(
 
 @router.post(
     "/leave-cron/monthly-allocation",
+    response_model=ResponseSchema[Dict[str, Any]],
     summary="Manually trigger Monthly Leave Allocation (Admin / HR only)",
 )
 def trigger_monthly_allocation(
@@ -321,10 +311,7 @@ def trigger_monthly_allocation(
 ):
 
     try:
-        # Note: This calls the internal allocation logic. 
-        # Typically run by a cron, but exposed here for manual correction.
-        # Since get_runtime_leave_balance does it dynamically, 
-        # this endpoint might be useful for manual persistence if needed later.
-        return {"message": "Monthly allocation logic completed (Dynamic)."}
+        # Allocation is dynamic, but this could trigger specific persistence if needed.
+        return ResponseSchema(status="success", message="Monthly allocation logic completed (Dynamic).")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

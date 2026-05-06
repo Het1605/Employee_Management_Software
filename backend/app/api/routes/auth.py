@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.orm import Session
 from app.db.database import get_db
+from app.schemas.base_response import ResponseSchema
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 from app.schemas.user import LoginRequest, ChangePasswordRequest, ResetPasswordRequest, ResetPasswordConfirm
@@ -10,16 +11,19 @@ from app.api.dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+from typing import Dict, Any
+
 from fastapi.security import OAuth2PasswordRequestForm
 
-@router.post("/login")
+@router.post("/login", response_model=ResponseSchema[Dict[str, Any]])
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    return AuthService.authenticate_user(db, data.username, data.password)
+    result = AuthService.authenticate_user(db, data.username, data.password)
+    return ResponseSchema(status="success", message="Login successful", data=result)
 
 class RefreshRequest(BaseModel):
     refresh_token: str
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=ResponseSchema[Dict[str, Any]])
 def refresh_token(
     data: Optional[RefreshRequest] = None, 
     refresh_token: Optional[str] = Header(None), 
@@ -39,16 +43,20 @@ def refresh_token(
     if token.startswith("Bearer "):
         token = token.replace("Bearer ", "")
         
-    return AuthService.refresh_tokens(db, token)
+    result = AuthService.refresh_tokens(db, token)
+    return ResponseSchema(status="success", data=result)
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=ResponseSchema[Dict[str, Any]])
 def change_password(data: ChangePasswordRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    return AuthService.change_password(db, current_user.email, data.old_password, data.new_password)
+    result = AuthService.change_password(db, current_user.email, data.old_password, data.new_password)
+    return ResponseSchema(status="success", message="Password changed successfully", data=result)
 
-@router.post("/reset-password")
+@router.post("/reset-password", response_model=ResponseSchema[Dict[str, Any]])
 def reset_password_request(data: ResetPasswordRequest, db: Session = Depends(get_db)):
-    return AuthService.reset_password_request(db, data.email)
+    result = AuthService.reset_password_request(db, data.email)
+    return ResponseSchema(status="success", data=result)
 
-@router.post("/reset-password-confirm")
+@router.post("/reset-password-confirm", response_model=ResponseSchema[Dict[str, Any]])
 def reset_password_confirm(data: ResetPasswordConfirm, db: Session = Depends(get_db)):
-    return AuthService.reset_password_confirm(db, data)
+    result = AuthService.reset_password_confirm(db, data)
+    return ResponseSchema(status="success", message="Password reset successfully", data=result)

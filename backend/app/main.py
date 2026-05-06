@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter
+from app.schemas.base_response import ResponseSchema
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import Base, engine
 import app.models  # Register all models for SQLAlchemy
@@ -91,6 +92,6 @@ api_router.include_router(location_router)
 # Include the centralized API router into the main app
 app.include_router(api_router)
 
-@app.get("/api")
+@app.get("/api", response_model=ResponseSchema[dict])
 def home():
-    return {"message": "API running"}
+    return ResponseSchema(status="success", message="API running")

@@ -94,7 +94,11 @@ def mark_attendance(db: Session, actor: User, company_id: int, status_str: str, 
         db.add(new_attendance)
         
     db.commit()
-    return {"message": f"Attendance recorded as {status_str}"}
+    return {
+        "date": final_date,
+        "status": status_str,
+        "day_type": day_status
+    }
 
 def get_my_attendance(db: Session, user_id: int, company_id: int, month: int, year: int):
     user = db.query(User).filter(User.id == user_id).first()
@@ -278,9 +282,9 @@ def get_today_status(db: Session, user_id: int, company_id: int):
         else:
             lock_message = "Leave approved for this day. Attendance is locked."
             
-    status = record.status if record else "absent"
+    final_status = record.status if record else "absent"
     return {
-        "status": status, 
+        "status": final_status, 
         "day_type": day_type,
         "is_locked": is_locked,
         "lock_message": lock_message

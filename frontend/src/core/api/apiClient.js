@@ -33,6 +33,14 @@ API.interceptors.request.use(
 
 API.interceptors.response.use(
   (response) => {
+    // Automatically unwrap the standard backend ResponseSchema { status, message, data }
+    if (response.data && response.data.status === "success" && response.data.hasOwnProperty("data")) {
+      return {
+        ...response,
+        data: response.data.data,
+        fullResponse: response.data // Keep the full envelope for components that might need status/message
+      };
+    }
     return response;
   },
   async (error) => {

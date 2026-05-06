@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.schemas.base_response import ResponseSchema
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, date, timedelta
 import calendar
 from app.db.database import get_db
@@ -34,7 +35,7 @@ def _calculate_total_days(db: Session, company_id: int, start_date: date, end_da
         curr += timedelta(days=1)
     return total
 
-@router.post("", response_model=LeaveRequestOut)
+@router.post("", response_model=ResponseSchema[LeaveRequestOut])
 def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # 1. Security Check: Does user belong to THIS specific company?
     mapping = db.query(UserCompanyMapping).filter_by(
@@ -79,9 +80,9 @@ def apply_for_leave(request: LeaveRequestCreate, db: Session = Depends(get_db), 
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
-    return db_request
+    return ResponseSchema(status="success", message="Leave request submitted successfully", data=db_request)
 
-@router.get("/my", response_model=List[LeaveRequestOut])
+@router.get("/my", response_model=ResponseSchema[List[LeaveRequestOut]])
 def get_my_leaves(
     company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db), 
@@ -100,9 +101,10 @@ def get_my_leaves(
         LeaveRequest.company_id == company_id,
         LeaveRequest.hidden_for_employee == False
     )
-    return query.order_by(LeaveRequest.applied_at.desc()).all()
+    leaves = query.order_by(LeaveRequest.applied_at.desc()).all()
+    return ResponseSchema(status="success", data=leaves)
 
-@router.get("", response_model=List[LeaveRequestOut])
+@router.get("", response_model=ResponseSchema[List[LeaveRequestOut]])
 def get_all_leaves(company_id: int = Query(..., description="ID of the selected company"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to view all leaves")
@@ -111,26 +113,24 @@ def get_all_leaves(company_id: int = Query(..., description="ID of the selected 
         LeaveRequest.company_id == company_id,
         LeaveRequest.hidden_for_admin == False
     ).order_by(LeaveRequest.applied_at.desc()).all()
-    return leaves
+    return ResponseSchema(status="success", data=leaves)
 
-@router.put("/{request_id}", response_model=LeaveRequestOut)
+@router.put("/{request_id}", response_model=ResponseSchema[LeaveRequestOut])
 def update_leave_request(
     request_id: int, 
     data: LeaveRequestEdit, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    # Fetch existing
+    # ... (skipping some logic but keeping all lines from original for replacement)
     db_request = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    # Permission check: Owner or Admin/HR/Manager
     is_privileged = current_user.role in ['ADMIN', 'HR', 'MANAGER']
     if db_request.user_id != current_user.id and not is_privileged:
         raise HTTPException(status_code=403, detail="You do not have permission to edit this request")
 
-    # Overlap check (excluding current request)
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == db_request.user_id,
         LeaveRequest.company_id == db_request.company_id,
@@ -143,18 +143,15 @@ def update_leave_request(
     if existing:
         raise HTTPException(status_code=400, detail="Updated dates overlap with another existing leave request")
 
-    # Recalculate total days
     total_days = _calculate_total_days(db, db_request.company_id, data.start_date, data.end_date, data.leave_duration_type)
     if total_days == 0:
         raise HTTPException(status_code=400, detail="The selected date range contains no working days")
 
-    # Reset status if already reviewed
     if db_request.status != "pending":
         db_request.status = "pending"
         db_request.reviewed_by = None
         db_request.reviewed_at = None
 
-    # Update fields
     db_request.leave_category = data.leave_category
     db_request.leave_duration_type = data.leave_duration_type
     db_request.start_date = data.start_date
@@ -164,9 +161,9 @@ def update_leave_request(
 
     db.commit()
     db.refresh(db_request)
-    return db_request
+    return ResponseSchema(status="success", message="Leave request updated successfully", data=db_request)
 
-@router.put("/{leave_id}/approve-reject", response_model=LeaveRequestOut)
+@router.put("/{leave_id}/approve-reject", response_model=ResponseSchema[LeaveRequestOut])
 def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to approve or reject leaves")
@@ -257,9 +254,9 @@ def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session
     db.add(audit_log)
     db.commit()
     db.refresh(db_request)
-    return db_request
+    return ResponseSchema(status="success", message=f"Leave request {request.status} successfully", data=db_request)
 
-@router.patch("/{leave_id}/edit", response_model=LeaveRequestOut)
+@router.patch("/{leave_id}/edit", response_model=ResponseSchema[LeaveRequestOut])
 def employee_edit_leave(
     leave_id: int,
     request: LeaveRequestEdit,
@@ -321,9 +318,9 @@ def employee_edit_leave(
 
     db.commit()
     db.refresh(db_request)
-    return db_request
+    return ResponseSchema(status="success", message="Leave request edited successfully", data=db_request)
 
-@router.delete("/{leave_id}", response_model=dict)
+@router.delete("/{leave_id}", response_model=ResponseSchema[Dict[str, Any]])
 def delete_leave(
     leave_id: int,
     db: Session = Depends(get_db),
@@ -368,9 +365,9 @@ def delete_leave(
             msg = "Leave request hidden from your view"
 
     db.commit()
-    return {"message": msg}
+    return ResponseSchema(status="success", message=msg)
 
-@router.get("/calendar-summary", response_model=List[LeaveCalendarSummary])
+@router.get("/calendar-summary", response_model=ResponseSchema[List[LeaveCalendarSummary]])
 def get_calendar_summary(
     month: int = Query(..., ge=1, le=12),
     year: int = Query(..., ge=2000),
@@ -405,9 +402,9 @@ def get_calendar_summary(
         if count > 0:
             summary.append({"date": curr_date, "leave_count": count})
 
-    return summary
+    return ResponseSchema(status="success", data=summary)
 
-@router.get("/activity-logs", response_model=LeaveActivityLogPaginated)
+@router.get("/activity-logs", response_model=ResponseSchema[LeaveActivityLogPaginated])
 def get_leave_activity_logs(
     company_id: int = Query(..., description="ID of the company"),
     page: int = Query(1, ge=1),
@@ -451,9 +448,9 @@ def get_leave_activity_logs(
     
     has_more = (offset + limit) < total_count
     
-    return {
+    return ResponseSchema(status="success", data={
         "logs": logs,
         "total_count": total_count,
         "has_more": has_more
-    }
+    })
 

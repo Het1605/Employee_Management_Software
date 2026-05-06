@@ -35,8 +35,8 @@ const JourneyListPage = () => {
 
   const loadCompanyUsers = async () => {
     try {
-      const response = await fetchUsers(selectedCompanyId);
-      setUsers(response.data || []);
+      const usersData = await fetchUsers(selectedCompanyId);
+      setUsers(usersData || []);
     } catch (error) {
       console.error("Failed to load users for this company:", error);
       setUsers([]);
@@ -52,10 +52,10 @@ const JourneyListPage = () => {
       if (activeFilters.userId) apiFilters.user_id = activeFilters.userId;
       if (activeFilters.status) apiFilters.status = activeFilters.status;
 
-      const response = await LocationService.getJourneys(selectedCompanyId, page, 20, apiFilters);
-      if (response.status === "success") {
-        setJourneys(response.data.items);
-        setTotal(response.data.total);
+      const journeyData = await LocationService.getJourneys(selectedCompanyId, page, 20, apiFilters);
+      if (journeyData) {
+        setJourneys(journeyData.items || []);
+        setTotal(journeyData.total || 0);
       }
     } catch (error) {
       console.error("Failed to fetch journeys:", error);
@@ -107,11 +107,9 @@ const JourneyListPage = () => {
 
     try {
       const response = await LocationService.deleteJourney(journeyId, selectedCompanyId);
-      if (response.status === "success") {
-        // Remove from local state
-        setJourneys(journeys.filter(j => j.id !== journeyId));
-        setTotal(prev => prev - 1);
-      }
+      // Delete journey logic (interceptor returns data directly)
+      setJourneys(journeys.filter(j => j.id !== journeyId));
+      setTotal(prev => prev - 1);
     } catch (error) {
       console.error("Failed to delete journey:", error);
       alert(error.response?.data?.detail || "Failed to delete journey");

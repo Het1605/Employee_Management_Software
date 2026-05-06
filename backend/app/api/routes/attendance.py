@@ -4,6 +4,7 @@ from app.db.database import get_db
 from app.models import User
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.roles import role_required
+from app.schemas.base_response import ResponseSchema
 from app.schemas.attendance import AttendanceMark, MyAttendanceStats, UserAttendanceRecord, AttendanceToday, AttendanceResponse
 from app.services import attendance_service
 from typing import List, Optional
@@ -16,7 +17,7 @@ def get_user_by_id(db: Session, user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.post("/mark")
+@router.post("/mark", response_model=ResponseSchema[AttendanceResponse])
 def mark_attendance(
     attendance: AttendanceMark,
     db: Session = Depends(get_db),
@@ -32,7 +33,7 @@ def mark_attendance(
     initiator_id = attendance.actor_id or attendance.user_id
     actor = get_user_by_id(db, initiator_id) if initiator_id else None
     
-    return attendance_service.mark_attendance(
+    result = attendance_service.mark_attendance(
         db, 
         actor, 
         attendance.company_id, 
@@ -40,8 +41,9 @@ def mark_attendance(
         attendance.user_id, 
         attendance.date
     )
+    return ResponseSchema(status="success", message="Attendance marked successfully", data=result)
 
-@router.get("/my", response_model=MyAttendanceStats)
+@router.get("/my", response_model=ResponseSchema[MyAttendanceStats])
 def get_my_attendance(
     user_id: int = Query(...),
     company_id: int = Query(..., description="ID of the company to filter by"),
@@ -52,9 +54,10 @@ def get_my_attendance(
 ):
     if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
          raise HTTPException(status_code=403, detail="Not authorized to view other's attendance")
-    return attendance_service.get_my_attendance(db, user_id, company_id, month, year)
+    result = attendance_service.get_my_attendance(db, user_id, company_id, month, year)
+    return ResponseSchema(status="success", data=result)
 
-@router.get("/company", response_model=List[UserAttendanceRecord])
+@router.get("/company", response_model=ResponseSchema[List[UserAttendanceRecord]])
 def get_company_attendance(
     company_id: int = Query(...),
     month: int = Query(..., ge=1, le=12),
@@ -62,9 +65,10 @@ def get_company_attendance(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return attendance_service.get_company_attendance(db, company_id, month, year)
+    attendance = attendance_service.get_company_attendance(db, company_id, month, year)
+    return ResponseSchema(status="success", data=attendance)
 
-@router.get("/today", response_model=AttendanceToday)
+@router.get("/today", response_model=ResponseSchema[AttendanceToday])
 def get_today_status(
     user_id: int = Query(...),
     company_id: int = Query(..., description="ID of the company to filter by"),
@@ -73,4 +77,5 @@ def get_today_status(
 ):
     if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
          raise HTTPException(status_code=403, detail="Not authorized")
-    return attendance_service.get_today_status(db, user_id, company_id)
+    result = attendance_service.get_today_status(db, user_id, company_id)
+    return ResponseSchema(status="success", data=result)

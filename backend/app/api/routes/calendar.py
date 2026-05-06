@@ -11,6 +11,7 @@ from app.schemas.calendar import (
 from app.schemas.employee_calendar import EmployeeCalendarSummary, EmployeeCalendarDay
 from app.services.calendar_service import CalendarService
 from fastapi import APIRouter, Depends, status, Query, HTTPException
+from app.schemas.base_response import ResponseSchema
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -33,107 +34,118 @@ router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
 # ----------------- Working Days -----------------
 
-@router.get("/working-days/{company_id}", response_model=List[WorkingDayResponse])
+@router.get("/working-days/{company_id}", response_model=ResponseSchema[List[WorkingDayResponse]])
 def get_working_days(
     company_id: int, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return CalendarService.get_working_days(db, company_id)
+    result = CalendarService.get_working_days(db, company_id)
+    return ResponseSchema(status="success", data=result)
 
-@router.put("/working-days/{company_id}", response_model=List[WorkingDayResponse])
+@router.put("/working-days/{company_id}", response_model=ResponseSchema[List[WorkingDayResponse]])
 def update_working_days(
     company_id: int, 
     payload: WorkingDaysUpdateBulk, 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.update_working_days(db, company_id, payload)
+    result = CalendarService.update_working_days(db, company_id, payload)
+    return ResponseSchema(status="success", message="Working days updated", data=result)
 
 # ----------------- Holidays -----------------
 
-@router.get("/holidays", response_model=List[HolidayResponse])
+@router.get("/holidays", response_model=ResponseSchema[List[HolidayResponse]])
 def get_holidays(
     company_id: int = Query(...), 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return CalendarService.get_holidays(db, company_id)
+    result = CalendarService.get_holidays(db, company_id)
+    return ResponseSchema(status="success", data=result)
 
-@router.post("/holidays", response_model=HolidayResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/holidays", response_model=ResponseSchema[HolidayResponse], status_code=status.HTTP_201_CREATED)
 def create_holiday(
     company_id: int = Query(...), 
     holiday: HolidayCreate = ..., 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.create_holiday(db, company_id, holiday)
+    result = CalendarService.create_holiday(db, company_id, holiday)
+    return ResponseSchema(status="success", message="Holiday created", data=result)
 
-@router.put("/holidays/{holiday_id}", response_model=HolidayResponse)
+@router.put("/holidays/{holiday_id}", response_model=ResponseSchema[HolidayResponse])
 def update_holiday(
     holiday_id: int, 
     holiday: HolidayUpdate, 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.update_holiday(db, holiday_id, holiday)
+    result = CalendarService.update_holiday(db, holiday_id, holiday)
+    return ResponseSchema(status="success", message="Holiday updated", data=result)
 
-@router.delete("/holidays/{holiday_id}")
+@router.delete("/holidays/{holiday_id}", response_model=ResponseSchema[dict])
 def delete_holiday(
     holiday_id: int, 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.delete_holiday(db, holiday_id)
+    result = CalendarService.delete_holiday(db, holiday_id)
+    return ResponseSchema(status="success", message="Holiday deleted", data=result)
 
 # ----------------- Overrides -----------------
 
-@router.get("/overrides", response_model=List[OverrideResponse])
+@router.get("/overrides", response_model=ResponseSchema[List[OverrideResponse]])
 def get_overrides(
     company_id: int = Query(...), 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return CalendarService.get_overrides(db, company_id)
+    result = CalendarService.get_overrides(db, company_id)
+    return ResponseSchema(status="success", data=result)
 
-@router.post("/overrides", response_model=OverrideResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/overrides", response_model=ResponseSchema[OverrideResponse], status_code=status.HTTP_201_CREATED)
 def create_override(
     company_id: int = Query(...), 
     override: OverrideCreate = ..., 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.create_override(db, company_id, override)
+    result = CalendarService.create_override(db, company_id, override)
+    return ResponseSchema(status="success", message="Override created", data=result)
 
-@router.put("/overrides/{override_id}", response_model=OverrideResponse)
+@router.put("/overrides/{override_id}", response_model=ResponseSchema[OverrideResponse])
 def update_override(
     override_id: int, 
     override: OverrideUpdate, 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.update_override(db, override_id, override)
+    result = CalendarService.update_override(db, override_id, override)
+    return ResponseSchema(status="success", message="Override updated", data=result)
 
-@router.delete("/overrides/{override_id}")
+@router.delete("/overrides/{override_id}", response_model=ResponseSchema[dict])
 def delete_override(
     override_id: int, 
     db: Session = Depends(get_db),
     admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
-    return CalendarService.delete_override(db, override_id)
+    result = CalendarService.delete_override(db, override_id)
+    return ResponseSchema(status="success", message="Override deleted", data=result)
 
 # ----------------- Core Logic Access -----------------
 
-@router.get("/status", response_model=DayStatusResponse)
+@router.get("/status", response_model=ResponseSchema[DayStatusResponse])
 def get_day_status(
     company_id: int = Query(...), 
     target_date: date = Query(...), 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return CalendarService.get_day_status(db, company_id, target_date)
+    result = CalendarService.get_day_status(db, company_id, target_date)
+    return ResponseSchema(status="success", data=result)
 
-@router.get("/my-config", response_model=CompanyCalendarConfig)
+@router.get("/my-config", response_model=ResponseSchema[CompanyCalendarConfig])
 def get_my_company_calendar_config(
     company_id: int = Query(...),
     db: Session = Depends(get_db),
@@ -151,13 +163,14 @@ def get_my_company_calendar_config(
     holidays = CalendarService.get_holidays(db, company_id)
     overrides = CalendarService.get_overrides(db, company_id)
     
-    return {
+    result = {
         "working_days": working_days,
         "holidays": holidays,
         "overrides": overrides
     }
+    return ResponseSchema(status="success", data=result)
 
-@router.get("/employee-summary", response_model=EmployeeCalendarSummary)
+@router.get("/employee-summary", response_model=ResponseSchema[EmployeeCalendarSummary])
 def get_employee_calendar_summary(
     company_id: int = Query(...),
     month: int = Query(..., ge=1, le=12),
@@ -259,4 +272,5 @@ def get_employee_calendar_summary(
 
         days.append(EmployeeCalendarDay(**day_result))
 
-    return EmployeeCalendarSummary(days=days)
+    result = EmployeeCalendarSummary(days=days)
+    return ResponseSchema(status="success", data=result)
