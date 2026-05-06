@@ -48,7 +48,7 @@ const CompanyManagement = () => {
         try {
             setLoading(true);
             const response = await fetchCompaniesRequest();
-            setCompanies(response.data);
+            setCompanies(response.data || []);
         } catch (err) {
             showToast("Failed to load companies. " + handleApiError(err), 'error');
         } finally {

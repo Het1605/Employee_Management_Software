@@ -53,7 +53,7 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
         setLoading(true);
         try {
             const res = await API.get(`/leave-requests/my?company_id=${selectedCompanyId}`);
-            setRequests(res.data);
+            setRequests(res.data || []);
         } catch (err) {
             console.error("Failed to fetch leave requests", err);
         } finally {
@@ -103,11 +103,11 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
 
             {loading ? (
                 <div className={styles.emptyState}>Loading requests...</div>
-            ) : requests.length === 0 ? (
+            ) : (requests || []).length === 0 ? (
                 <div className={styles.emptyState}>You have no leave requests.</div>
             ) : (
                 <div className={styles.cardList}>
-                    {requests.map((req) => (
+                    {(requests || []).map((req) => (
                         <div key={req.id} className={styles.mobileCard}>
                             <div className={styles.cardRow}>
                                 <span className={styles.leaveCategory}>{req.leave_category}</span>

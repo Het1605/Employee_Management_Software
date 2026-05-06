@@ -25,7 +25,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       const res = await fetchUsersRequest();
-      setUsers(res.data);
+      setUsers(res.data || []);
     } catch (err) {
       showToast("Failed to load users. " + handleApiError(err), 'error');
     }
@@ -78,7 +78,7 @@ const UserManagement = () => {
         </button>
       </div>
       <div className={styles.userGrid}>
-        {users.map(user => (
+        {(users || []).map(user => (
           <UserCard
             key={user.id}
             user={user}

@@ -101,15 +101,15 @@ const JourneyDetailPage = () => {
 
   const fetchJourneyData = async () => {
     try {
-      const response = await LocationService.getJourneyDetail(id, selectedCompanyId);
-      if (response.status === "success") {
-        setJourney(response.data);
-        setLogs(response.data.logs || []);
+      const data = await LocationService.getJourneyDetail(id, selectedCompanyId);
+      if (data) {
+        setJourney(data);
+        setLogs(data.logs || []);
         setLastSync(new Date());
 
-        if (response.data.status === "ACTIVE" && !pollingRef.current) {
+        if (data.status === "ACTIVE" && !pollingRef.current) {
           startPolling();
-        } else if (response.data.status === "COMPLETED" && pollingRef.current) {
+        } else if (data.status === "COMPLETED" && pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
@@ -124,13 +124,13 @@ const JourneyDetailPage = () => {
   const startPolling = () => {
     pollingRef.current = setInterval(async () => {
       try {
-        const response = await LocationService.getJourneyDetail(id, selectedCompanyId);
-        if (response.status === "success") {
-          setJourney(response.data);
-          setLogs(response.data.logs || []);
+        const data = await LocationService.getJourneyDetail(id, selectedCompanyId);
+        if (data) {
+          setJourney(data);
+          setLogs(data.logs || []);
           setLastSync(new Date());
           
-          if (response.data.status === "COMPLETED") {
+          if (data.status === "COMPLETED") {
             clearInterval(pollingRef.current);
             pollingRef.current = null;
           }

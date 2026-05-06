@@ -35,7 +35,7 @@ const AttendanceManagement = () => {
                     year
                 }
             });
-            setAttendanceData(response.data);
+            setAttendanceData(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error("Error fetching attendance data", error);
         } finally {
@@ -47,7 +47,7 @@ const AttendanceManagement = () => {
         return new Date(year, month, 0).getDate();
     }, [month, year]);
 
-    const filteredData = attendanceData.filter(emp => 
+    const filteredData = (attendanceData || []).filter(emp => 
         emp.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -194,7 +194,7 @@ const AttendanceManagement = () => {
                                     {filteredData.map(emp => (
                                         <tr key={emp.user_id}>
                                             <td className={styles.stickyCol}>{emp.name}</td>
-                                            {emp.attendance.map((rec, idx) => (
+                                            {(emp.attendance || []).map((rec, idx) => (
                                                 <td 
                                                     key={idx} 
                                                     className={`${styles.attendanceCell} ${getStatusClass(rec.status, rec.day_type, rec.date, rec.is_locked)}`}

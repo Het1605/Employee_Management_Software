@@ -54,7 +54,7 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
         setLoading(true);
         try {
             const res = await API.get(`/leave-requests?company_id=${parseInt(selectedCompanyId, 10)}`);
-            setRequests(res.data);
+            setRequests(res.data || []);
         } catch (err) {
             console.error("Failed to fetch all leave requests", err);
             setRequests([]);
@@ -123,11 +123,11 @@ const LeaveApprovalPanel = ({ refreshTrigger, onActionComplete }) => {
 
             {loading ? (
                 <div className={styles.emptyState}>Loading requests...</div>
-            ) : requests.length === 0 ? (
+            ) : (requests || []).length === 0 ? (
                 <div className={styles.emptyState}>No leave requests exist for the company.</div>
             ) : (
                 <div className={styles.cardList}>
-                    {requests.map((req) => (
+                    {(requests || []).map((req) => (
                         <div key={req.id} className={styles.mobileCard}>
                             <div className={styles.cardRow}>
                                 <span className={styles.cardLabel}>Employee:</span>

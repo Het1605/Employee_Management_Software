@@ -35,8 +35,8 @@ const JourneyListPage = () => {
 
   const loadCompanyUsers = async () => {
     try {
-      const usersData = await fetchUsers(selectedCompanyId);
-      setUsers(usersData || []);
+      const res = await fetchUsers(selectedCompanyId);
+      setUsers(res.data || []);
     } catch (error) {
       console.error("Failed to load users for this company:", error);
       setUsers([]);

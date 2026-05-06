@@ -26,7 +26,7 @@ const MyProfile = () => {
         try {
             setLoading(true);
             const response = await fetchUserProfile();
-            setUser(response.data);
+            setUser(response.data || {});
         } catch (err) {
             console.error("Failed to load profile", err);
             setError("Could not load profile details.");
@@ -99,7 +99,7 @@ const MyProfile = () => {
                     <div className={styles.detailsGrid}>
                         <div className={styles.detailItem}>
                             <span className={styles.detailItemLabel}>Username / Email</span>
-                            <span className={styles.detailItemValue}>{user.email}</span>
+                            <span className={styles.detailItemValue}>{user?.email || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
