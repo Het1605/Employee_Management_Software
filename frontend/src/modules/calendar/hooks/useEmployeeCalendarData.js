@@ -21,9 +21,9 @@ export const useEmployeeCalendarData = () => {
             const response = await fetchMyCompanyCalendarConfig(selectedCompanyId);
             const { working_days, holidays, overrides } = response.data;
 
-            setWorkingDays(working_days);
-            setHolidays(holidays);
-            setOverrides(overrides);
+            setWorkingDays(Array.isArray(working_days) ? working_days : []);
+            setHolidays(Array.isArray(holidays) ? holidays : []);
+            setOverrides(Array.isArray(overrides) ? overrides : []);
         } catch (error) {
             console.error("Error fetching employee calendar data:", error);
         } finally {

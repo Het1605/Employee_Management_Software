@@ -53,7 +53,7 @@ const MyLeaveRequests = ({ refreshTrigger }) => {
         setLoading(true);
         try {
             const res = await API.get(`/leave-requests/my?company_id=${selectedCompanyId}`);
-            setRequests(res.data || []);
+            setRequests(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error("Failed to fetch leave requests", err);
         } finally {

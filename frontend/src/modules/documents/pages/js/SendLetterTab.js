@@ -27,7 +27,7 @@ const SendLetterTab = () => {
           return;
         }
         const res = await API.get(`/documents?company_id=${selectedCompanyId}`);
-        setDocuments(res.data || []);
+        setDocuments(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         showToast('Failed to load documents: ' + handleApiError(err), 'error');
       } finally {
@@ -46,7 +46,7 @@ const SendLetterTab = () => {
       setLoadingUsers(true);
       try {
         const res = await API.get(`/companies/${selectedCompanyId}/users`);
-        setUsers(res.data || []);
+        setUsers(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         showToast('Failed to load users: ' + handleApiError(err), 'error');
       } finally {
