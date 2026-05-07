@@ -20,7 +20,7 @@ export const CompanyProvider = ({ children }) => {
     const loadCompanies = async () => {
       setLoadingCompanies(true);
       const role = (localStorage.getItem('role') || 'EMPLOYEE').toUpperCase();
-      const endpoint = (role === 'ADMIN' || role === 'HR') ? '/companies' : '/companies/my';
+      const endpoint = (role === 'ADMIN' || role === 'HR') ? '/companies/' : '/companies/my';
       
       try {
         const res = await API.get(endpoint);

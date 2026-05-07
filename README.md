@@ -6,7 +6,7 @@ This project is a modular, containerized Employee Management System. It is deliv
 Please ensure you have the following 4 files in a single directory:
 1.  **`frontend.tar`**: Compiled React application and Nginx Gateway.
 2.  **`backend.tar`**: Compiled FastAPI application and services.
-3.  **`docker-compose.yml`**: Deployment instructions (previously `docker-compose.production.yml`).
+3.  **`docker-compose.production.yml`**: Deployment instructions.
 4.  **`.env`**: Database and security configurations.
 
 ---
@@ -28,7 +28,7 @@ Verify the `.env` file contains your desired secrets (Database passwords, Secret
 ### 3. Start the System
 Run the following command to start the Database, Backend, and Frontend:
 ```bash
-docker-compose up -d
+docker compose -f docker-compose.production.yml up -d
 ```
 
 ---
