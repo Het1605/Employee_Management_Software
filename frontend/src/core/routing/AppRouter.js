@@ -13,7 +13,6 @@ import ChangePassword from '../../modules/auth/pages/js/ChangePassword';
 import AdminDashboard from '../../layout/dashboards/admin/js/AdminDashboard';
 import UserManagement from '../../modules/user/pages/js/UserManagement';
 import HRDashboard from '../../layout/dashboards/hr/js/HRDashboard';
-import ManagerDashboard from '../../layout/dashboards/manager/js/ManagerDashboard';
 import EmployeeDashboard from '../../layout/dashboards/employee/js/EmployeeDashboard';
 import InternDashboard from '../../layout/dashboards/intern/js/InternDashboard';
 import CompanyManagement from '../../modules/company/pages/js/CompanyManagement';
@@ -48,7 +47,6 @@ const AppRouter = () => {
           {/* --- Dashboards --- */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR']}><HRDashboard /></ProtectedRoute>} />
-          <Route path="/manager" element={<ProtectedRoute allowedRoles={['ADMIN']}><ManagerDashboard /></ProtectedRoute>} />
           <Route path="/employee" element={<ProtectedRoute allowedRoles={['EMPLOYEE']}><EmployeeDashboard /></ProtectedRoute>} />
           <Route path="/intern" element={<ProtectedRoute allowedRoles={['INTERN']}><InternDashboard /></ProtectedRoute>} />
 
@@ -56,7 +54,7 @@ const AppRouter = () => {
           <Route 
             path="/user-management" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <UserManagement />
               </ProtectedRoute>
             } 
@@ -122,7 +120,7 @@ const AppRouter = () => {
           <Route 
             path="/mark-attendance" 
             element={
-              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN', 'MANAGER']}>
+              <ProtectedRoute allowedRoles={['EMPLOYEE', 'INTERN']}>
                 <AttendancePage />
               </ProtectedRoute>
             } 
@@ -150,7 +148,7 @@ const AppRouter = () => {
           <Route 
             path="/leave-management" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'EMPLOYEE', 'INTERN']}>
                 <LeaveManagementPage />
               </ProtectedRoute>
             } 
@@ -158,7 +156,7 @@ const AppRouter = () => {
           <Route 
             path="/apply-leave" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'EMPLOYEE', 'INTERN']}>
                 <LeaveManagementPage />
               </ProtectedRoute>
             } 
@@ -186,7 +184,7 @@ const AppRouter = () => {
           <Route 
             path="/location" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <JourneyListPage />
               </ProtectedRoute>
             } 
@@ -194,7 +192,7 @@ const AppRouter = () => {
           <Route 
             path="/location/journey/:id" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR']}>
                 <JourneyDetailPage />
               </ProtectedRoute>
             } 
@@ -204,7 +202,7 @@ const AppRouter = () => {
           <Route 
             path="/profile" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'INTERN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'HR', 'EMPLOYEE', 'INTERN']}>
                 <MyProfile />
               </ProtectedRoute>
             } 

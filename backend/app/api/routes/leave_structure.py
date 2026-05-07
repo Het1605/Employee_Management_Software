@@ -62,7 +62,7 @@ def create_leave_structure(
 def list_leave_structures(
     company_id: int = Query(..., description="ID of the company to filter by"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"])),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
     result = LeaveStructureService.get_all_structures(db, company_id=company_id)
     return ResponseSchema(status="success", data=result)
@@ -76,7 +76,7 @@ def list_leave_structures(
 def get_leave_structure(
     structure_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"])),
+    current_user: User = Depends(role_required(["ADMIN", "HR"])),
 ):
     structure = LeaveStructureService.get_structure_by_id(db, structure_id)
     if not structure:
@@ -173,7 +173,7 @@ def get_user_assignment(
     current_user: User = Depends(get_current_user),
 ):
     # Security Check
-    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
+    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     assignment = db.query(LeaveAssignment).filter_by(
@@ -278,7 +278,7 @@ def get_user_leave_balance(
     Returns real-time leave balance for a SPECIFIC company.
     """
     # Authorization check
-    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR", "MANAGER"):
+    if current_user.id != user_id and current_user.role not in ("ADMIN", "HR"):
         raise HTTPException(status_code=403, detail="Not authorized to view this user's balance.")
 
     try:

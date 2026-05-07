@@ -16,7 +16,7 @@ const HRDashboard = () => {
   return (
     <ModuleDashboard
       title="HR Dashboard"
-      welcomeTitle="Welcome, HR Manager"
+      welcomeTitle="Welcome, HR Administrator"
       subtitle="Oversee organizational talent and employee well-being."
       sections={sections}
     />

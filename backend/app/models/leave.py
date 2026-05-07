@@ -74,7 +74,7 @@ class LeaveActivityLog(Base):
     leave_type = Column(String, nullable=False)
     action = Column(String, default="BALANCE_SET")
     action_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    action_by_role = Column(String, nullable=True) # ADMIN, HR, MANAGER
+    action_by_role = Column(String, nullable=True) # ADMIN, HR
     balance_changes = Column(JSONB, nullable=False) # List of {month, before, after}
     details = Column(JSONB, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())

@@ -37,7 +37,7 @@ def create_structure(
 def list_structures(
     company_id: int | None = None, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.list_definitions(db, company_id)
     return ResponseSchema(status="success", data=result)
@@ -47,7 +47,7 @@ def list_structures(
 def get_structure(
     structure_id: int, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.get_definition(db, structure_id)
     return ResponseSchema(status="success", data=result)
@@ -92,7 +92,7 @@ def add_components(
 def list_components(
     structure_id: int, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.list_details(db, structure_id)
     return ResponseSchema(status="success", data=result)
@@ -139,7 +139,7 @@ def assign_structure(
 def list_assignments(
     company_id: int | None = None, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.list_assignments(db, company_id)
     return ResponseSchema(status="success", data=result)
@@ -150,7 +150,7 @@ def get_assignment(
     assignment_id: int, 
     company_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.get_assignment(db, assignment_id, company_id)
     return ResponseSchema(status="success", data=result)

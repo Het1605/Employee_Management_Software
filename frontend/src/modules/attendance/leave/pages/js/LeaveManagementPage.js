@@ -15,7 +15,7 @@ const LeaveManagementPage = () => {
 
     // Standardized role checking from local storage
     const role = localStorage.getItem('role') || 'EMPLOYEE';
-    const isPrivileged = ['ADMIN', 'HR', 'MANAGER'].includes(role.toUpperCase());
+    const isPrivileged = ['ADMIN', 'HR'].includes(role.toUpperCase());
 
     const [isAssigned, setIsAssigned] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);

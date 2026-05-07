@@ -68,8 +68,6 @@ function Login() {
         navigate("/intern");
       } else if (role === "HR") {
         navigate("/hr");
-      } else if (role === "MANAGER") {
-        navigate("/manager");
       } else {
         navigate("/");
       }

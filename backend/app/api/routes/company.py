@@ -23,7 +23,7 @@ def create_company(
 @router.get("/", response_model=ResponseSchema[List[CompanyResponse]])
 def get_companies(
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     companies = CompanyService.get_companies(db)
     return ResponseSchema(status="success", data=companies)
@@ -90,7 +90,7 @@ def unassign_users(
 def get_assigned_users(
     company_id: int, 
     db: Session = Depends(get_db),
-    admin_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     users = CompanyService.get_assigned_users(db, company_id)
     return ResponseSchema(status="success", data=users)
@@ -99,7 +99,7 @@ def get_assigned_users(
 def get_available_users(
     company_id: int, 
     db: Session = Depends(get_db),
-    admin_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    admin_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     users = CompanyService.get_available_users(db, company_id)
     return ResponseSchema(status="success", data=users)

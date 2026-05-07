@@ -49,7 +49,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       type: 'group',
       title: 'Users Management',
-      roles: ['ADMIN', 'HR', 'MANAGER'],
+      roles: ['ADMIN', 'HR'],
       items: [
         { to: "/user-management", icon: Users, label: 'Manage Users' }
       ]
@@ -88,7 +88,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           to: "/mark-attendance", 
           icon: ClipboardCheck, 
           label: 'Mark Attendance', 
-          roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
+          roles: ['EMPLOYEE', 'INTERN'] 
         },
         { 
           to: "/attendance-management", 
@@ -100,7 +100,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           to: "/calendar", 
           icon: Calendar, 
           label: 'My Calendar',
-          roles: ['EMPLOYEE', 'INTERN', 'MANAGER'] 
+          roles: ['EMPLOYEE', 'INTERN'] 
         }
       ]
     },
@@ -108,7 +108,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       type: 'group',
       title: 'Leave Management',
       items: [
-        { to: "/leave-management", icon: Umbrella, label: 'Manage Leaves', roles: ['ADMIN', 'HR', 'MANAGER'] },
+        { to: "/leave-management", icon: Umbrella, label: 'Manage Leaves', roles: ['ADMIN', 'HR'] },
         { to: "/apply-leave", icon: ClipboardCheck, label: 'Apply Leave' },
         { 
           to: "/leave-structure", 
@@ -121,7 +121,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       type: 'group',
       title: 'Field Operations',
-      roles: ['ADMIN', 'HR', 'MANAGER'],
+      roles: ['ADMIN', 'HR'],
       items: [
         { to: "/location", icon: Navigation, label: 'Location Tracking' }
       ]

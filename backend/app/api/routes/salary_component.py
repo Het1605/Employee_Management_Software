@@ -29,7 +29,7 @@ def create_component(
 def get_components(
     company_id: int = Query(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.get_salary_components(db, company_id)
     return ResponseSchema(status="success", data=result)
@@ -39,7 +39,7 @@ def get_component(
     component_id: int,
     company_id: int = Query(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     result = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
     return ResponseSchema(status="success", data=result)

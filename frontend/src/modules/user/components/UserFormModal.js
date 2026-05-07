@@ -190,7 +190,6 @@ const UserFormModal = ({ user, onClose, onSubmit }) => {
               <select name="role" value={formData.role} onChange={handleChange}>
                 <option value="ADMIN">ADMIN</option>
                 <option value="HR">HR</option>
-                <option value="MANAGER">MANAGER</option>
                 <option value="EMPLOYEE">EMPLOYEE</option>
                 <option value="INTERN">INTERN</option>
               </select>

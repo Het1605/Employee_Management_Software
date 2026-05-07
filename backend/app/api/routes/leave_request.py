@@ -106,7 +106,7 @@ def get_my_leaves(
 
 @router.get("", response_model=ResponseSchema[List[LeaveRequestOut]])
 def get_all_leaves(company_id: int = Query(..., description="ID of the selected company"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if current_user.role not in ["ADMIN", "HR"]:
         raise HTTPException(status_code=403, detail="Not authorized to view all leaves")
         
     leaves = db.query(LeaveRequest).filter(
@@ -127,7 +127,7 @@ def update_leave_request(
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    is_privileged = current_user.role in ['ADMIN', 'HR', 'MANAGER']
+    is_privileged = current_user.role in ['ADMIN', 'HR']
     if db_request.user_id != current_user.id and not is_privileged:
         raise HTTPException(status_code=403, detail="You do not have permission to edit this request")
 
@@ -165,7 +165,7 @@ def update_leave_request(
 
 @router.put("/{leave_id}/approve-reject", response_model=ResponseSchema[LeaveRequestOut])
 def approve_reject_leave(leave_id: int, request: LeaveRequestUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if current_user.role not in ["ADMIN", "HR"]:
         raise HTTPException(status_code=403, detail="Not authorized to approve or reject leaves")
         
     db_request = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
@@ -335,7 +335,7 @@ def delete_leave(
     if not db_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
-    is_admin = current_user.role in ["ADMIN", "HR", "MANAGER"]
+    is_admin = current_user.role in ["ADMIN", "HR"]
     is_owner = db_request.user_id == current_user.id
 
     if not is_admin and not is_owner:
@@ -375,7 +375,7 @@ def get_calendar_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if current_user.role not in ["ADMIN", "HR"]:
         raise HTTPException(status_code=403, detail="Not authorized to view calendar summary")
 
     start_date = date(year, month, 1)
@@ -414,7 +414,7 @@ def get_leave_activity_logs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if current_user.role not in ["ADMIN", "HR"]:
         raise HTTPException(status_code=403, detail="Not authorized to view activity logs")
 
     query = db.query(LeaveActivityLog).options(

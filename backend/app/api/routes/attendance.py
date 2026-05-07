@@ -52,7 +52,7 @@ def get_my_attendance(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if user_id != current_user.id and current_user.role not in ["ADMIN", "HR"]:
          raise HTTPException(status_code=403, detail="Not authorized to view other's attendance")
     result = attendance_service.get_my_attendance(db, user_id, company_id, month, year)
     return ResponseSchema(status="success", data=result)
@@ -75,7 +75,7 @@ def get_today_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if user_id != current_user.id and current_user.role not in ["ADMIN", "HR", "MANAGER"]:
+    if user_id != current_user.id and current_user.role not in ["ADMIN", "HR"]:
          raise HTTPException(status_code=403, detail="Not authorized")
     result = attendance_service.get_today_status(db, user_id, company_id)
     return ResponseSchema(status="success", data=result)

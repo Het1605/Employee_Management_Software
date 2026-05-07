@@ -30,7 +30,7 @@ def get_all_users(
     active_only: bool = Query(False),
     company_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     users = UserService.get_all_users(db, active_only=active_only, company_id=company_id)
     return ResponseSchema(status="success", data=users)
@@ -39,7 +39,7 @@ def get_all_users(
 def get_user(
     user_id: int, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(["ADMIN", "HR", "MANAGER"]))
+    current_user: User = Depends(role_required(["ADMIN", "HR"]))
 ):
     user = UserService.get_user_by_id(db, user_id)
     return ResponseSchema(status="success", data=user)
