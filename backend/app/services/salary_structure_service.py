@@ -73,9 +73,16 @@ class SalaryStructureService:
     @staticmethod
     def delete_salary_component(db: Session, component_id: int, company_id: int):
         component = SalaryStructureService.get_salary_component_by_id(db, component_id, company_id)
-        db.delete(component)
-        db.commit()
-        return {"detail": "Component deleted successfully"}
+        try:
+            db.delete(component)
+            db.commit()
+            return {"detail": "Component deleted successfully"}
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete this component because it is being used in one or more Salary Structures. Please remove it from the structures first."
+            )
 
 
     # ---------- Salary Structure Definitions ----------

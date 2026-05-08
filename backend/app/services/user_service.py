@@ -107,7 +107,7 @@ class UserService:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot delete user because they have active company associations"
+                detail="Cannot delete user because they are still assigned to one or more companies. Please remove all company associations first."
             )
         except Exception:
             db.rollback()

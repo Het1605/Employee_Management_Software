@@ -74,11 +74,12 @@ function Login() {
 
     } catch (err) {
       let errorMsg = "Login Failed: Network or Server Error";
-      if (err.response?.data?.detail) {
-        if (typeof err.response.data.detail === "string") {
-          errorMsg = err.response.data.detail;
-        } else if (Array.isArray(err.response.data.detail)) {
-          errorMsg = err.response.data.detail[0]?.msg || JSON.stringify(err.response.data.detail);
+      const backendError = err.response?.data?.message || err.response?.data?.detail;
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMsg = backendError;
+        } else if (Array.isArray(backendError)) {
+          errorMsg = backendError[0]?.msg || JSON.stringify(backendError);
         }
       }
       setError(errorMsg);

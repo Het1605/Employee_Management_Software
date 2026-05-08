@@ -34,17 +34,35 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => {
     // Automatically unwrap the standard backend ResponseSchema { status, message, data }
-    if (response.data && response.data.status === "success" && response.data.hasOwnProperty("data")) {
-      return {
-        ...response,
-        data: response.data.data,
-        fullResponse: response.data // Keep the full envelope for components that might need status/message
-      };
+    if (response.data && (response.data.status === "success" || response.data.status === "error")) {
+      // Compatibility Shim: Ensure 'detail' exists if 'message' is present
+      if (response.data.message && !response.data.detail) {
+        response.data.detail = response.data.message;
+      }
+
+      // If it's a success and has a data payload, unwrap it for convenience
+      if (response.data.status === "success" && response.data.hasOwnProperty("data")) {
+        return {
+          ...response,
+          data: response.data.data,
+          fullResponse: response.data // Keep the full envelope for components that might need status/message
+        };
+      }
     }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+
+    // Compatibility Shim for Errors:
+    // If backend returned our new ResponseSchema in the error body, 
+    // map 'message' to 'detail' so old frontend code doesn't break.
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (data.message && !data.detail) {
+        data.detail = data.message;
+      }
+    }
 
     // Handle 401 errors and try refreshing the token
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -75,7 +93,6 @@ API.interceptors.response.use(
 
       return new Promise(async (resolve, reject) => {
         try {
-          
           // Use JSON body instead of headers for cross-platform consistency (like mobile)
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
             refresh_token: refreshToken
@@ -93,7 +110,6 @@ API.interceptors.response.use(
           localStorage.setItem('token', access_token); // Compatibility
           if (new_refresh_token) localStorage.setItem('refresh_token', new_refresh_token);
 
-          
           API.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
           originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
           

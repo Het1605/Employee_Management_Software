@@ -175,6 +175,7 @@ const SalaryStructureManagement = () => {
             companyId={selectedCompanyId}
             components={componentsList}
             structures={structuresList}
+            assignments={assignments}
             refreshStructures={async () => {
               if (!selectedCompanyId) return;
               try {
@@ -624,7 +625,7 @@ const AddComponentModal = ({ isOpen, onClose, editData }) => {
   );
 };
 
-const StructuresTab = ({ companyId, components, structures, refreshStructures, isModalOpen, setIsModalOpen, editingStructure, setEditingStructure, loading, showToast, handleApiError }) => {
+const StructuresTab = ({ companyId, components, structures, assignments, refreshStructures, isModalOpen, setIsModalOpen, editingStructure, setEditingStructure, loading, showToast, handleApiError }) => {
   const openModal = (structure = null) => {
     setEditingStructure(structure);
     setIsModalOpen(true);
@@ -716,10 +717,19 @@ const StructuresTab = ({ companyId, components, structures, refreshStructures, i
                     <button
                       className={`${styles.iconBtn} ${styles.delete}`}
                       onClick={async () => {
-                        if (window.confirm(`Delete salary structure "${structure.structure_name || structure.name}"?`)) {
+                        const structureName = structure.structure_name || structure.name;
+                        const assignedCount = (assignments || []).filter(a => Number(a.structure_id) === Number(structure.id)).length;
+                        
+                        let confirmMessage = `Are you sure you want to delete the salary structure "${structureName}"?`;
+                        if (assignedCount > 0) {
+                          confirmMessage = `WARNING: There are ${assignedCount} users assigned to "${structureName}". \n\nDeleting this structure will PERMANENTLY remove the salary assignments for these users. \n\nAre you sure you want to proceed?`;
+                        }
+
+                        if (window.confirm(confirmMessage)) {
                           try {
                             await API.delete(`/salary-structures/${structure.id}`);
                             refreshStructures();
+                            showToast('Structure deleted successfully', 'success');
                           } catch (err) {
                             showToast('Delete failed: ' + handleApiError(err), 'error');
                           }

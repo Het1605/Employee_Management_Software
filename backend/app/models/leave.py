@@ -18,7 +18,7 @@ class LeaveRequest(Base):
     __tablename__ = "leave_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
@@ -30,7 +30,7 @@ class LeaveRequest(Base):
     leave_duration_type = Column(Enum(LeaveDurationType), nullable=False)
     
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
-    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
 
     hidden_for_admin = Column(Boolean, default=False)
@@ -50,7 +50,7 @@ class LeaveBalance(Base):
     __tablename__ = "leave_balances"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False) # PL, CL, SL
     balance = Column(Numeric(precision=5, scale=2), default=0)
@@ -69,7 +69,7 @@ class LeaveActivityLog(Base):
     __tablename__ = "leave_activity_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     leave_type = Column(String, nullable=False)
     action = Column(String, default="BALANCE_SET")

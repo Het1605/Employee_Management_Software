@@ -14,7 +14,7 @@ class JourneySession(Base):
     __tablename__ = "journey_sessions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     
     start_time = Column(DateTime(timezone=True), server_default=func.now())
@@ -46,7 +46,7 @@ class LocationLog(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     journey_id = Column(UUID(as_uuid=True), ForeignKey("journey_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     
     latitude = Column(Float, nullable=False)

@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from app.models import Company, User, UserCompanyMapping
+from app.models import (
+    Company, User, UserCompanyMapping, 
+    UserSalaryStructure, LeaveAssignment, LeaveBalance,
+    JourneySession, JourneyStatus
+)
 from app.schemas.company import CompanyCreate, CompanyUpdate
 from sqlalchemy import and_
 
@@ -105,6 +109,49 @@ class CompanyService:
 
     @staticmethod
     def unassign_users(db: Session, company_id: int, user_ids: list[int]):
+        # Check for active assignments before allowing unassignment
+        for user_id in user_ids:
+            # 1. Check Salary Structure Assignment
+            salary_assign = db.query(UserSalaryStructure).filter(
+                and_(UserSalaryStructure.user_id == user_id, UserSalaryStructure.company_id == company_id)
+            ).first()
+            if salary_assign:
+                user = db.query(User).filter(User.id == user_id).first()
+                user_name = f"{user.first_name} {user.last_name}" if user else f"User {user_id}"
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail=f"Cannot remove {user_name} because they have an active Salary Structure assignment in this company. Please remove the assignment first."
+                )
+
+            # 2. Check Leave Structure Assignment
+            leave_assign = db.query(LeaveAssignment).filter(
+                and_(LeaveAssignment.user_id == user_id, LeaveAssignment.company_id == company_id)
+            ).first()
+            if leave_assign:
+                user = db.query(User).filter(User.id == user_id).first()
+                user_name = f"{user.first_name} {user.last_name}" if user else f"User {user_id}"
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail=f"Cannot remove {user_name} because they have an active Leave Structure assignment in this company. Please remove the assignment first."
+                )
+
+            # 3. Check Active Journey Session
+            active_journey = db.query(JourneySession).filter(
+                and_(
+                    JourneySession.user_id == user_id, 
+                    JourneySession.company_id == company_id,
+                    JourneySession.status == JourneyStatus.ACTIVE
+                )
+            ).first()
+            if active_journey:
+                user = db.query(User).filter(User.id == user_id).first()
+                user_name = f"{user.first_name} {user.last_name}" if user else f"User {user_id}"
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail=f"Cannot remove {user_name} because they have an ACTIVE location tracking journey in this company. Please stop the journey first."
+                )
+
+        # If no assignments, proceed with deletion of mapping
         db.query(UserCompanyMapping).filter(
             and_(UserCompanyMapping.company_id == company_id, UserCompanyMapping.user_id.in_(user_ids))
         ).delete(synchronize_session=False)
