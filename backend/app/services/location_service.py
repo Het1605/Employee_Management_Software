@@ -83,7 +83,11 @@ class LocationService:
             raise HTTPException(status_code=403, detail="Unauthorized: Journey company mismatch")
 
         if journey.status != JourneyStatus.ACTIVE:
-            raise HTTPException(status_code=400, detail="Cannot track location: Journey is not ACTIVE")
+            # Special 403 status and message to tell mobile app to stop service
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="JOURNEY_STOPPED_BY_ADMIN"
+            )
 
         # 3. Efficient Deduplication & Insertion (Postgres ON CONFLICT)
         logs_to_insert = []
@@ -157,7 +161,11 @@ class LocationService:
             raise HTTPException(status_code=403, detail="Unauthorized: Company mismatch")
 
         if journey.status != JourneyStatus.ACTIVE:
-            raise HTTPException(status_code=400, detail="Journey is already COMPLETED or invalid")
+            # If already ended (e.g. by admin), tell mobile app to stop local state
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="JOURNEY_STOPPED_BY_ADMIN"
+            )
         
         # 3. Mark COMPLETED
         journey.status = JourneyStatus.COMPLETED
@@ -267,4 +275,31 @@ class LocationService:
         return {
             "status": "success",
             "message": "Journey and all associated location data deleted successfully"
+        }
+    @staticmethod
+    async def force_stop_session(db: Session, journey_id: UUID, company_id: int):
+        """Allows Admin to force-complete a journey session."""
+        journey = db.query(JourneySession).filter(
+            JourneySession.id == journey_id,
+            JourneySession.company_id == company_id
+        ).first()
+        
+        if not journey:
+            raise HTTPException(status_code=404, detail="Journey not found")
+            
+        if journey.status != JourneyStatus.ACTIVE:
+            raise HTTPException(status_code=400, detail="Journey is already COMPLETED")
+            
+        # Complete the journey
+        journey.status = JourneyStatus.COMPLETED
+        journey.end_time = datetime.utcnow()
+        # Admin stop won't have end lat/lng from mobile, so we just mark it ended
+        
+        db.commit()
+        db.refresh(journey)
+        
+        return {
+            "status": "success",
+            "message": "Journey force-stopped by administrator",
+            "data": journey
         }

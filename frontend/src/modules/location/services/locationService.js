@@ -27,6 +27,16 @@ const LocationService = {
   },
 
   /**
+   * Force stop an ACTIVE journey (Admin only)
+   */
+  forceStopJourney: async (journeyId, companyId) => {
+    const response = await API.post(`/location/force-stop/${journeyId}`, null, {
+      params: { company_id: companyId },
+    });
+    return response.data;
+  },
+
+  /**
    * Delete a journey and its logs (Only for COMPLETED journeys)
    */
   deleteJourney: async (journeyId, companyId) => {

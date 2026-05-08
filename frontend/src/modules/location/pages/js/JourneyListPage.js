@@ -4,7 +4,7 @@ import { useCompanyContext } from "../../../../contexts/CompanyContext";
 import LocationService from "../../services/locationService";
 import { fetchUsers } from "../../../user/services/userService";
 import styles from "../styles/JourneyListPage.module.css";
-import { MapPin, Clock, Calendar, ChevronRight, User, Search, Filter, X, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { MapPin, Clock, Calendar, ChevronRight, User, Search, Filter, X, ChevronDown, ChevronUp, Trash2, Square } from "lucide-react";
 
 const JourneyListPage = () => {
   const { selectedCompanyId } = useCompanyContext();
@@ -96,6 +96,22 @@ const JourneyListPage = () => {
 
   const handleViewMap = (journeyId) => {
     navigate(`/location/journey/${journeyId}`);
+  };
+
+  const handleForceStop = async (e, journeyId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to FORCE STOP this journey? The mobile app will automatically stop tracking on its next update.")) {
+      return;
+    }
+
+    try {
+      await LocationService.forceStopJourney(journeyId, selectedCompanyId);
+      // Refresh the list to show updated status
+      fetchJourneys();
+    } catch (error) {
+      console.error("Failed to force stop journey:", error);
+      alert(error.response?.data?.detail || "Failed to force stop journey");
+    }
   };
 
   const handleDelete = async (e, journeyId) => {
@@ -244,6 +260,15 @@ const JourneyListPage = () => {
                     {journey.status === 'ACTIVE' && <span className={styles.pulse}></span>}
                     {journey.status}
                   </span>
+                  {journey.status === 'ACTIVE' && (
+                    <button 
+                      className={styles.forceStopBtn}
+                      onClick={(e) => handleForceStop(e, journey.id)}
+                      title="Force Stop Journey"
+                    >
+                      <Square size={14} fill="currentColor" />
+                    </button>
+                  )}
                   {journey.status === 'COMPLETED' && (
                     <button 
                       className={styles.deleteBtn}

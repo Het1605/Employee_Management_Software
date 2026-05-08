@@ -282,6 +282,28 @@
   transform: scale(1.05);
 }
 
+.forceStopBtn {
+  background: white;
+  border: 1px solid #fed7aa;
+  color: #f97316;
+  padding: 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  height: 32px;
+  width: 32px;
+}
+
+.forceStopBtn:hover {
+  background-color: #fff7ed;
+  border-color: #fb923c;
+  color: #ea580c;
+  transform: scale(1.05);
+}
+
 .pulse {
   width: 8px;
   height: 8px;

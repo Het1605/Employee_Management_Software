@@ -92,3 +92,22 @@ async def delete_journey(
     
     result = await LocationService.delete_journey(db, id, company_id)
     return ResponseSchema(status=result["status"], message=result.get("message"), data=result.get("data"))
+@router.post("/force-stop/{id}", response_model=ResponseSchema[JourneyResponse])
+async def force_stop_journey(
+    id: UUID,
+    company_id: int = Query(...),
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Role Check: Only Admin or HR can force stop
+    if current_user.role not in ["ADMIN", "HR"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized: Only administrators or HR can force-stop a journey"
+        )
+
+    # 2. Strict company membership validation
+    LocationService._validate_user_membership(db, current_user.id, company_id)
+    
+    result = await LocationService.force_stop_session(db, id, company_id)
+    return ResponseSchema(status=result["status"], message=result.get("message"), data=result.get("data"))
