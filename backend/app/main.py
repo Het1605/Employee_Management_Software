@@ -38,8 +38,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json"
+    docs_url="/api/docs" if settings.SHOW_DOCS else None,
+    redoc_url="/api/redoc" if settings.SHOW_DOCS else None,
+    openapi_url="/api/openapi.json" if settings.SHOW_DOCS else None
 )
 
 # --- GLOBAL EXCEPTION HANDLERS ---
