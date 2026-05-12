@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Employee Management System"
     DATABASE_URL: str
     SECRET_KEY: str
+    SHOW_DOCS: bool = True
     
     # Security
     ALGORITHM: str = "HS256"

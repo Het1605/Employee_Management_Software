@@ -34,7 +34,7 @@ const SalaryStructureManagement = () => {
       }
       setLoadingComponents(true);
       try {
-        const res = await API.get(`/salary-components?company_id=${selectedCompanyId}`);
+        const res = await API.get(`/salary-components/?company_id=${selectedCompanyId}`);
         setComponentsList(res.data || []);
       } catch (err) {
         showToast('Failed to load components: ' + handleApiError(err), 'error');
@@ -53,12 +53,12 @@ const SalaryStructureManagement = () => {
       }
       setLoadingStructures(true);
       try {
-        const defs = await API.get(`/salary-structures?company_id=${selectedCompanyId}`);
+        const defs = await API.get(`/salary-structures/?company_id=${selectedCompanyId}`);
         const definitions = defs.data || [];
         const withComponents = await Promise.all(
           definitions.map(async (d) => {
             try {
-              const comps = await API.get(`/salary-structures/${d.id}/components`);
+              const comps = await API.get(`/salary-structures/${d.id}/components/`);
               const compRows = comps.data || [];
               const total = compRows.reduce((sum, r) => sum + Number(r.percentage || 0), 0);
               return { ...d, components: compRows, total };

@@ -208,7 +208,7 @@ const JourneyDetailPage = () => {
               >
                 <Popup className={styles.pointPopup}>
                   <div className={styles.popupContent}>
-                    <strong>{isFirst ? "Start Point" : isLast ? "Current/End Point" : "Way Point"}</strong>
+                    <strong>{isFirst ? "Start Point" : isLast ? (journey.status === "ACTIVE" ? "Current Point" : "End Point") : "Way Point"}</strong>
                     <div className={styles.popupTime}>🕒 {formatTime(log.recorded_at)}</div>
                     <div className={styles.popupCoords}>📍 {log.latitude.toFixed(5)}, {log.longitude.toFixed(5)}</div>
                   </div>
